@@ -1,14 +1,14 @@
-# Hackbot
+# GateCounsel
 
 **An agent-assisted DevSecOps platform for continuous, scope-constrained web application security testing**
 
-Hackbot is a proposed academic prototype that explores how specialized AI agents can help select web security checks while deterministic controls keep testing limited to an explicitly authorized, isolated laboratory. The project combines application security, agent orchestration, evidence-based verification, and CI/CD feedback.
+GateCounsel is a proposed academic prototype that explores how specialized AI agents can help select web security checks while deterministic controls keep testing limited to an explicitly authorized, isolated laboratory. The project combines application security, agent orchestration, evidence-based verification, and CI/CD feedback.
 
 > **Project status:** This repository currently contains the project proposal and planning documents. The application, Docker lab, and CI workflow described here are planned work and are not implemented in this repository yet.
 
 ## The idea
 
-Security checks are most useful when developers can run them repeatedly during development and receive clear, verifiable results. Hackbot is intended to automate a bounded security assessment of a deliberately vulnerable web application in a local lab, then return findings and a policy decision to the development pipeline.
+Security checks are most useful when developers can run them repeatedly during development and receive clear, verifiable results. GateCounsel is intended to automate a bounded security assessment of a deliberately vulnerable web application in a local lab, then return findings and a policy decision to the development pipeline.
 
 The system separates reasoning from action. Agents can analyze a mapped application surface and propose typed test plans. They do not make network requests. A deterministic request broker and Scope Guard check every action against the run's policy before approved tools can interact with the lab target. A verifier evaluates observed evidence; an agent's claim by itself does not establish a vulnerability.
 
@@ -60,7 +60,7 @@ SQL injection is a possible next step after XSS and IDOR work reliably end to en
 
 ## Safety and authorization boundary
 
-Hackbot is intended only for targets that the project team owns or is explicitly authorized to test. The planned MVP uses a local, deliberately vulnerable target in an isolated Docker network. Public, third-party, and production targets are outside the project scope.
+GateCounsel is intended only for targets that the project team owns or is explicitly authorized to test. The planned MVP uses a local, deliberately vulnerable target in an isolated Docker network. Public, third-party, and production targets are outside the project scope.
 
 The core safety design is structural:
 
@@ -92,9 +92,9 @@ Technology choices remain proposals until implementation and validation. The pro
 
 ## Repository contents
 
-- [`HACKBOT_MVP_ROADMAP.md`](HACKBOT_MVP_ROADMAP.md) — prioritized MVP boundaries, architecture, acceptance criteria, and a ten-working-day implementation sequence.
-- [`HACKBOT_FULL_PROJECT_ROADMAP.md`](HACKBOT_FULL_PROJECT_ROADMAP.md) — staged architecture, technology recommendations, safety controls, evaluation strategy, and long-term milestones.
-- [`Hackbot_Project_Detailed.md`](Hackbot_Project_Detailed.md) — broader multi-agent project concept and component design.
+- [`GATECOUNSEL_MVP_ROADMAP.md`](GATECOUNSEL_MVP_ROADMAP.md) — prioritized MVP boundaries, architecture, acceptance criteria, and a ten-working-day implementation sequence.
+- [`GATECOUNSEL_FULL_PROJECT_ROADMAP.md`](GATECOUNSEL_FULL_PROJECT_ROADMAP.md) — staged architecture, technology recommendations, safety controls, evaluation strategy, and long-term milestones.
+- [`GateCounsel_Project_Detailed.md`](GateCounsel_Project_Detailed.md) — broader multi-agent project concept and component design.
 - [`Proposition_Projet_Expertise_Badr_Taha.pdf`](Proposition_Projet_Expertise_Badr_Taha.pdf) — French academic proposal describing the project motivation, authorized-lab framing, and initial project scope.
 - [`Proposition_Projet_Expertise_Badr_Taha.tex`](Proposition_Projet_Expertise_Badr_Taha.tex) — LaTeX source for the academic proposal PDF.
 

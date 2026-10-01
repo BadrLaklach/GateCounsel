@@ -1,10 +1,10 @@
-# Hackbot — Full Project Roadmap
+# GateCounsel — Full Project Roadmap
 
 ## 1. Project definition
 
 ### Proposed title
 
-**Hackbot: An Agentic DevSecOps Platform for Continuous, Scope-Constrained Web Application Security Testing**
+**GateCounsel: An Agentic DevSecOps Platform for Continuous, Scope-Constrained Web Application Security Testing**
 
 ### Core objective
 
@@ -82,7 +82,7 @@ Persist each contract as JSON per run. This makes the workflow auditable, testab
 ## 4. Repository layout
 
 ```text
-hackbot/
+gatecounsel/
 ├── apps/
 │   ├── api/                       # FastAPI control plane
 │   └── dashboard/                 # React UI; add after the API is stable
@@ -147,7 +147,7 @@ Pin every dependency in a lock file and record tested versions in `docs/technolo
 | Browser automation | Playwright for Python | Recon, authenticated navigation, screenshots, and browser-based confirmation. Use one isolated context per run. |
 | Retrieval | Chroma locally plus a local embedding model | Store reviewed documents with class, source, version, and license metadata. |
 | Model provider | Provider interface; local model runtime for the demo, optional hosted provider for development | Require JSON-schema-compatible structured output. Keep prompts and model IDs versioned. |
-| Lab/infrastructure | Docker Compose Specification | Define targets, Hackbot, storage, and isolated networks as code. |
+| Lab/infrastructure | Docker Compose Specification | Define targets, GateCounsel, storage, and isolated networks as code. |
 | CI/CD | GitHub Actions | Build, test, start the lab, run safe end-to-end tests, upload reports, and clean up. |
 | Security reporting | JSON + Markdown/HTML; SARIF as a later integration | JSON is the source of truth; human reports and CI annotations are generated from it. |
 
@@ -185,7 +185,7 @@ Use Docker Compose, not Kubernetes, for the core thesis. Kubernetes adds operati
 
 1. Start with one custom deliberately vulnerable demo target because it provides stable ground truth.
 2. Add OWASP Juice Shop later as a realistic integration target, not as the only benchmark source.
-3. Put Hackbot and the target on a private Compose network. Expose ports to the host only for local development.
+3. Put GateCounsel and the target on a private Compose network. Expose ports to the host only for local development.
 4. Add health checks and a reset/seed command so every test run begins from a known state.
 5. Confirm that the executor container cannot reach the public internet; use network design and an egress-blocking rule where available.
 
@@ -357,4 +357,4 @@ Use Docker Compose, not Kubernetes, for the core thesis. Kubernetes adds operati
 
 ## 11. Final full-project definition of done
 
-The project is complete when a clean CI job can start a controlled lab target, run Hackbot under a recorded scope policy, generate a typed site map and specialist test tasks, verify selected findings with sanitized evidence, upload a reproducible report package, return a deterministic policy decision, clean up its environment, and produce evaluation data comparing at least one specialist configuration against a baseline.
+The project is complete when a clean CI job can start a controlled lab target, run GateCounsel under a recorded scope policy, generate a typed site map and specialist test tasks, verify selected findings with sanitized evidence, upload a reproducible report package, return a deterministic policy decision, clean up its environment, and produce evaluation data comparing at least one specialist configuration against a baseline.

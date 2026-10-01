@@ -1,4 +1,4 @@
-# HACKBOT
+# GATECOUNSEL
 ### A Multi-Agent, Vulnerability-Class-Specialized Autonomous Pentesting Assistant
 
 **Author:** Taha Benahmadi
@@ -30,11 +30,11 @@
 
 ## 1. Overview
 
-**Hackbot** is an autonomous, multi-agent system that performs web application penetration testing the way a human security researcher would: it explores a target application, decides which vulnerabilities are worth investigating, attempts to actually exploit them, confirms whether the exploit genuinely worked, and produces a structured, professional report — all while staying inside a strictly enforced, human-approved scope.
+**GateCounsel** is an autonomous, multi-agent system that performs web application penetration testing the way a human security researcher would: it explores a target application, decides which vulnerabilities are worth investigating, attempts to actually exploit them, confirms whether the exploit genuinely worked, and produces a structured, professional report — all while staying inside a strictly enforced, human-approved scope.
 
-What distinguishes Hackbot from a generic "AI hacking agent" is **specialization by vulnerability class**. Instead of a single general-purpose agent trying to reason about every possible attack with one shallow system prompt, Hackbot routes each testing opportunity to a dedicated **expert agent** — one per vulnerability class (XSS, SQL Injection, SSRF, IDOR, CSRF, Auth/JWT flaws, etc.). Each expert is strengthened with retrieval-augmented generation (RAG) over real security documentation (PortSwigger Web Security Academy, OWASP references) and, for the best-documented classes, a lightweight fine-tuned model adapter (LoRA).
+What distinguishes GateCounsel from a generic "AI hacking agent" is **specialization by vulnerability class**. Instead of a single general-purpose agent trying to reason about every possible attack with one shallow system prompt, GateCounsel routes each testing opportunity to a dedicated **expert agent** — one per vulnerability class (XSS, SQL Injection, SSRF, IDOR, CSRF, Auth/JWT flaws, etc.). Each expert is strengthened with retrieval-augmented generation (RAG) over real security documentation (PortSwigger Web Security Academy, OWASP references) and, for the best-documented classes, a lightweight fine-tuned model adapter (LoRA).
 
-Hackbot is designed as the **offensive counterpart** to a prior project, MANTIS (an AI cybersecurity copilot that finds and *fixes* vulnerable code via multi-agent orchestration). Where MANTIS is defensive, Hackbot is offensive — together they form a coherent specialization: **AI-driven offensive and defensive security automation.**
+GateCounsel is designed as the **offensive counterpart** to a prior project, MANTIS (an AI cybersecurity copilot that finds and *fixes* vulnerable code via multi-agent orchestration). Where MANTIS is defensive, GateCounsel is offensive — together they form a coherent specialization: **AI-driven offensive and defensive security automation.**
 
 ---
 
@@ -42,7 +42,7 @@ Hackbot is designed as the **offensive counterpart** to a prior project, MANTIS 
 
 - **Manual pentesting is slow and expert-dependent.** A skilled human tester takes days to thoroughly cover even a moderately sized application. Automation cannot replace human judgment, but it can dramatically extend coverage and speed for well-understood vulnerability classes, freeing human testers to focus on business-logic flaws and novel attack chains.
 - **LLM-based agents are increasingly capable of structured reasoning + tool use**, making autonomous, multi-step security testing workflows realistic for the first time — this is an active research area (autonomous pentesting agents, "PentestGPT"-style tools, LLM red-teaming).
-- **Natural extension of existing skills and prior work.** The author has completed the full PortSwigger Web Security Academy curriculum, is an active CTF/HackTheBox participant, and previously built MANTIS — a LangGraph-orchestrated, multi-agent AI system for vulnerability remediation. Hackbot reuses the same architectural pattern (multi-agent orchestration via LangGraph) applied to the opposite side of the security lifecycle.
+- **Natural extension of existing skills and prior work.** The author has completed the full PortSwigger Web Security Academy curriculum, is an active CTF/HackTheBox participant, and previously built MANTIS — a LangGraph-orchestrated, multi-agent AI system for vulnerability remediation. GateCounsel reuses the same architectural pattern (multi-agent orchestration via LangGraph) applied to the opposite side of the security lifecycle.
 - **Specialization by vulnerability class is a genuinely novel angle** compared to typical student security projects (scanners, WAFs, antivirus tools), and is closer to real mixture-of-experts research than a single generalist agent would be.
 
 ---
@@ -90,7 +90,7 @@ Design, implement, and evaluate an autonomous multi-agent system capable of perf
 
 ## 5. System Architecture
 
-Hackbot is organized as a directed pipeline of specialized agents, orchestrated with **LangGraph**, where state (recon data, findings, attack plans, confirmed results) flows through each stage.
+GateCounsel is organized as a directed pipeline of specialized agents, orchestrated with **LangGraph**, where state (recon data, findings, attack plans, confirmed results) flows through each stage.
 
 ```
                         ┌────────────────────┐
@@ -319,7 +319,7 @@ The entire stack is built on free and open-source components end to end — no r
 ## 11. Project Structure (Repository Layout)
 
 ```
-hackbot/
+gatecounsel/
 ├── agents/
 │   ├── recon_agent.py
 │   ├── planner_agent.py

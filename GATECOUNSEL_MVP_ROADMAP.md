@@ -1,4 +1,4 @@
-# Hackbot MVP Roadmap — Fast, Safe, End-to-End
+# GateCounsel MVP Roadmap — Fast, Safe, End-to-End
 
 ## 1. MVP objective
 
@@ -28,7 +28,7 @@ GitHub Actions / local command
              │
              ▼
       Docker Compose starts
-      demo-target + hackbot
+      demo-target + gatecounsel
              │
              ▼
  ScopePolicy → RequestBroker → Recon → RulePlanner
@@ -48,7 +48,7 @@ GitHub Actions / local command
 ## 4. MVP repository layout
 
 ```text
-hackbot/
+gatecounsel/
 ├── app/
 │   ├── models.py
 │   ├── scope_guard.py
@@ -119,7 +119,7 @@ Write `docs/mvp-scope.md` stating:
 Person A creates `lab/compose.yaml` with:
 
 - `demo-target` service;
-- `hackbot` service;
+- `gatecounsel` service;
 - one internal network;
 - a target health check;
 - no external target required;
@@ -134,7 +134,7 @@ The demo target must include two seeded, documented cases:
 
 Record expected safe evidence criteria in `demo-target/ground_truth.json`; do not rely on memory.
 
-**Done when:** Compose starts the target, health checks pass, and the Hackbot container can resolve only the Compose target name.
+**Done when:** Compose starts the target, health checks pass, and the GateCounsel container can resolve only the Compose target name.
 
 ### Day 3 — Make scope enforcement real
 
@@ -233,7 +233,7 @@ Add `.github/workflows/mvp.yml` with these jobs/steps:
 2. lint and unit-test;
 3. build/start Compose services;
 4. wait for health check;
-5. run the Hackbot end-to-end command;
+5. run the GateCounsel end-to-end command;
 6. upload sanitized reports/logs/screenshots as workflow artifacts;
 7. always stop and remove the Compose environment.
 
@@ -253,7 +253,7 @@ Start with a manually triggered workflow and scheduled runs. Enable pull-request
 
 ## 7. MVP acceptance checklist
 
-- [ ] Compose starts an intentionally vulnerable target and Hackbot in one isolated environment.
+- [ ] Compose starts an intentionally vulnerable target and GateCounsel in one isolated environment.
 - [ ] The target policy is explicit, versioned, and enforced at every outbound request.
 - [ ] Recon creates a typed site map.
 - [ ] The planner routes tasks to XSS and IDOR specialist interfaces.
