@@ -4,7 +4,7 @@
 
 GateCounsel is a proposed academic prototype that explores how specialized AI agents can help select web security checks while deterministic controls keep testing limited to an explicitly authorized, isolated laboratory. The project combines application security, agent orchestration, evidence-based verification, and CI/CD feedback.
 
-> **Project status:** This repository currently contains the project proposal and planning documents. The application, Docker lab, and CI workflow described here are planned work and are not implemented in this repository yet.
+> **Project status:** This repository contains the public project overview. The application, Docker lab, and CI workflow are planned and are not implemented here yet. Detailed plans and supporting documents belong in the local, Git-ignored `Document_Plans_GitIgnored/` folder and are not published with this repository.
 
 ## The idea
 
@@ -92,13 +92,9 @@ Technology choices remain proposals until implementation and validation. The pro
 
 ## Repository contents
 
-- [`GATECOUNSEL_MVP_ROADMAP.md`](GATECOUNSEL_MVP_ROADMAP.md) — prioritized MVP boundaries, architecture, acceptance criteria, and a ten-working-day implementation sequence.
-- [`GATECOUNSEL_FULL_PROJECT_ROADMAP.md`](GATECOUNSEL_FULL_PROJECT_ROADMAP.md) — staged architecture, technology recommendations, safety controls, evaluation strategy, and long-term milestones.
-- [`GateCounsel_Project_Detailed.md`](GateCounsel_Project_Detailed.md) — broader multi-agent project concept and component design.
-- [`Proposition_Projet_Expertise_Badr_Taha.pdf`](Proposition_Projet_Expertise_Badr_Taha.pdf) — French academic proposal describing the project motivation, authorized-lab framing, and initial project scope.
-- [`Proposition_Projet_Expertise_Badr_Taha.tex`](Proposition_Projet_Expertise_Badr_Taha.tex) — LaTeX source for the academic proposal PDF.
+- `README.md` - public overview of the project concept, planned MVP, architecture, and safety boundaries.
 
-The detailed concept document explores a wider feature set than the MVP. When planning initial implementation, use the MVP roadmap for the first deliverable and treat the full roadmap and detailed concept as staged research directions.
+Project planning files and supporting documents are intentionally excluded from Git. Keep internal roadmaps, research notes, PDFs, and document sources in the local `Document_Plans_GitIgnored/` folder. Git ignores PDF, TeX, and Markdown files throughout the repository, except for this README.
 
 ## First implementation milestone
 

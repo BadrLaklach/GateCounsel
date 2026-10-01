@@ -1,0 +1,10 @@
+# Keep the public overview tracked while excluding Markdown planning documents.
+*.md
+!/README.md
+
+# Keep proposal documents local.
+*.pdf
+*.tex
+
+# Local-only project plans and working notes.
+/Document_Plans_GitIgnored/
