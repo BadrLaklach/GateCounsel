@@ -17,8 +17,8 @@ import logging
 import re
 from urllib.parse import urljoin, urlsplit, parse_qsl
 
-from agents.models import Endpoint, Param
-from agents.crawler import RE_JWT
+from agents.recon.core.models import Endpoint, Param
+from agents.recon.crawlers.crawler import RE_JWT
 
 log = logging.getLogger("hackbot.browser")
 
@@ -156,7 +156,7 @@ class BrowserCrawler:
         return params
 
     def _record(self, method: str, url: str, **kw) -> Endpoint:
-        from agents.crawler import normalize_key
+        from agents.recon.crawlers.crawler import normalize_key
         key = normalize_key(method, url)
         ep = self.captured.get(key)
         if ep is None:

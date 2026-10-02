@@ -23,8 +23,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from agents.recon_agent import ReconAgent  # noqa: E402
-from agents.models import SiteMap  # noqa: E402
+from agents.recon.recon_agent import ReconAgent  # noqa: E402
+from agents.recon.core.models import SiteMap  # noqa: E402
 
 EXPECTED_URL_FRAGMENTS = [
     "/rest/products/search",   # XHR API captured by the browser pass

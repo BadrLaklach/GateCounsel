@@ -20,9 +20,9 @@ import logging
 import re
 from urllib.parse import urljoin, urlsplit
 
-from agents.crawler import RE_JWT
-from agents.http_client import FetchResult, ScopedHttpClient
-from agents.models import AuthInfo, Endpoint, FormInfo
+from agents.recon.crawlers.crawler import RE_JWT
+from agents.recon.core.http_client import FetchResult, ScopedHttpClient
+from agents.recon.core.models import AuthInfo, Endpoint, FormInfo
 
 log = logging.getLogger("hackbot.auth")
 

@@ -18,9 +18,9 @@ import re
 import string
 from urllib.parse import urljoin, urlsplit, parse_qsl, urlencode
 
-from agents.http_client import ScopedHttpClient
-from agents.crawler import normalize_key
-from agents.models import Endpoint, Param
+from agents.recon.core.http_client import ScopedHttpClient
+from agents.recon.crawlers.crawler import normalize_key
+from agents.recon.core.models import Endpoint, Param
 
 log = logging.getLogger("hackbot.probe")
 

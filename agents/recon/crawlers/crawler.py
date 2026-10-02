@@ -14,9 +14,9 @@ from urllib.parse import urljoin, urlsplit, parse_qsl, urlencode, urlunsplit
 
 from bs4 import BeautifulSoup
 
-from agents.http_client import FetchResult, ScopedHttpClient
-from agents.fingerprint import fingerprint
-from agents.models import Endpoint, FormInfo, Param, TechHint
+from agents.recon.core.http_client import FetchResult, ScopedHttpClient
+from agents.recon.scanners.fingerprint import fingerprint
+from agents.recon.core.models import Endpoint, FormInfo, Param, TechHint
 
 log = logging.getLogger("hackbot.crawler")
 

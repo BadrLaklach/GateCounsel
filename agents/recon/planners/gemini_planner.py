@@ -17,7 +17,7 @@ from urllib.parse import quote
 
 import httpx
 
-from agents.models import Endpoint
+from agents.recon.core.models import Endpoint
 
 log = logging.getLogger("hackbot.gemini")
 

@@ -19,10 +19,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from agents.models import SiteMap  # noqa: E402
-from agents.gemini_planner import GeminiReconPlanner, _dotenv_key  # noqa: E402
-from agents.katana_crawler import KatanaCrawler  # noqa: E402
-from agents.recon_agent import ReconAgent  # noqa: E402
+from agents.recon.core.models import SiteMap  # noqa: E402
+from agents.recon.planners.gemini_planner import GeminiReconPlanner, _dotenv_key  # noqa: E402
+from agents.recon.crawlers.katana_crawler import KatanaCrawler  # noqa: E402
+from agents.recon.recon_agent import ReconAgent  # noqa: E402
 from safety.scope_guard import ScopeGuard, ScopeViolationError  # noqa: E402
 from tests.mock_app import start_mock_app  # noqa: E402
 
@@ -76,7 +76,7 @@ class GeminiPlannerTests(unittest.TestCase):
             self.assertEqual(_dotenv_key("GEMINI_API_KEY", dotenv), "test-key")
 
     def test_planner_payload_is_structural_and_redacted(self):
-        from agents.models import Endpoint, FormInfo, Param
+        from agents.recon.core.models import Endpoint, FormInfo, Param
         endpoint = Endpoint(
             url="http://lab.local/login", method="POST",
             params=[Param(name="password", examples=["secret-value"])],
@@ -240,7 +240,7 @@ class LangGraphNodeTests(unittest.TestCase):
         cls.server.shutdown()
 
     def test_recon_node_returns_state_update(self):
-        from agents.recon_agent import recon_node
+        from agents.recon.recon_agent import recon_node
         update = recon_node({"target": self.base_url,
                              "recon_config": {"use_playwright": False, "rps": 20}})
         self.assertTrue(update["recon_done"])

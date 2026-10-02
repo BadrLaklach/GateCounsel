@@ -16,8 +16,8 @@ from dataclasses import dataclass, field
 from typing import Callable
 from urllib.parse import urlsplit
 
-from agents.crawler import normalize_key
-from agents.models import Endpoint
+from agents.recon.crawlers.crawler import normalize_key
+from agents.recon.core.models import Endpoint
 
 log = logging.getLogger("hackbot.katana")
 

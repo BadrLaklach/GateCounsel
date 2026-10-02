@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from agents.recon_agent import ReconState, recon_node
+from agents.recon.recon_agent import ReconState, recon_node
 
 log = logging.getLogger("hackbot.graph")
 

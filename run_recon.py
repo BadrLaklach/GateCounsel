@@ -18,7 +18,7 @@ import logging
 import sys
 from pathlib import Path
 
-from agents.recon_agent import ReconAgent
+from agents.recon.recon_agent import ReconAgent
 
 try:
     from rich.console import Console

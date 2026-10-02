@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from agents.models import TechHint
+from agents.recon.core.models import TechHint
 
 # (name, category, source, compiled regex, where the regex applies)
 _BODY_SIGNS: list[tuple[str, str, re.Pattern[str]]] = [

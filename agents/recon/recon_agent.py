@@ -21,15 +21,15 @@ import time
 from typing import Any, TypedDict
 from urllib.parse import urljoin, urlsplit
 
-from agents.auth_detector import AuthDetector, decode_jwt
-from agents.browser_crawler import BrowserCrawler
-from agents.crawler import HttpCrawler, normalize_key
-from agents.fingerprint import fingerprint, merge_hints
-from agents.gemini_planner import GeminiReconPlanner
-from agents.http_client import ScopedHttpClient
-from agents.katana_crawler import KatanaCrawler
-from agents.models import AuthInfo, Endpoint, SiteMap, TechHint
-from agents.param_probe import ParamProber
+from agents.recon.scanners.auth_detector import AuthDetector, decode_jwt
+from agents.recon.crawlers.browser_crawler import BrowserCrawler
+from agents.recon.crawlers.crawler import HttpCrawler, normalize_key
+from agents.recon.scanners.fingerprint import fingerprint, merge_hints
+from agents.recon.planners.gemini_planner import GeminiReconPlanner
+from agents.recon.core.http_client import ScopedHttpClient
+from agents.recon.crawlers.katana_crawler import KatanaCrawler
+from agents.recon.core.models import AuthInfo, Endpoint, SiteMap, TechHint
+from agents.recon.scanners.param_probe import ParamProber
 from safety.scope_guard import ScopeGuard
 
 log = logging.getLogger("hackbot.recon")
