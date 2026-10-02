@@ -1,3 +1,11 @@
+__pycache__/
+*.pyc
+sitemap.json
+juiceshop_sitemap.json
+*.jsonl
+.venv/
+.env
+
 # Keep the public overview tracked while excluding Markdown planning documents.
 *.md
 !/README.md

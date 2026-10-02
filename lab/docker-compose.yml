@@ -1,0 +1,41 @@
+# Hackbot lab targets — deliberately vulnerable applications for authorized
+# security research ONLY (see project spec §4.2/§9).
+#
+# Usage:   docker compose -f lab/docker-compose.yml up -d
+# Juice Shop:  http://localhost:3000
+#
+# Nothing in this compose file is exposed beyond localhost of the operator
+# machine; never expose lab containers to a shared network.
+
+services:
+  juice-shop:
+    image: bkimminich/juice-shop:latest
+    container_name: hackbot-juice-shop
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+    networks:
+      - lab
+
+  # --- Additional lab targets (spec §4.2), enable as needed ---------------
+  # dvwa:
+  #   image: vulnerables/web-dvwa
+  #   container_name: hackbot-dvwa
+  #   ports:
+  #     - "127.0.0.1:8001:80"
+  #   networks:
+  #     - lab
+  #
+  # webgoat:
+  #   image: webgoat/webgoat
+  #   container_name: hackbot-webgoat
+  #   environment:
+  #     - WEBGOAT_PORT=8080
+  #   ports:
+  #     - "127.0.0.1:8080:8080"
+  #   networks:
+  #     - lab
+
+networks:
+  lab:
+    driver: bridge
