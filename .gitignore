@@ -6,8 +6,7 @@ juiceshop_sitemap.json
 .venv/
 .env
 
-# Keep the public overview tracked while excluding Markdown planning documents.
-*.md
+
 !/README.md
 
 # Keep proposal documents local.
