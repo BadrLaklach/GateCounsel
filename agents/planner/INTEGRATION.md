@@ -13,8 +13,7 @@ folder runs by itself.
    YOUR SIDE (already built)
    ─────────────────────────────────────────────────────────────────────
    target URL ─► Recon Agent ─► SiteMap ─► sitemap.json
-                                (agents/models.py — the DATA CONTRACT
-                                 between recon and planner)
+                                (agents/recon/core/models.py — DATA CONTRACT)
 
    THIS DELIVERY (planner only)
    ─────────────────────────────────────────────────────────────────────
@@ -47,20 +46,18 @@ test"** — as a JSON plan your expert agents will consume.
 
 ## 2. The files
 
-| File | One-line role | Action for you |
-|---|---|---|
-| `agents/plan_models.py` | Output contract: `PlanTask`, `AttackPlan`, bands | copy as-is |
-| `agents/rule_engine.py` | Deterministic brain: recon signals → scored tasks | copy as-is (tunable tables) |
-| `agents/llm_client.py` | Thin OpenAI-compatible chat client (httpx, no SDK) | copy as-is |
-| `agents/planner.py` | Orchestrator + `planner_node` (LangGraph glue) | copy as-is |
-| `agents/models.py` | **Recon** SiteMap contract — reference copy only | you already have it |
-| `agents/__init__.py` | package marker | you already have it |
-| `run_planner.py` | CLI: `sitemap.json → plan.json` + rich table | copy as-is |
-| `orchestration/graph_snippet.py` | 3-line wiring into your own LangGraph | read & apply |
-| `tests/test_planner.py` | 23 tests (rules, planner, LLM mocks, CLI) | run to verify |
-| `tests/mock_app.py` | stdlib test app used by integration tests | you already have it |
+| File | One-line role |
+|---|---|
+| `agents/planner/__init__.py` | Public API: `AttackPlanner`, `planner_node` |
+| `agents/planner/planner.py` | Orchestrator + LangGraph node |
+| `agents/planner/models/plan_models.py` | Output contract: `PlanTask`, `AttackPlan` |
+| `agents/planner/engine/rule_engine.py` | Deterministic SiteMap → scored tasks |
+| `agents/planner/client/llm_client.py` | OpenAI-compatible chat client (httpx) |
+| `run_planner.py` | CLI: `sitemap.json → plan.json` |
+| `orchestration/graph.py` | `START → recon → planner → END` |
+| `tests/test_planner.py` | Rules, LLM mocks, CLI, recon integration |
 
-### 2.1 `agents/plan_models.py` — the output contract
+### 2.1 `agents/planner/models/plan_models.py` — the output contract
 
 Defines what a plan IS. Three models:
 

@@ -1,0 +1,445 @@
+{
+  "target": "https://server.vulnapp.id",
+  "base_url": "https://server.vulnapp.id",
+  "generated_at": "2026-10-06T16:06:35+0000",
+  "planner_version": "0.1.0",
+  "summary": {
+    "total_tasks": 23,
+    "by_class": {
+      "sqli": 12,
+      "ssrf": 1,
+      "xss_reflected": 10
+    },
+    "by_band": {
+      "high": 13,
+      "low": 10
+    },
+    "safe_probes": 10,
+    "needs_review": 13
+  },
+  "tasks": [
+    {
+      "id": "T-001",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "https://server.vulnapp.id/mutillidae/?page=add-to-your-blog.php",
+      "method": "GET",
+      "target_params": [
+        "page"
+      ],
+      "signals": [
+        "param 'page' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "The 'page' parameter in Mutillidae is frequently vulnerable to SQL injection due to direct database inclusion or insecure routing.",
+      "priority": 75,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-002",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "http://server.vulnapp.id/twiki/bin/search/Main/SearchResult",
+      "method": "GET",
+      "target_params": [
+        "search"
+      ],
+      "signals": [
+        "param 'search' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)"
+      ],
+      "rationale": "TWiki search endpoints taking a 'search' parameter are notorious historical targets for SQL injection and command execution.",
+      "priority": 72,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-003",
+      "vuln_class": "ssrf",
+      "expert_route": "ssrf_expert",
+      "endpoint_url": "https://server.vulnapp.id/phpMyAdmin/index.php",
+      "method": "POST",
+      "target_params": [
+        "server"
+      ],
+      "signals": [
+        "'server' is fetched by the server (SSRF candidate)"
+      ],
+      "rationale": "phpMyAdmin server connection configuration parameters frequently allow Server-Side Request Forgery if external hosts are accepted without validation.",
+      "priority": 71,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-004",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "https://server.vulnapp.id/mutillidae/index.php?do=toggle-hints&page=home.php",
+      "method": "GET",
+      "target_params": [
+        "page"
+      ],
+      "signals": [
+        "param 'page' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "The 'page' parameter handling in index.php should be fuzzed for SQL injection or local file inclusion vulnerabilities.",
+      "priority": 70,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-005",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "https://server.vulnapp.id/mutillidae/index.php?page=home.php",
+      "method": "GET",
+      "target_params": [
+        "page"
+      ],
+      "signals": [
+        "param 'page' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Standard index.php page parameter handling presents a classic attack surface for input validation flaws.",
+      "priority": 70,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-006",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/search/Know/",
+      "method": "GET",
+      "target_params": [
+        "search"
+      ],
+      "signals": [
+        "param 'search' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)"
+      ],
+      "rationale": "The Know web search functionality accepts direct query parameters that should be tested for backend database interaction errors.",
+      "priority": 70,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-007",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/search/Know/SearchResult",
+      "method": "GET",
+      "target_params": [
+        "search"
+      ],
+      "signals": [
+        "param 'search' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)"
+      ],
+      "rationale": "SearchResult endpoint handling for the Know web context is prone to injection risks during search string processing.",
+      "priority": 70,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-008",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/search/Main/",
+      "method": "GET",
+      "target_params": [
+        "search"
+      ],
+      "signals": [
+        "param 'search' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)"
+      ],
+      "rationale": "Main web search endpoint parameter handling exposes potential database query construction flaws.",
+      "priority": 70,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-009",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/search/Main/SearchResult",
+      "method": "GET",
+      "target_params": [
+        "search"
+      ],
+      "signals": [
+        "param 'search' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)"
+      ],
+      "rationale": "Repeated search functionality on Main/SearchResult provides a reliable surface for input fuzzing and error-based SQLi probes.",
+      "priority": 70,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-010",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/search/Sandbox/SearchResult",
+      "method": "GET",
+      "target_params": [
+        "search"
+      ],
+      "signals": [
+        "param 'search' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)"
+      ],
+      "rationale": "Sandbox search results process user input which can be leveraged to test for database query manipulation.",
+      "priority": 70,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-011",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/search/TWiki/",
+      "method": "GET",
+      "target_params": [
+        "search"
+      ],
+      "signals": [
+        "param 'search' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)"
+      ],
+      "rationale": "TWiki core search module handles input parameters that frequently lack proper escaping before database queries.",
+      "priority": 70,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-012",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/search/TWiki/SearchResult",
+      "method": "GET",
+      "target_params": [
+        "search"
+      ],
+      "signals": [
+        "param 'search' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)"
+      ],
+      "rationale": "TWiki SearchResult endpoint represents a high-probability target for uncovering input validation vulnerabilities.",
+      "priority": 70,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-013",
+      "vuln_class": "sqli",
+      "expert_route": "sqli_expert",
+      "endpoint_url": "https://server.vulnapp.id/mutillidae/index.php?page=password-generator.php&username=anonymous",
+      "method": "GET",
+      "target_params": [
+        "page"
+      ],
+      "signals": [
+        "param 'page' matches SQLi-prone name",
+        "value reflected in response (error-based probing viable)",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Combining the 'page' and 'username' parameters on the password-generator endpoint increases SQL injection surface area.",
+      "priority": 68,
+      "band": "high",
+      "risk_tier": "needs_review"
+    },
+    {
+      "id": "T-014",
+      "vuln_class": "xss_reflected",
+      "expert_route": "xss_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/view/Main/WebSearch",
+      "method": "GET",
+      "target_params": [
+        "topic"
+      ],
+      "signals": [
+        "value of 'topic' echoed in response body",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Test reflected XSS in topic",
+      "priority": 36,
+      "band": "low",
+      "risk_tier": "safe_probe"
+    },
+    {
+      "id": "T-015",
+      "vuln_class": "xss_reflected",
+      "expert_route": "xss_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebChanges",
+      "method": "GET",
+      "target_params": [
+        "topic"
+      ],
+      "signals": [
+        "value of 'topic' echoed in response body",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Test reflected XSS in topic",
+      "priority": 36,
+      "band": "low",
+      "risk_tier": "safe_probe"
+    },
+    {
+      "id": "T-016",
+      "vuln_class": "xss_reflected",
+      "expert_route": "xss_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebHome",
+      "method": "GET",
+      "target_params": [
+        "topic"
+      ],
+      "signals": [
+        "value of 'topic' echoed in response body",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Test reflected XSS in topic",
+      "priority": 36,
+      "band": "low",
+      "risk_tier": "safe_probe"
+    },
+    {
+      "id": "T-017",
+      "vuln_class": "xss_reflected",
+      "expert_route": "xss_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/StartingPoints",
+      "method": "GET",
+      "target_params": [
+        "topic"
+      ],
+      "signals": [
+        "value of 'topic' echoed in response body",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Test reflected XSS in topic",
+      "priority": 36,
+      "band": "low",
+      "risk_tier": "safe_probe"
+    },
+    {
+      "id": "T-018",
+      "vuln_class": "xss_reflected",
+      "expert_route": "xss_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/TWikiRegistration",
+      "method": "GET",
+      "target_params": [
+        "topic"
+      ],
+      "signals": [
+        "value of 'topic' echoed in response body",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Test reflected XSS in topic",
+      "priority": 36,
+      "band": "low",
+      "risk_tier": "safe_probe"
+    },
+    {
+      "id": "T-019",
+      "vuln_class": "xss_reflected",
+      "expert_route": "xss_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebChanges",
+      "method": "GET",
+      "target_params": [
+        "topic"
+      ],
+      "signals": [
+        "value of 'topic' echoed in response body",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Test reflected XSS in topic",
+      "priority": 36,
+      "band": "low",
+      "risk_tier": "safe_probe"
+    },
+    {
+      "id": "T-020",
+      "vuln_class": "xss_reflected",
+      "expert_route": "xss_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebHome",
+      "method": "GET",
+      "target_params": [
+        "topic"
+      ],
+      "signals": [
+        "value of 'topic' echoed in response body",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Test reflected XSS in topic",
+      "priority": 36,
+      "band": "low",
+      "risk_tier": "safe_probe"
+    },
+    {
+      "id": "T-021",
+      "vuln_class": "xss_reflected",
+      "expert_route": "xss_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebPreferences",
+      "method": "GET",
+      "target_params": [
+        "topic"
+      ],
+      "signals": [
+        "value of 'topic' echoed in response body",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Test reflected XSS in topic",
+      "priority": 36,
+      "band": "low",
+      "risk_tier": "safe_probe"
+    },
+    {
+      "id": "T-022",
+      "vuln_class": "xss_reflected",
+      "expert_route": "xss_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebSearch",
+      "method": "GET",
+      "target_params": [
+        "topic"
+      ],
+      "signals": [
+        "value of 'topic' echoed in response body",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Test reflected XSS in topic",
+      "priority": 36,
+      "band": "low",
+      "risk_tier": "safe_probe"
+    },
+    {
+      "id": "T-023",
+      "vuln_class": "xss_reflected",
+      "expert_route": "xss_expert",
+      "endpoint_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WelcomeGuest",
+      "method": "GET",
+      "target_params": [
+        "topic"
+      ],
+      "signals": [
+        "value of 'topic' echoed in response body",
+        "endpoint confirmed reachable"
+      ],
+      "rationale": "Test reflected XSS in topic",
+      "priority": 36,
+      "band": "low",
+      "risk_tier": "safe_probe"
+    }
+  ],
+  "llm_used": true,
+  "llm_model": "gemini-3.5-flash-lite",
+  "notes": [
+    "48 candidate task(s) from deterministic rules",
+    "LLM (gemini-3.5-flash-lite) adjusted 30 task(s)"
+  ]
+}

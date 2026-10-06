@@ -66,7 +66,7 @@ differing only in their knowledge base content and a few class-specific hint fie
 
 ## 3. Shared input contract (do not redefine — import from planner)
 
-Every expert receives one `PlanTask` (already defined in `agents/plan_models.py` —
+Every expert receives one `PlanTask` (already defined in `agents/planner/models/plan_models.py` —
 import it, do not duplicate it). Relevant fields the expert must read:
 
 ```python
@@ -376,5 +376,5 @@ Mirror the Planner's testing discipline (23 tests, no network calls, LLM mocked)
 - Do **not** train any LoRA adapter as part of this task — Tier 2 wiring (the
   `lora_adapter_path` plumbing) should exist, but no actual training run is in
   scope here.
-- Do **not** modify `agents/plan_models.py`, `rule_engine.py`, `planner.py`, or
+- Do **not** modify `agents/planner/models/plan_models.py`, `agents/planner/engine/rule_engine.py`, `agents/planner/planner.py`, or
   anything in the recon package — this delivery only adds new files.
