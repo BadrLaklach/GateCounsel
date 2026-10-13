@@ -28,7 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--max-tasks", type=int, default=40, help="Cap on number of planned tasks (default: 40)")
     p.add_argument("--min-priority", type=int, default=0, help="Drop tasks scoring below this (0-100)")
     p.add_argument("--no-llm", action="store_true", help="Skip the LLM re-ranking pass (rules only)")
-    p.add_argument("--llm-model", default=None, help="Override LLM model (default: gemini-2.0-flash)")
+    p.add_argument("--llm-model", default=None, help="Override LLM model (default: gemini-3.5-flash-lite)")
     p.add_argument("--llm-base-url", default=None, help="Override OpenAI-compatible base URL")
     p.add_argument("--llm-timeout", type=float, default=25.0, help="LLM request timeout seconds")
     p.add_argument("-v", "--verbose", action="store_true", help="Debug logging")
