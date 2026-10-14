@@ -1,4 +1,4 @@
-"""Hackbot Planner Agent — SiteMap to AttackPlan."""
+"""GateCounsel Planner Agent — SiteMap to AttackPlan."""
 
 from agents.planner.planner import (
     PLANNER_VERSION,

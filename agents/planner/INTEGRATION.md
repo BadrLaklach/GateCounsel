@@ -225,7 +225,7 @@ python -m unittest tests.test_planner -v        # 20 run + 3 skip here*
 
 *In the planner-only folder the 3 recon→planner integration tests skip
 (they import `agents.recon_agent`); run the full suite from your main
-hackbot repo where recon lives — there all 23 pass.
+GateCounsel repo where recon lives — there all 23 pass.
 
 Dependencies: `pydantic`, `httpx` (both already required by recon).
 Optional: `rich` (pretty CLI table), `langgraph` (only for Option A).

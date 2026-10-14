@@ -1,1 +1,1 @@
-"""Hackbot orchestration package."""
+"""GateCounsel orchestration package."""

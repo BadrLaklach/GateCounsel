@@ -1,4 +1,4 @@
-"""Pydantic models for Hackbot's structured site map (spec §6.1 output contract).
+"""Pydantic models for GateCounsel's structured site map (spec §6.1 output contract).
 
 The site map is the interface between the Recon Agent and the Planner Agent:
 every endpoint is annotated with parameters, auth requirements and technology

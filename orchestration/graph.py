@@ -1,4 +1,4 @@
-"""Hackbot orchestration graph (spec §10) — LangGraph pipeline definition.
+"""GateCounsel orchestration graph (spec §10) — LangGraph pipeline definition.
 
 Currently wires recon → planner; expert/exploit/report stages attach later.
 Keep the node contract dict-shaped so each stage stays independently testable.
@@ -12,7 +12,7 @@ from typing import Any
 from agents.planner import PlannerConfig, planner_node
 from agents.recon.recon_agent import ReconState, recon_node
 
-log = logging.getLogger("hackbot.graph")
+log = logging.getLogger("gatecounsel.graph")
 
 try:
     from langgraph.graph import END, START, StateGraph
@@ -22,7 +22,7 @@ except ImportError:
     LANGGRAPH_AVAILABLE = False
 
 
-class HackbotState(ReconState, total=False):
+class GateCounselState(ReconState, total=False):
     """Shared pipeline state: recon keys (inherited) + planner keys."""
 
     plan: dict[str, Any]
@@ -45,7 +45,7 @@ def build_recon_planner_graph():
     """Graph: START -> recon -> planner -> END."""
     if not LANGGRAPH_AVAILABLE:
         raise RuntimeError("langgraph is not installed; pip install langgraph")
-    graph = StateGraph(HackbotState)
+    graph = StateGraph(GateCounselState)
     graph.add_node("recon", recon_node)
     graph.add_node("planner", planner_node)
     graph.add_edge(START, "recon")
@@ -55,7 +55,7 @@ def build_recon_planner_graph():
 
 
 def build_full_graph_stub():
-    """Skeleton showing where the remaining HACKBOT stages attach.
+    """Skeleton showing where the remaining GateCounsel stages attach.
 
     planner_node  -> consumes state['sitemap'], emits testing tasks
     expert_nodes  -> per-vulnerability-class attack plans (RAG/LoRA)
@@ -64,7 +64,7 @@ def build_full_graph_stub():
     """
     if not LANGGRAPH_AVAILABLE:
         raise RuntimeError("langgraph is not installed; pip install langgraph")
-    graph = StateGraph(HackbotState)
+    graph = StateGraph(GateCounselState)
     graph.add_node("recon", recon_node)
     graph.add_node("planner", planner_node)
     graph.add_edge(START, "recon")

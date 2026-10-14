@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hackbot Planner CLI — turn a recon site map into a prioritized attack plan.
+"""GateCounsel Planner CLI — turn a recon site map into a prioritized attack plan.
 
 Usage:
     python run_planner.py sitemap.json --out plan.json
@@ -20,8 +20,8 @@ from agents.recon.core.models import SiteMap
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="hackbot-planner",
-        description="Plan attack tasks from a Hackbot recon site map.",
+        prog="gatecounsel-planner",
+        description="Plan attack tasks from a GateCounsel recon site map.",
     )
     p.add_argument("sitemap", help="Path to a sitemap.json produced by run_recon.py")
     p.add_argument("--out", default="plan.json", help="Output plan JSON path (default: plan.json)")

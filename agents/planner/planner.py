@@ -1,4 +1,4 @@
-"""Hackbot Planner Agent (spec §6.2) — turns the recon site map into a
+"""GateCounsel Planner Agent (spec §6.2) — turns the recon site map into a
 prioritized, safety-tiered attack plan.
 
 Pipeline:
@@ -24,7 +24,7 @@ from agents.planner.engine.rule_engine import RuleEngine
 from agents.planner.models.plan_models import AttackPlan, PlanSummary, PlanTask
 from agents.recon.core.models import SiteMap
 
-log = logging.getLogger("hackbot.planner")
+log = logging.getLogger("gatecounsel.planner")
 
 PLANNER_VERSION = "0.1.0"
 MAX_LLM_CANDIDATES = 30

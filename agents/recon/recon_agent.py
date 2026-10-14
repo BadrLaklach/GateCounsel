@@ -1,4 +1,4 @@
-"""Hackbot Recon Agent (spec §6.1) — builds the structured site map.
+"""GateCounsel Recon Agent (spec §6.1) — builds the structured site map.
 
 Pipeline phases:
   0. scope registration + target reachability check
@@ -32,7 +32,7 @@ from agents.recon.core.models import AuthInfo, Endpoint, SiteMap, TechHint
 from agents.recon.scanners.param_probe import ParamProber
 from safety.scope_guard import ScopeGuard
 
-log = logging.getLogger("hackbot.recon")
+log = logging.getLogger("gatecounsel.recon")
 
 
 class ReconConfig(TypedDict, total=False):

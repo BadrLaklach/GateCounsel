@@ -20,7 +20,7 @@ from urllib.parse import urljoin, urlsplit, parse_qsl
 from agents.recon.core.models import Endpoint, Param
 from agents.recon.crawlers.crawler import RE_JWT
 
-log = logging.getLogger("hackbot.browser")
+log = logging.getLogger("gatecounsel.browser")
 
 JWT_LOCALSTORAGE_KEY_HINTS = ("token", "jwt", "auth", "session")
 

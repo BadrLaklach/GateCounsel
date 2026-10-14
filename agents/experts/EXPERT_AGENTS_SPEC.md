@@ -1,7 +1,7 @@
-# Hackbot — Vulnerability Expert Agents: Build Specification
+# GateCounsel — Vulnerability Expert Agents: Build Specification
 
 **Purpose of this document:** a precise, implementation-ready spec for building the
-Expert Agents stage of the Hackbot pipeline (spec §6.3 / §8). Hand this file directly
+Expert Agents stage of the GateCounsel pipeline (spec §6.3 / §8). Hand this file directly
 to an AI coding agent as the task brief. It assumes the Recon Agent (`SiteMap` /
 `sitemap.json`) and Planner Agent (`AttackPlan` / `plan.json`, with `PlanTask` objects)
 already exist and are stable — **do not modify recon or planner code.** This spec
@@ -38,7 +38,7 @@ application and never call sqlmap/nuclei/Playwright/etc. directly. They only rea
 over text (the task, retrieved documentation, and the LLM's response) and emit a
 structured verdict object. Network execution is exclusively the Exploit Agent's job
 (future milestone). This separation is a core architectural guarantee of the whole
-Hackbot system — do not blur it for convenience.
+GateCounsel system — do not blur it for convenience.
 
 ---
 

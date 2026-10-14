@@ -1,5 +1,5 @@
 """A tiny deliberately-vulnerable mock app used ONLY to unit-test the
-Hackbot recon pipeline without Docker. Pure stdlib, ephemeral port.
+GateCounsel recon pipeline without Docker. Pure stdlib, ephemeral port.
 
 Features it emulates (mirroring common lab-app patterns):
   * HTML pages with links + a GET search form that REFLECTS its parameter
@@ -69,7 +69,7 @@ HIDDEN = "<html><body><h1>Hidden treasure page</h1></body></html>"
 USERS = [{"id": 1, "email": "admin@mock.sh", "role": "admin"},
          {"id": 2, "email": "user@mock.sh", "role": "user"}]
 
-SECRET = b"hackbot-mock-secret"
+SECRET = b"gatecounsel-mock-secret"
 JSON_USERS = {"admin@mock.sh": "admin123"}   # /auth/login JSON API -> JWT
 VALID_USERS = {"admin": "admin123"}          # /csrf/login form -> session cookie
 FORM_USERS = {"user": "password123"}         # plain HTML form login (no CSRF)

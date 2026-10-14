@@ -24,7 +24,7 @@ from agents.recon.crawlers.crawler import RE_JWT
 from agents.recon.core.http_client import FetchResult, ScopedHttpClient
 from agents.recon.core.models import AuthInfo, Endpoint, FormInfo
 
-log = logging.getLogger("hackbot.auth")
+log = logging.getLogger("gatecounsel.auth")
 
 LOGIN_URL_HINTS = re.compile(r"(login|signin|sign-in|auth|session|authenticate)", re.I)
 USERNAME_FIELDS = ["email", "username", "user", "login", "mail"]

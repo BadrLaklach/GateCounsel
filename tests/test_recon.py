@@ -1,4 +1,4 @@
-"""End-to-end tests for the Hackbot recon pipeline.
+"""End-to-end tests for the GateCounsel recon pipeline.
 
 Run from the repo root:   python -m unittest discover -s tests -v
 (or:  python tests/test_recon.py)

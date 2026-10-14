@@ -1,1 +1,1 @@
-"""Hackbot agents package."""
+"""GateCounsel agents package."""

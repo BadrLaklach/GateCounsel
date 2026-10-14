@@ -22,7 +22,7 @@ from agents.recon.core.http_client import ScopedHttpClient
 from agents.recon.crawlers.crawler import normalize_key
 from agents.recon.core.models import Endpoint, Param
 
-log = logging.getLogger("hackbot.probe")
+log = logging.getLogger("gatecounsel.probe")
 
 MARKER_CHARS = string.ascii_lowercase + string.digits
 MARKER_SUFFIX = '<>"\'()'  # context chars: quote/angle/paren reflection context probe

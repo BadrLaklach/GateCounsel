@@ -18,7 +18,7 @@ from agents.recon.core.http_client import FetchResult, ScopedHttpClient
 from agents.recon.scanners.fingerprint import fingerprint
 from agents.recon.core.models import Endpoint, FormInfo, Param, TechHint
 
-log = logging.getLogger("hackbot.crawler")
+log = logging.getLogger("gatecounsel.crawler")
 
 SKIP_EXTENSIONS = (
     ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp", ".bmp",

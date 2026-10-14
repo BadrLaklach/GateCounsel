@@ -1,6 +1,6 @@
-"""Scope Guard — Hackbot's single, non-bypassable safety checkpoint.
+"""Scope Guard — GateCounsel's single, non-bypassable safety checkpoint.
 
-Design principle (per HACKBOT spec §9):
+Design principle (per GateCounsel spec §9):
     This is plain, deterministic code — NOT an LLM call — so its behavior
     is guaranteed and independently testable, not just "probably safe".
 

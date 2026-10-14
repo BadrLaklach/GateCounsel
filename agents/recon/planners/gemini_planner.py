@@ -19,7 +19,7 @@ import httpx
 
 from agents.recon.core.models import Endpoint
 
-log = logging.getLogger("hackbot.gemini")
+log = logging.getLogger("gatecounsel.gemini")
 
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"

@@ -1,4 +1,4 @@
-"""Pydantic models for Hackbot's attack plan (planner output contract, spec §6.2).
+"""Pydantic models for GateCounsel's attack plan (planner output contract, spec §6.2).
 
 The plan is the interface between the Planner Agent and the expert/exploit
 agents: every task is an (endpoint, vulnerability_class) hypothesis produced

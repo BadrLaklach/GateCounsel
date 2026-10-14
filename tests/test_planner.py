@@ -1,4 +1,4 @@
-"""Tests for the Hackbot Planner Agent (spec §6.2).
+"""Tests for the GateCounsel Planner Agent (spec §6.2).
 
 Run from the repo root:  python -m unittest tests.test_planner -v
 """

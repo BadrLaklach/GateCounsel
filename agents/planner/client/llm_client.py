@@ -1,4 +1,4 @@
-"""OpenAI-compatible chat client for the Hackbot planner LLM layer.
+"""OpenAI-compatible chat client for the GateCounsel planner LLM layer.
 
 Talks HTTP to any `/chat/completions` endpoint (Gemini's OpenAI-compat
 surface, OpenAI, local vLLM/Ollama). Uses httpx — the same stack as recon —
@@ -20,7 +20,7 @@ from typing import Any, Optional
 
 import httpx
 
-log = logging.getLogger("hackbot.llm")
+log = logging.getLogger("gatecounsel.llm")
 
 GEMINI_OPENAI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/"
 DEFAULT_MODEL = "gemini-3.5-flash-lite"

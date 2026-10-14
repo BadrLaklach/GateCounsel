@@ -2,7 +2,7 @@
 
 Katana runs as a separate process, so it is constrained with its own exact
 origin crawl scope and bounded rate/depth/duration.  Its JSONL findings are
-also checked against Hackbot's ScopeGuard before they enter the site map.
+also checked against GateCounsel's ScopeGuard before they enter the site map.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 from agents.recon.crawlers.crawler import normalize_key
 from agents.recon.core.models import Endpoint
 
-log = logging.getLogger("hackbot.katana")
+log = logging.getLogger("gatecounsel.katana")
 
 
 @dataclass

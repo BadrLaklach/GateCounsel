@@ -1,1 +1,1 @@
-"""Hackbot safety package."""
+"""GateCounsel safety package."""

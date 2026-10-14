@@ -1,4 +1,4 @@
-"""Deterministic rule engine for the Hackbot Planner (spec §6.2 core).
+"""Deterministic rule engine for the GateCounsel Planner (spec §6.2 core).
 
 Turns recon signals from a SiteMap into scored attack-plan tasks:
 

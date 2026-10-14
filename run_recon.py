@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hackbot Recon Agent CLI.
+"""GateCounsel Recon Agent CLI.
 
 Usage:
     python run_recon.py http://localhost:3000
@@ -7,7 +7,7 @@ Usage:
     python run_recon.py http://localhost:3000 --no-playwright --out sitemap.json --rps 2
 
 Only run this against targets you are explicitly authorized to test
-(see HACKBOT spec §9 — sanctioned lab applications only).
+(see GateCounsel spec §9 — sanctioned lab applications only).
 """
 
 from __future__ import annotations
@@ -30,8 +30,8 @@ except ImportError:  # pragma: no cover
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="hackbot-recon",
-        description="Hackbot Recon Agent — maps the attack surface of a sanctioned lab target.",
+        prog="gatecounsel-recon",
+        description="GateCounsel Recon Agent — maps the attack surface of a sanctioned lab target.",
     )
     p.add_argument("target", help="Base URL of the target, e.g. http://localhost:3000")
     p.add_argument("--username", help="Operator-supplied login for the authenticated pass")
@@ -64,7 +64,7 @@ def print_summary(sitemap) -> None:
         return
     console = Console()
     stats = sitemap.stats
-    console.print(f"\n[bold cyan]Hackbot Recon — {sitemap.target}[/]")
+    console.print(f"\n[bold cyan]GateCounsel Recon — {sitemap.target}[/]")
     console.print(
         f"  endpoints: [bold]{len(sitemap.endpoints)}[/]   pages: {stats.pages_crawled}   "
         f"requests: {stats.requests_made}   scope-blocked: {stats.scope_blocked}   "

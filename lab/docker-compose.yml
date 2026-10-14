@@ -1,4 +1,4 @@
-# Hackbot lab targets — deliberately vulnerable applications for authorized
+# GateCounsel lab targets — deliberately vulnerable applications for authorized
 # security research ONLY (see project spec §4.2/§9).
 #
 # Usage:   docker compose -f lab/docker-compose.yml up -d
@@ -10,7 +10,7 @@
 services:
   juice-shop:
     image: bkimminich/juice-shop:latest
-    container_name: hackbot-juice-shop
+    container_name: gatecounsel-juice-shop
     ports:
       - "127.0.0.1:3000:3000"
     restart: unless-stopped
@@ -20,7 +20,7 @@ services:
   # --- Additional lab targets (spec §4.2), enable as needed ---------------
   # dvwa:
   #   image: vulnerables/web-dvwa
-  #   container_name: hackbot-dvwa
+  #   container_name: gatecounsel-dvwa
   #   ports:
   #     - "127.0.0.1:8001:80"
   #   networks:
@@ -28,7 +28,7 @@ services:
   #
   # webgoat:
   #   image: webgoat/webgoat
-  #   container_name: hackbot-webgoat
+  #   container_name: gatecounsel-webgoat
   #   environment:
   #     - WEBGOAT_PORT=8080
   #   ports:

@@ -20,7 +20,7 @@ import httpx
 
 from safety.scope_guard import ScopeGuard
 
-log = logging.getLogger("hackbot.http")
+log = logging.getLogger("gatecounsel.http")
 
 MAX_REDIRECTS = 6
 DEFAULT_BODY_CAP = 2 * 1024 * 1024  # 2 MB
@@ -68,7 +68,7 @@ class ScopedHttpClient:
         *,
         rps: float = 5.0,
         timeout: float = 10.0,
-        user_agent: str = "Hackbot-Recon/0.1 (security research; authorized lab target)",
+        user_agent: str = "GateCounsel-Recon/0.1 (security research; authorized lab target)",
         body_cap: int = DEFAULT_BODY_CAP,
     ) -> None:
         self.guard = guard

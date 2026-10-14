@@ -90,7 +90,7 @@ def main() -> int:
     parser.add_argument("--skip-wait", action="store_true")
     args = parser.parse_args()
 
-    print(f"== Hackbot recon validation — {args.target} ==")
+    print(f"== GateCounsel recon validation — {args.target} ==")
     if not args.skip_wait:
         print("waiting for the target to come up...")
         if not wait_for_target(args.target):
