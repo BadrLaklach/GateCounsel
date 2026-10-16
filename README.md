@@ -45,18 +45,18 @@ The MVP roadmap narrows the broader project proposal to a small, reproducible de
 
 | Area | Planned MVP |
 |---|---|
-| Target | One custom, deliberately vulnerable web application running in Docker |
-| Vulnerability classes | Cross-Site Scripting (XSS) and Insecure Direct Object Reference (IDOR) |
-| Planning | A rule-based planner and two specialist components with typed outputs |
+| Target | One custom, deliberately vulnerable web application plus a lab-only SSRF sentinel in Docker |
+| Vulnerability classes | Reflected XSS, IDOR, SQL injection (SQLi), SSRF, and open redirect |
+| Planning | A rule-based planner and five class-specific expert profiles with typed outputs |
 | Reconnaissance | Bounded, same-origin browser exploration of known pages and inputs |
 | Execution | One Python/Playwright executor using the request broker |
-| Safety | Private Docker network, explicit scope policy, redirect checks, request and time budgets, and an audit log |
+| Safety | Isolated Docker network, explicit scope policy, redirect checks, request and time budgets, and an audit log; SSRF and redirect checks use only lab-controlled destinations |
 | Evidence and reports | Class-specific verification plus sanitized JSON and Markdown reports |
 | DevSecOps integration | Docker Compose and a GitHub Actions workflow that runs the lab, collects artifacts, and cleans up |
 | Interface | CLI or FastAPI's generated API documentation; no dashboard in the MVP |
-| RAG and fine-tuning | Deferred until the controlled baseline is reliable |
+| RAG and fine-tuning | Small reviewed local class-specific retrieval collections are planned; a large corpus and fine-tuning are deferred |
 
-SQL injection is a possible next step after XSS and IDOR work reliably end to end. The broader planning documents discuss additional vulnerability classes, retrieval-augmented generation, model fine-tuning, an API, and a dashboard as later research or extension work; they are not MVP commitments.
+The five classes above are the current MVP target. Additional vulnerability classes, a large retrieval corpus, model fine-tuning, an API, and a dashboard remain later research or extension work.
 
 ## Safety and authorization boundary
 
@@ -64,8 +64,9 @@ GateCounsel is intended only for targets that the project team owns or is explic
 
 The core safety design is structural:
 
-- Every outgoing request and browser navigation goes through one deterministic request broker and Scope Guard.
-- The policy defines permitted hosts, addresses, ports, methods, redirects, expiry, and resource budgets.
+- Every GateCounsel-originated request and browser navigation goes through one deterministic request broker and Scope Guard.
+- Target-side SSRF is contained by the lab network and can reach only the dedicated sentinel endpoint.
+- The policy defines permitted lab services, paths, addresses, ports, methods, redirects, expiry, and resource budgets.
 - Agents produce structured plans but have no direct network or tool access.
 - Execution is bounded, auditable, and restricted to the approved lab target.
 - Reports and artifacts are sanitized to avoid exposing credentials, tokens, or other sensitive data.
@@ -86,7 +87,7 @@ The evaluation plan calls for a documented set of known positive and negative la
 
 ## Planned architecture and technology
 
-The full roadmap recommends Python, Pydantic data contracts, LangGraph orchestration, FastAPI for a run API, Playwright for browser automation, Docker Compose for the lab, and GitHub Actions for CI/CD. A local retrieval store and model-provider abstraction are considered for later stages. The MVP can begin with a CLI and deterministic planning so that a model provider is not required for a repeatable run.
+The full roadmap recommends Python, Pydantic data contracts, LangGraph orchestration, FastAPI for a run API, Playwright for browser automation, Docker Compose for the lab and its SSRF sentinel, and GitHub Actions for CI/CD. The MVP plan includes small class-specific local retrieval collections and a model-provider abstraction. A CLI and deterministic fallback keep ordinary runs reproducible without a live model provider.
 
 Technology choices remain proposals until implementation and validation. The project does not currently contain dependency manifests, runnable services, or a supported setup command.
 
@@ -98,7 +99,7 @@ Project planning files and supporting documents are intentionally excluded from 
 
 ## First implementation milestone
 
-The MVP is considered demonstrated when one local command or CI workflow can start the isolated lab, perform bounded reconnaissance, create typed plans for XSS and IDOR checks, execute them only through the scope-checked broker, confirm or reject controlled cases using evidence, publish sanitized reports, return a deterministic gate decision, and clean up the environment.
+The MVP is considered demonstrated when one local command or CI workflow can start the isolated lab, perform bounded reconnaissance, create typed plans for reflected XSS, IDOR, SQLi, SSRF, and open-redirect checks, execute them only through the scope-checked broker, confirm or reject seeded lab cases using class-specific evidence, publish sanitized reports, return a deterministic gate decision, and clean up the environment.
 
 ## Project team
 

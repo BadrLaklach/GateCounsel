@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Provenance for the compact HackTricks-derived GateCounsel MVP retrieval notes and synthetic training examples.",
+  "upstream": {
+    "name": "HackTricks",
+    "author_attribution": "Carlos Polop",
+    "repository": "https://github.com/HackTricks-wiki/hacktricks",
+    "local_checkout": "../../../hacktricks",
+    "branch": "master",
+    "commit": "f66c437539916b7e87d35c17252a26f90878b40f",
+    "license": {
+      "name": "Creative Commons Attribution-NonCommercial 4.0 International",
+      "spdx": "CC-BY-NC-4.0",
+      "url": "https://creativecommons.org/licenses/by-nc/4.0/",
+      "upstream_notice": "https://github.com/HackTricks-wiki/hacktricks/blob/f66c437539916b7e87d35c17252a26f90878b40f/src/LICENSE.md",
+      "exception_note": "The upstream notice says some external material belongs to its original authors and may have separate terms. This resource uses paraphrased concepts and does not copy those passages."
+    }
+  },
+  "curation": {
+    "method": "Read the pinned English source pages, extract only concepts needed for bounded local-lab ExpertVerdict examples, and write concise paraphrased notes plus synthetic scenarios.",
+    "modifications": "Original summaries and examples; no upstream page text or raw payload lists are copied.",
+    "runtime_status": "Offline reference data only. This resource is not wired to the runtime planner, executor, or model trainer.",
+    "safety_scope": "Synthetic demo-target endpoints; one seeded record at a time; read-only SQL checks; SSRF to the lab sentinel only; redirect Location inspected without following; XSS DOM-marker canaries only."
+  },
+  "sources": [
+    {
+      "id": "HT-XSS-CORE",
+      "class": "xss_reflected",
+      "title": "XSS: methodology, reflected values, and output contexts",
+      "source_file": "src/pentesting-web/xss-cross-site-scripting/README.md",
+      "curated_file": "source/src/pentesting-web/xss-cross-site-scripting/README.md",
+      "source_url": "https://github.com/HackTricks-wiki/hacktricks/blob/f66c437539916b7e87d35c17252a26f90878b40f/src/pentesting-web/xss-cross-site-scripting/README.md",
+      "sha256": "CD6F14BC043B93C263E48D32C36506DD5D4C25270DF2ABCF0CBC9A2DF2E96081",
+      "relevant_sections": ["Methodology", "Reflected values", "Contexts"],
+      "used_for": "Treat reflection as a candidate; identify the HTML context and require a browser-observed execution signal."
+    },
+    {
+      "id": "HT-XSS-DOM",
+      "class": "xss_reflected",
+      "title": "DOM XSS: source-to-sink data flow",
+      "source_file": "src/pentesting-web/xss-cross-site-scripting/dom-xss.md",
+      "curated_file": "source/src/pentesting-web/xss-cross-site-scripting/dom-xss.md",
+      "source_url": "https://github.com/HackTricks-wiki/hacktricks/blob/f66c437539916b7e87d35c17252a26f90878b40f/src/pentesting-web/xss-cross-site-scripting/dom-xss.md",
+      "sha256": "44593A0B0844097B9611C1076E34CED1ADCFB20F9C195D100AC183988DB31D6B",
+      "relevant_sections": ["DOM Vulnerabilities", "Common sources", "Common Sinks"],
+      "used_for": "Separate controlled sources from executable/rendering sinks; include only the source-to-sink distinction relevant to reflected cases."
+    },
+    {
+      "id": "HT-IDOR-CORE",
+      "class": "idor",
+      "title": "IDOR/BOLA: user-controlled object references and object-level authorization",
+      "source_file": "src/pentesting-web/idor.md",
+      "curated_file": "source/src/pentesting-web/idor.md",
+      "source_url": "https://github.com/HackTricks-wiki/hacktricks/blob/f66c437539916b7e87d35c17252a26f90878b40f/src/pentesting-web/idor.md",
+      "sha256": "A9BDB20E354A756FE0BC5F209F287D6D561CE78F4EEAF762788BA1C85518DD85",
+      "relevant_sections": ["Identifying Potential IDORs", "Impact of IDOR/BOLA", "Mitigations & Best Practices"],
+      "used_for": "Keep the same authenticated test principal, alter one known object identifier, and verify server-side ownership checks using synthetic fixtures."
+    },
+    {
+      "id": "HT-SQLI-CORE",
+      "class": "sqli",
+      "title": "SQL injection: entry points and logical confirmation",
+      "source_file": "src/pentesting-web/sql-injection/README.md",
+      "curated_file": "source/src/pentesting-web/sql-injection/README.md",
+      "source_url": "https://github.com/HackTricks-wiki/hacktricks/blob/f66c437539916b7e87d35c17252a26f90878b40f/src/pentesting-web/sql-injection/README.md",
+      "sha256": "AAFACD0ED6A5C587F2992F63DD552182380412C39A3A3B80549AB8FC404E9138",
+      "relevant_sections": ["What is SQL injection?", "Entry point detection", "Confirming with logical operations"],
+      "used_for": "Use a known seeded row and harmless expression-context probes; compare deterministic behavior without reading unrelated rows or changing data."
+    },
+    {
+      "id": "HT-SSRF-CORE",
+      "class": "ssrf",
+      "title": "SSRF: server-side fetch behavior and interaction evidence",
+      "source_file": "src/pentesting-web/ssrf-server-side-request-forgery/README.md",
+      "curated_file": "source/src/pentesting-web/ssrf-server-side-request-forgery/README.md",
+      "source_url": "https://github.com/HackTricks-wiki/hacktricks/blob/f66c437539916b7e87d35c17252a26f90878b40f/src/pentesting-web/ssrf-server-side-request-forgery/README.md",
+      "sha256": "AFBA5F15A08678FFEFEB9C748E58EBE9DD481824B4C4E3944DB1D8FBA5D070A7",
+      "relevant_sections": ["Basic Information", "Capture SSRF", "Whitelisted Domains Bypass"],
+      "used_for": "Distinguish a server-originated request from client reflection and confirm it using a unique event at a lab-controlled sentinel."
+    },
+    {
+      "id": "HT-SSRF-URL-PARSING",
+      "class": "ssrf",
+      "title": "URL parsing and allowlist validation considerations",
+      "source_file": "src/pentesting-web/ssrf-server-side-request-forgery/url-format-bypass.md",
+      "curated_file": "source/src/pentesting-web/ssrf-server-side-request-forgery/url-format-bypass.md",
+      "source_url": "https://github.com/HackTricks-wiki/hacktricks/blob/f66c437539916b7e87d35c17252a26f90878b40f/src/pentesting-web/ssrf-server-side-request-forgery/url-format-bypass.md",
+      "sha256": "1327FA17A834CD83BA20A8C96763050695552944797FDC17044FC3E3AC03C910",
+      "relevant_sections": ["Domain Parser", "Domain Confusion", "Bypass via redirect"],
+      "used_for": "Motivate canonical parsing and redirect revalidation. Bypass values and access to internal/cloud services are deliberately excluded from examples."
+    },
+    {
+      "id": "HT-OPEN-REDIRECT-CORE",
+      "class": "open_redirect",
+      "title": "Open redirect: destination validation and parser consistency",
+      "source_file": "src/pentesting-web/open-redirect.md",
+      "curated_file": "source/src/pentesting-web/open-redirect.md",
+      "source_url": "https://github.com/HackTricks-wiki/hacktricks/blob/f66c437539916b7e87d35c17252a26f90878b40f/src/pentesting-web/open-redirect.md",
+      "sha256": "E34DA9348C2909279C4935B91EE282932FB01F6B05B569A65AF51586084EDFEE",
+      "relevant_sections": ["Open redirect", "OAuth/SSO allowlist footguns", "Common injection parameters"],
+      "used_for": "Check how a destination is validated and emitted in Location; inspect only a pre-registered lab destination and do not follow it."
+    }
+  ]
+}
