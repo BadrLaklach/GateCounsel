@@ -4,8 +4,8 @@
 Each JSONL line is a single training conversation:
   {"messages": [{"role": "system", ...}, {"role": "user", ...}, {"role": "assistant", ...}]}
 
-Payloads, techniques, success signals and methodology are grounded in the
-PayloadsAllTheThings markdown cheat sheets that live in this repository.
+Payload choices and techniques are based on PayloadsAllTheThings. The
+resource-specific fine-tuning examples are kept in this folder.
 Run:  python generate.py
 """
 
