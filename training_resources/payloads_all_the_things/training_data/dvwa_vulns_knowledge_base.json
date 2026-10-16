@@ -2,6 +2,8 @@
   "meta": {
     "target": "https://server.vulnapp.id/dvwa",
     "assessment_date": "2026-10-13",
+    "reassessment_date": "2026-10-16",
+    "reassessment_note": "Follow-up reassessment on 2026-10-16: all new findings (LIVE-010..LIVE-013) independently re-validated by a reviewer; a 2026-10-16 recheck note was appended to LIVE-005 (MySQL still down). Original assessment_date retained.",
     "assessment_type": "Authorized lab assessment (user-owned DVWA training instance) for expert-agent training data",
     "application": {
       "name": "Damn Vulnerable Web Application (DVWA)",
@@ -10,6 +12,7 @@
     },
     "infrastructure": [
       { "component": "web server", "detail": "nginx/1.24.0 (Ubuntu)", "evidence": "live_verified: Server response header" },
+      { "component": "web server backend", "detail": "Apache/2.2.8 (Ubuntu) DAV/2 behind nginx (leaked in 404 footer)", "evidence": "live_verified: 404 error page footer 2026-10-16" },
       { "component": "php", "detail": "PHP/5.2.4-2ubuntu5.10", "evidence": "live_verified: X-Powered-By header" },
       { "component": "database", "detail": "MySQL (backend, UNREACHABLE during assessment)", "evidence": "live_verified: setup.php reports 'Could not connect to the database'" },
       { "component": "deployment", "detail": "reverse-proxied (X-Forwarded-For / X-Real-IP env present in phpinfo)", "evidence": "live_verified: phpinfo _ENV dump" }
@@ -23,13 +26,16 @@
     "authentication": {
       "default_credentials": { "username": "admin", "password": "password" },
       "verification": "documented_dvwa_default: could NOT be live-verified because MySQL was down during assessment (login is DB-backed)",
+      "credentials_corroboration": "2026-10-16: the default admin/password credentials are corroborated by the publicly readable /dvwa/README.txt (stock DVWA readme, live_verified as LIVE-011)",
       "auth_gating": "all module pages 302-redirect to login.php without a valid session (live_verified)"
     },
     "constraints": [
       "MySQL backend was down for the entire assessment: login and all DB-backed modules (brute, csrf, sqli, sqli_blind, xss_s, upload-form) could not be live-exploited.",
       "Module endpoints were live-confirmed to exist via the DVWA menu HTML rendered on setup.php before authentication.",
       "Module payload entries below are DOCUMENTED behavior for DVWA v1.0.7 (deterministic lab application); payload entries are labeled evidence='documented_dvwa_1.0.7' and must be re-verified live once MySQL is restored (see reverification_checklist).",
-      "Live-verified findings are labeled evidence='live_verified' and carry the HTTP proof observed on 2026-10-13."
+      "Live-verified findings are labeled evidence='live_verified' and carry the HTTP proof observed on 2026-10-13.",
+      "2026-10-16 recheck: the MySQL backend first reported down on 2026-10-13 remained down on 2026-10-16 (login.php still returns 'Unable to connect to the database'); dummy-credential POSTs and SQLi probes remain indistinguishable because the app dies at DB-connect before query construction — see LIVE-005 and LIVE-013.",
+      "2026-10-16 reassessment added LIVE-010..LIVE-013 (session fixation, README.txt disclosure, missing security headers, unauthenticated DB reset), each independently re-validated by a reviewer; original findings LIVE-001..009 unchanged."
     ],
     "evidence_legend": {
       "live_verified": "observed directly on the target during this assessment",
@@ -61,7 +67,7 @@
       "endpoint": "/dvwa/hackable/uploads/, /dvwa/config/, /dvwa/dvwa/",
       "injection_point": "path",
       "evidence": "live_verified",
-      "detail": "nginx autoindex serves browsable listings ('Index of') for /dvwa/hackable/uploads/ (full file inventory incl. all shells), /dvwa/config/ (reveals config.inc.php filename) and /dvwa/dvwa/ (includes dir).",
+      "detail": "nginx autoindex serves browsable listings ('Index of') for /dvwa/hackable/uploads/ (full file inventory incl. all shells), /dvwa/config/ (reveals config.inc.php filename) and /dvwa/dvwa/ (includes dir). 2026-10-16 recheck confirmed listings still on; additionally the same autoindex exposure exists on /dvwa/hackable/ (shows uploads/ and users/) and /dvwa/external/ (shows phpids/); /dvwa/config/ now lists only config.inc.php.",
       "expected_success_signal": "200 response containing 'Index of' and href list of files",
       "severity": "medium",
       "impact": "Reveals attack surface: uploaded shell inventory, config file names, internal structure; helps an attacker identify prior shells to reuse",
@@ -106,7 +112,7 @@
       "endpoint": "/dvwa/setup.php, /dvwa/login.php",
       "injection_point": "n/a",
       "evidence": "live_verified",
-      "detail": "Every page load dies with 'Unable to connect to the database.'; POST create_db returns 'Could not connect to the database - please check the config file.' Persistent across the whole assessment window (7+ probes over several minutes).",
+      "detail": "Every page load dies with 'Unable to connect to the database.'; POST create_db returns 'Could not connect to the database - please check the config file.' Persistent across the whole assessment window (7+ probes over several minutes). 2026-10-16 recheck: MySQL still down — login.php still returns the 'Unable to connect to the database' fragment; on this state dummy-credential POSTs and SQLi probes are indistinguishable because the app dies at DB-connect before query construction, so no observation under the current outage can confirm credential validity or injectability.",
       "expected_success_signal": "login.php body contains 'Unable to connect to the database'",
       "severity": "availability/config issue (blocks all DB-backed modules)",
       "impact": "Lab unusable for DB-backed vuln training until fixed; also an availability fingerprint",
@@ -173,6 +179,81 @@
       "remediation": "Purge uploads dir before using this instance for clean training runs",
       "confidence": 1.0,
       "reasoning": "Names enumerated from the live directory listing."
+    },
+    {
+      "id": "LIVE-010",
+      "vuln_class": "session_fixation",
+      "title": "Session fixation: server accepts attacker-chosen PHPSESSID (session.use_strict_mode off)",
+      "endpoint": "/dvwa/login.php (Cookie: PHPSESSID)",
+      "injection_point": "cookie",
+      "evidence": "live_verified",
+      "detail": "Sending 'Cookie: PHPSESSID=<attacker-chosen-value>' to GET /dvwa/login.php is accepted: the server issues NO new Set-Cookie for PHPSESSID and keeps the client-supplied session id (PHP session.use_strict_mode off behavior). Evidence observed live 2026-10-16 (follow-up reassessment, independently re-validated by a reviewer).",
+      "expected_success_signal": "Response to GET /dvwa/login.php with an attacker-chosen Cookie: PHPSESSID contains no Set-Cookie: PHPSESSID directive and subsequent requests keep using the supplied id",
+      "severity": "medium",
+      "impact": "An attacker who plants a known session id (link/session-state injection, aided by LIVE-004's flagless cookie) inherits the victim's authenticated session once the victim logs in — full account takeover",
+      "remediation": "Enable session.use_strict_mode=1 and regenerate the session id on privilege change (session_regenerate_id(true) after successful login)",
+      "confidence": 0.95,
+      "reasoning": "Directly observable: an attacker-chosen id was retained and no replacement Set-Cookie header was issued, the live fingerprint of strict mode disabled. Full hijack depends on post-login behavior (reverification_checklist item 8)."
+    },
+    {
+      "id": "LIVE-011",
+      "vuln_class": "information_disclosure",
+      "title": "Publicly readable README.txt discloses default admin credentials",
+      "endpoint": "/dvwa/README.txt",
+      "injection_point": "path",
+      "evidence": "live_verified",
+      "detail": "GET /dvwa/README.txt returns HTTP 200 with 4934 bytes: the publicly readable stock DVWA readme states 'Default username = admin' and 'Default password = password' plus installation guidance. Evidence observed live 2026-10-16 (follow-up reassessment, independently re-validated by a reviewer). This also publicly corroborates the default credentials documented in meta.authentication, which could not be live-verified on 2026-10-13 because MySQL was down.",
+      "expected_success_signal": "HTTP 200, 4934-byte body containing 'Default username = admin' and 'Default password = password'",
+      "severity": "low",
+      "impact": "Hands the admin credential pair for an internet-reachable shared instance to any visitor; combined with the brute-force module (no lockout, BF-LOW-NOLOCKOUT) it removes the guessing step entirely",
+      "remediation": "Remove /dvwa/README.txt from the public webroot or deny it at nginx (location ~* /README.txt { deny all; }) — stock documentation should not ship on a public endpoint",
+      "confidence": 1.0,
+      "reasoning": "Body fetched directly: status 200, length 4934 bytes, default-credential strings read verbatim in the response."
+    },
+    {
+      "id": "LIVE-012",
+      "vuln_class": "missing_security_headers",
+      "title": "No protective security headers on any response",
+      "endpoint": "all responses",
+      "injection_point": "header",
+      "evidence": "live_verified",
+      "detail": "No Strict-Transport-Security, no Content-Security-Policy, no X-Frame-Options, no X-Content-Type-Options, no Referrer-Policy on all responses — only Server/X-Powered-By/Cache-Control/Pragma/Expires are present. Evidence observed live 2026-10-16 (follow-up reassessment, independently re-validated by a reviewer). 2026-10-16 - port 80 issues a 301 to https (no plaintext content served) but Strict-Transport-Security remains absent on all responses.",
+      "expected_success_signal": "Response headers contain none of the five protective headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy)",
+      "severity": "medium",
+      "impact": "Amplifies every injection-class finding on this instance: no CSP to constrain XSS modules, clickjacking possible without X-Frame-Options, MIME-sniffing without nosniff, credential/session leakage via Referer without a policy",
+      "remediation": "Add the headers once at the proxy (nginx add_header): HSTS, a default-src CSP, X-Frame-Options SAMEORIGIN, X-Content-Type-Options nosniff, Referrer-Policy no-referrer",
+      "confidence": 1.0,
+      "reasoning": "Full response header sets captured live on 2026-10-16; each of the five protective headers is absent by inspection."
+    },
+    {
+      "id": "LIVE-013",
+      "vuln_class": "unauthenticated_database_reset",
+      "title": "Unauthenticated setup.php exposes a live Create / Reset Database control to any anonymous visitor",
+      "endpoint": "/dvwa/setup.php",
+      "injection_point": "path",
+      "evidence": "live_verified",
+      "detail": "GET /dvwa/setup.php returns HTTP 200 without any authentication and renders a live POST form (input name=create_db value='Create / Reset Database'): any anonymous visitor can wipe/reset the shared training DB once MySQL is restored. The destructive form was NOT submitted during the assessment. Evidence observed live 2026-10-16 (follow-up reassessment, independently re-validated by a reviewer).",
+      "expected_success_signal": "Unauthenticated GET /dvwa/setup.php returns HTTP 200 rendering the form input name=create_db value='Create / Reset Database'",
+      "severity": "high",
+      "impact": "On a shared instance any anonymous visitor can wipe/reset the shared training DB (destroying stored state for every user) and re-seed it at will — and a reset also purges prior-attacker artifacts tracked in LIVE-009, complicating forensics",
+      "remediation": "Delete or IP-restrict setup.php after initial install (nginx allow/deny) or require authentication; never leave DB-reset controls reachable anonymously on a shared instance",
+      "confidence": 1.0,
+      "reasoning": "The 200 response and form markup were fetched directly; exposure (not exploitation) was verified, so the destructive POST was deliberately withheld to avoid harming the shared lab."
+    },
+    {
+      "id": "LIVE-014",
+      "vuln_class": "information_disclosure",
+      "title": "Hidden Apache backend leaked in nginx 404 error pages (EOL Apache 2.2.8 behind the proxy)",
+      "endpoint": "/dvwa/ (any 404)",
+      "injection_point": "path",
+      "evidence": "live_verified",
+      "detail": "Any 404 response from nginx serves an Apache-style error footer reading 'Apache/2.2.8 (Ubuntu) DAV/2 Server at server.vulnapp.id Port 80', proving nginx reverse-proxies to an EOL Apache 2.2.8 (2008-era) backend that the 'Server: nginx/1.24.0 (Ubuntu)' header alone concealed. Evidence observed live 2026-10-16 (follow-up reassessment, independently re-validated by a reviewer). This corrects/completes the infrastructure picture recorded in meta.infrastructure: the stack is nginx front + Apache 2.2.8 (DAV/2) backend + PHP 5.2.4, so version/CVE exposure is broader than the header-only view previously recorded.",
+      "expected_success_signal": "Any 404 response body carries the Apache footer 'Apache/2.2.8 (Ubuntu) DAV/2 Server at server.vulnapp.id Port 80'",
+      "severity": "low",
+      "impact": "Completes the stack fingerprint (hidden backend engine and mod_dav) and enables precise CVE mapping against an Apache 2.2 release from 2008 that no longer receives security fixes",
+      "remediation": "proxy_intercept_errors on with custom nginx error pages so backend signatures never reach clients; upgrade or retire the EOL Apache 2.2.8 backend; disable mod_dav if unused; server_tokens off on both tiers",
+      "confidence": 1.0,
+      "reasoning": "An Apache-format error footer cannot be generated by nginx itself, so the 404 pages pass through from an Apache 2.2.8 backend; footer text captured verbatim from live responses."
     }
   ],
 
@@ -607,6 +688,7 @@
     "4. Set level low: POST /dvwa/security.php security=low&seclev_submit=Submit (or set cookie security=low).",
     "5. Re-run every 'documented_dvwa_1.0.7' payload above at low, then medium, and flip each entry's evidence field to live_verified once its expected_success_signal matches.",
     "6. Purge /dvwa/hackable/uploads/ of prior shells (MARIJUANA.php, pwn.php, ...) before clean training runs — they are live RCE backdoors.",
-    "7. Re-check that the DB-backed negative entries (SQLI-MED ambiguity) are resolved by observation, not assumption."
+    "7. Re-check that the DB-backed negative entries (SQLI-MED ambiguity) are resolved by observation, not assumption.",
+    "8. Re-verify session-fixation behavior after login once the DB is restored (2026-10-16 finding LIVE-010 was confirmed only on the unauthenticated login.php surface): with a pre-set attacker-chosen PHPSESSID, log in and confirm whether the server keeps the client-supplied id or regenerates it via session_regenerate_id(true) — only the post-login outcome decides whether fixation is full account takeover."
   ]
 }
