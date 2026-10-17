@@ -15,3 +15,6 @@ juiceshop_sitemap.json
 
 # Local-only project plans and working notes.
 /Document_Plans_GitIgnored/
+
+# Version the generated training dataset with the repo.
+!training_data/*.jsonl
