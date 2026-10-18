@@ -1,0 +1,14 @@
+[0m
+> build · longcat-2.5-preview-free
+[0m
+[0m→ [0mRead training_resources/enrichment/specs/idor_a.md
+[0m
+[0m$ [0mls training_resources/enrichment/ 2>/dev/null; python --version 2>&1 || python3 --version 2>&1
+build_specs.py
+candidates
+logs
+qa
+reviews
+specs
+Python 3.13.3
+[0m
