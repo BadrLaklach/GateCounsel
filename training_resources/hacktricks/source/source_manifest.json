@@ -17,10 +17,10 @@
     }
   },
   "curation": {
-    "method": "Read the pinned English source pages, extract only concepts needed for bounded local-lab ExpertVerdict examples, and write concise paraphrased notes plus synthetic scenarios.",
-    "modifications": "Original summaries and examples; no upstream page text or raw payload lists are copied.",
+    "method": "Read the pinned English source pages and write concise paraphrased retrieval notes under source/src/. The original bounded ExpertVerdict example modules were superseded by and removed in favor of the full technique corpus (see full_technique_corpus below).",
+    "modifications": "Original summaries, scenario framing, evidence and reasoning; no upstream page text or raw payload lists are copied verbatim.",
     "runtime_status": "Offline reference data only. This resource is not wired to the runtime planner, executor, or model trainer.",
-    "safety_scope": "Synthetic demo-target endpoints; one seeded record at a time; read-only SQL checks; SSRF to the lab sentinel only; redirect Location inspected without following; XSS DOM-marker canaries only."
+    "safety_scope": "Training and reference data only; it grants no scope, target, or execution authorization. Runtime execution remains governed by the ScopePolicy, the operation allowlist, and the deterministic verifier."
   },
   "full_technique_corpus": {
     "purpose": "Provenance for the full-scale expert training modules (training_data/data_*_full.py + generate_full.py). These follow the same chat-JSONL format as training_resources/payloads_all_the_things/training_data/ and cover real-world techniques from the pinned HackTricks pages below. They are research training data for the expert models, not MVP runtime inputs, and grant no scope or authorization.",
