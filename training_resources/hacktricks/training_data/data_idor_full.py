@@ -1,0 +1,173 @@
+"""Full-scale IDOR/BOLA training scenarios. Techniques from HackTricks (pinned commit f66c437).
+
+Page used: src/pentesting-web/idor.md
+
+Row format: (endpoint, params, evidence, rationale, payload, injection_point, success_signal, confidence, reasoning)
+"""
+
+EXAMPLES = [
+    # --- identification heuristics (idor.md section 1) ---
+    ("PUT /api/lead/cem-xhr", "lead_id (JSON body)",
+     "Endpoint accepts an 8-digit sequential lead_id with the session cookie; no ownership check observed.",
+     "Single manual tamper with the same authenticated token.",
+     "{\"lead_id\":64185740}", "body",
+     "Response returns another applicant's full PII (name, email, phone, address)",
+     0.9,
+     "The methodology's core move: keep the low-privilege session, change only the object identifier; absence of an authorization error on a foreign object is the finding."),
+
+    ("GET /api/user/1234", "user id (path segment)",
+     "Path-style object references; own ID is 1234 and adjacent IDs are plausible.",
+     "Test path-based references for object-level authorization.",
+     "/api/user/1233", "path",
+     "200 with another user's record instead of 403/404",
+     0.85,
+     "Section 1 lists path references first: the endpoint 'discloses or accepts a user-controllable identifier used directly to access an internal object'."),
+
+    ("GET /files/550e8400-e29b-41d4-a716-446655440000", "file id (UUID path)",
+     "Files are addressed by UUID; the app assumes unguessability equals authorization.",
+     "Swap in any other valid UUID from a shared context.",
+     "/files/<any-other-valid-uuid>", "path",
+     "Foreign file served to a session that never owned it",
+     0.7,
+     "UUIDs slow guessing but are not authorization; the page stresses 'prefer unguessable identifiers' as a mitigation, implying their absence of a check is the bug when leaked."),
+
+    ("GET /api/invoices?invoice=2024-00001", "invoice (query)",
+     "Invoice numbers follow a predictable business format visible in your own history.",
+     "Predictable business identifiers are direct object references.",
+     "invoice=2024-00002", "query",
+     "Another tenant's invoice document returned",
+     0.8,
+     "Sequential or formatted business IDs (invoices, receipts, orders) make every record enumerable when the lookup lacks a per-record ownership check."),
+
+    ("POST /api/orders", "user_id, order_id (JSON body)",
+     "API accepts object references inside the JSON body: {\"user_id\":321,\"order_id\":987}.",
+     "Body-carried identifiers need the same authorization testing.",
+     "{\"user_id\":322,\"order_id\":987}", "body",
+     "Operation executes against user 322's order under the original session",
+     0.75,
+     "Body/JSON references are the third identifier location in section 1; authorization must be re-evaluated server-side per object, not trusted from the payload."),
+
+    ("GET /api/v1/data", "X-Client-ID (header)",
+     "Backend routes tenancy from a client-ID header the session can influence.",
+     "Header-carried identifiers are equally direct references.",
+     "X-Client-ID: 4712", "header",
+     "Data belonging to client 4712 returned to the original session",
+     0.7,
+     "Headers and cookies close the identifier list; a header that selects the object/tenant without an ownership check is a textbook IDOR surface."),
+
+    # --- enumeration workflows (idor.md) ---
+    ("PUT /api/lead/cem-xhr", "lead_id (JSON body)",
+     "Single tamper confirmed IDOR; measure the blast radius.",
+     "Sequential curl loop over adjacent IDs.",
+     "for id in $(seq 64185742 64185700); do curl -X PUT ... -d '{\"lead_id\":'$id'}'; done", "body",
+     "Multiple hits: every decremented lead_id returns a different applicant's PII",
+     0.85,
+     "The page's automated-enumeration loop walks the ID space with one valid cookie; each 200 with an email field is a distinct leaked record."),
+
+    ("GET /download.php?id=54", "id (query)",
+     "File-hosting panel stores all tenants' files in one table; download takes an integer id.",
+     "ffuf sweep of the integer space with response filtering.",
+     "ffuf -u 'http://target/download.php?id=FUZZ' -b 'PHPSESSID=<session>' -w <(seq 0 6000) -fr 'File Not Found'", "query",
+     "Surviving IDs leak other tenants' backups, configs and signing keys",
+     0.8,
+     "The documented ffuf workflow filters the 404 template so only true hits remain; the HTB case recovered full site backups and signing material this way."),
+
+    ("GET /chat.php", "chat_users[0], chat_users[1] (query)",
+     "Chat threads addressed by two user IDs; only login is checked.",
+     "Combinatorial two-ID enumeration.",
+     "chat_users[0]=NUM1&chat_users[1]=NUM2 (ffuf with two wordlists)", "query",
+     "Other users' private chat threads returned; jq dedupes symmetric pairs",
+     0.7,
+     "The combinatorial ffuf example fuzzes both IDs with seq wordlists under one cookie; the jq post-processing keeps only A<B pairs to remove duplicates."),
+
+    ("GET /view.php", "username, file (query)",
+     "Endpoint takes username and filename; error texts differ per failure cause.",
+     "Error-message oracle enumerates valid users.",
+     "ffuf -u 'http://target/view.php?username=FUZZ&file=test.doc' -b 'PHPSESSID=<session>' -w names.txt -fr 'User not found'", "query",
+     "Usernames that avoid the 'User not found' template are valid accounts",
+     0.7,
+     "The error-oracle section distinguishes 'User not found' from 'File does not exist' from extension errors; filtering on the first string turns the endpoint into a user oracle."),
+
+    # --- search-index authorization bypass (idor.md section) ---
+    ("GET /api/search", "query (query)",
+     "Search is backed by a secondary index; a restricted field still participates in matching.",
+     "Scoped substring oracle against an object you can access.",
+     "query={candidate}%20AND%20((workspaceId=1%20AND%20ITEM_DETAILS:ITEM_ID=23))", "query",
+     "200-with-item versus 204-empty cleanly answers whether the candidate text occurs in the hidden field",
+     0.65,
+     "The blind-substring-oracle technique fixes the object filter and varies one candidate term; presence/absence of the accessible object becomes a membership test for hidden indexed content."),
+
+    ("GET /api/search", "query (query)",
+     "Substring oracle established; recover the hidden value.",
+     "Bidirectional extension with backtracking.",
+     "extend(seed, left=True) then extend(seed, left=False) over the alphabet, backtracking on multiple branches", "query",
+     "Full hidden value (e.g. an email) reconstructed character by character from both ends",
+     0.6,
+     "The page's extend() algorithm grows the seed left and right from a marker like '@'; multiple hits force backtracking because repeated fields create competing branches."),
+
+    # --- real-world patterns (idor.md case studies) ---
+    ("PUT /api/lead/cem-xhr", "lead_id (JSON body)",
+     "McHire-style recruitment portal: any restaurant test account session plus 8-digit sequential lead IDs.",
+     "One decrement exposes full applicant PII and a consumer JWT.",
+     "{\"lead_id\":64185741}", "body",
+     "PII plus a JWT enabling session hijack; the range 1-64,185,742 covers ~64M records",
+     0.85,
+     "The McHire case study: default admin credentials (123456) plus the IDOR yielded company-wide PII; the JWT in each record escalated data exposure to account takeover."),
+
+    ("GET /memories/api", "id (query)",
+     "QR wristband system: the printed band ID is hex-encoded client-side and used as the only credential.",
+     "Predictable encoded IDs act as bearer tokens.",
+     "id=432d3238352d313030", "query",
+     "Media (photos/videos) and full names for wristband C-285-100 returned with no session at all",
+     0.8,
+     "The Carlsberg case: ASCII-hex of 'C-285-100' is the lookup key; ~26M keyspace at ~139 req/s falls in ~52 hours — encoding added zero entropy."),
+
+    ("GET /memories/api", "id (query)",
+     "Wristband enumeration at scale via Intruder.",
+     "Pitchfork with hex-encoding payload processing.",
+     "[A-Z]-###-### with Burp payload processing 'prefix/suffix, encoding: ASCII hex'", "query",
+     "~500 valid bands (videos + names) harvested in a sample run",
+     0.7,
+     "The documented workflow generates candidate IDs, hex-encodes them inside Intruder, and greps for media markers — the vendor's claimed rate limiting was disproved by re-running at identical throughput."),
+
+    # --- impact / write paths (idor.md) ---
+    ("PUT /api/records/987", "record id (path segment)",
+     "Update endpoints accept arbitrary record IDs with your session.",
+     "Write-path IDOR: modify another principal's object.",
+     "PUT /api/records/986 with modified fields", "path",
+     "Victim's record 986 mutated under the attacker session",
+     0.75,
+     "Section 1 says to prefer endpoints that read or update data (GET/PUT/PATCH/DELETE): object-level checks must gate mutations too, and their absence is often higher impact."),
+
+    ("GET /api/hidden-flow", "(alternate flow discovery)",
+     "Login page exposes a 'Paradox team members' style link to an undocumented API.",
+     "Explore hidden flows for unprotected object endpoints.",
+     "GET /api/team/members", "query",
+     "Alternate API returns objects without the authorization present on the main flow",
+     0.6,
+     "The methodology's step 4: hidden or alternate flows (extra links, forgotten mobile APIs) frequently miss the authorization backported to the primary endpoints."),
+
+    ("GET /api/export", "user_id (query)",
+     "Export runs under the supplied user; the ID is validated only for existence.",
+     "Vertical element: run another user's privileged operation.",
+     "user_id=<admin-or-other-user>", "query",
+     "Export generated for a different principal's dataset delivered to the attacker",
+     0.7,
+     "The impact section names vertical escalation (low-priv user reaching admin functionality) beside horizontal; parameterized job/user endpoints are the common vehicle."),
+
+    ("GET /admin/panel", "(authenticated low-priv session)",
+     "Admin routes merely hidden in the UI, not enforced server-side.",
+     "Forced browsing to the admin surface with the low-priv token.",
+     "GET /admin/panel (Cookie: low-priv session)", "header",
+     "Admin panel renders for a non-admin session",
+     0.65,
+     "The page's mitigation list insists authorization be server-side 'never rely on hidden form fields or UI controls' — forced browsing tests exactly that assumption."),
+
+    ("GET /api/orders?cursor=", "cursor (query)",
+     "Pagination cursors encode object references; own cursor decodes to order IDs.",
+     "Decode, tamper and re-encode opaque cursors.",
+     "base64decode(cursor) -> tamper ids -> base64encode -> resend", "query",
+     "Foreign orders listed through the forged cursor",
+     0.6,
+     "Encoding (base64/hex) is presentation, not authorization — the wristband lesson generalises to any opaque token that internally carries enumerable object references."),
+]

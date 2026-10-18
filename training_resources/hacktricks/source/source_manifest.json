@@ -22,6 +22,71 @@
     "runtime_status": "Offline reference data only. This resource is not wired to the runtime planner, executor, or model trainer.",
     "safety_scope": "Synthetic demo-target endpoints; one seeded record at a time; read-only SQL checks; SSRF to the lab sentinel only; redirect Location inspected without following; XSS DOM-marker canaries only."
   },
+  "full_technique_corpus": {
+    "purpose": "Provenance for the full-scale expert training modules (training_data/data_*_full.py + generate_full.py). These follow the same chat-JSONL format as training_resources/payloads_all_the_things/training_data/ and cover real-world techniques from the pinned HackTricks pages below. They are research training data for the expert models, not MVP runtime inputs, and grant no scope or authorization.",
+    "pages": [
+      {
+        "source_file": "src/pentesting-web/sql-injection/README.md",
+        "sha256": "AAFACD0ED6A5C587F2992F63DD552182380412C39A3A3B80549AB8FC404E9138",
+        "used_by": ["data_sqli_full"]
+      },
+      {
+        "source_file": "src/pentesting-web/sql-injection/mysql-injection/README.md",
+        "sha256": "1C0BAE87C4790AD54FCEE7782E05A0B5AFC952353E94946277D4C1F28DD8327C",
+        "used_by": ["data_sqli_full"]
+      },
+      {
+        "source_file": "src/pentesting-web/sql-injection/mssql-injection.md",
+        "sha256": "6ED1B62EC3DDB799A7E4CCE9536585EEBED2EC7A8CB7ECC6C971C62B3E345BBF",
+        "used_by": ["data_sqli_full"]
+      },
+      {
+        "source_file": "src/pentesting-web/sql-injection/oracle-injection.md",
+        "sha256": "D6B8D50C84AE393AAC76B70A11928A2CDB33119A9D51C2DB29361736D364E057",
+        "used_by": ["data_sqli_full"]
+      },
+      {
+        "source_file": "src/pentesting-web/sql-injection/postgresql-injection/README.md",
+        "sha256": "C66FE55F7E5322D609B00AF4183F948A077F2FC81A3883328D6DA312C76CC81B",
+        "used_by": ["data_sqli_full"]
+      },
+      {
+        "source_file": "src/pentesting-web/xss-cross-site-scripting/README.md",
+        "sha256": "CD6F14BC043B93C263E48D32C36506DD5D4C25270DF2ABCF0CBC9A2DF2E96081",
+        "used_by": ["data_xss_reflected_full"]
+      },
+      {
+        "source_file": "src/pentesting-web/xss-cross-site-scripting/dom-xss.md",
+        "sha256": "44593A0B0844097B9611C1076E34CED1ADCFB20F9C195D100AC183988DB31D6B",
+        "used_by": ["data_xss_reflected_full"]
+      },
+      {
+        "source_file": "src/pentesting-web/idor.md",
+        "sha256": "A9BDB20E354A756FE0BC5F209F287D6D561CE78F4EEAF762788BA1C85518DD85",
+        "used_by": ["data_idor_full"]
+      },
+      {
+        "source_file": "src/pentesting-web/open-redirect.md",
+        "sha256": "E34DA9348C2909279C4935B91EE282932FB01F6B05B569A65AF51586084EDFEE",
+        "used_by": ["data_open_redirect_full"]
+      },
+      {
+        "source_file": "src/pentesting-web/ssrf-server-side-request-forgery/README.md",
+        "sha256": "AFBA5F15A08678FFEFEB9C748E58EBE9DD481824B4C4E3944DB1D8FBA5D070A7",
+        "used_by": ["data_ssrf_full"]
+      },
+      {
+        "source_file": "src/pentesting-web/ssrf-server-side-request-forgery/url-format-bypass.md",
+        "sha256": "1327FA17A834CD83BA20A8C96763050695552944797FDC17044FC3E3AC03C910",
+        "used_by": ["data_ssrf_full", "data_open_redirect_full"]
+      },
+      {
+        "source_file": "src/pentesting-web/ssrf-server-side-request-forgery/cloud-ssrf.md",
+        "sha256": "E1CD4C2CBB604C32A60E81EAA5D83F426E859AFEB4266E7BB48585D8738106D6",
+        "used_by": ["data_ssrf_full"]
+      }
+    ]
+  },
   "sources": [
     {
       "id": "HT-XSS-CORE",
