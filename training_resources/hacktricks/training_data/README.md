@@ -22,7 +22,7 @@ From `training_resources/hacktricks/`:
 python .\training_data\generate_full.py
 ```
 
-The generator validates every row (schema keys, injection point in {query, body, header, cookie, path}, confidence in [0, 1], (param, payload) uniqueness) and writes one `{class}_full_training_data.jsonl` per class under `generated/`, with the HackTricks attribution embedded in every system prompt. Generated files are ignored by the repository-wide `*.jsonl` rule.
+The generator validates every row (schema keys, injection point in {query, body, header, cookie, path}, confidence in [0, 1], (param, payload) uniqueness) and writes one `{class}_full_training_data.jsonl` per class under `generated/`, with the HackTricks attribution embedded in every system prompt. The generated files are versioned with the repo via a `.gitignore` negation.
 
 ## Safety and interpretation
 
