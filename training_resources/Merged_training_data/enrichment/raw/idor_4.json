@@ -1,0 +1,68 @@
+{
+ "key": "idor_4",
+ "model": "opencode/glm-5.3-flash-free",
+ "class": "idor",
+ "variants": [
+  {
+   "endpoint": "GET /api/v3/statements/export?user_id=44821&year=2025",
+   "target_param": "user_id",
+   "recon_evidence": "Repeating user_id twice in the URL makes the response metadata reflect the second value while the pre-export authorization check logs the first, indicating the report generator resolves its object from the last occurrence.",
+   "planner_rationale": "Duplicating the identifier so the authorization filter validates the benign first value while the export job consumes the attacker-controlled last one.",
+   "vuln_class": "idor",
+   "payload": "user_id=123&user_id=124 (duplicate param)",
+   "injection_point": "query",
+   "expected_success_signal": "Generated statement PDF contains transaction history for user 124, not the authenticated caller",
+   "confidence": 0.68,
+   "reasoning": "Duplicate-parameter parsing desync: the auth layer validates the first user_id occurrence while the export job resolves the object from the last, so the second value redirects the statement to another tenant."
+  },
+  {
+   "endpoint": "GET /ops/exports/usage-report?user_id=1001&scope=team",
+   "target_param": "user_id (occurrence not deduplicated on this route)",
+   "recon_evidence": "An edge layer rewrites duplicate user_id values only on /api/* routes; the ops export route lacks that normalization and passes every occurrence of user_id untouched into the report builder.",
+   "planner_rationale": "The deduplication that would kill HPP is absent here, so smuggling a second identifier past the ownership check should work.",
+   "vuln_class": "idor",
+   "payload": "user_id=123&user_id=124 (duplicate param)",
+   "injection_point": "query",
+   "expected_success_signal": "CSV usage report includes activity attributed to user 124 alongside the requesting account's rows",
+   "confidence": 0.6,
+   "reasoning": "Where duplicate user_id values reach the object resolver without normalization, the ownership check and the data fetch can bind to different occurrences, letting the final value redirect the report to a foreign account."
+  },
+  {
+   "endpoint": "POST /api/graphql (persisted operation)",
+   "target_param": "subredditName (GraphQL variables)",
+   "recon_evidence": "Only hashed operation ids are accepted, so the query text is fixed; however the variables block is attacker-controlled, and substituting another subreddit's name returns that community's removed-post queue to an account with no moderator rights there.",
+   "planner_rationale": "Keep the allowlisted persisted id and only retarget the subredditName variable at the restricted community.",
+   "vuln_class": "idor",
+   "payload": "{\"id\":\"<persisted-query-id>\",\"variables\":{\"subredditName\":\"target-subreddit\"}}",
+   "injection_point": "body",
+   "expected_success_signal": "Removed-post queue for the target subreddit returned, with endCursor present on each page for full walk-through",
+   "confidence": 0.82,
+   "reasoning": "The persisted-operation allowlist validates which query runs, not which objects its variables select, so the unvalidated subredditName substitution drives the resolver to enumerate a foreign community's moderation data."
+  },
+  {
+   "endpoint": "POST /orion/graphql (mobile app promoted persisted query)",
+   "target_param": "variables.subredditName",
+   "recon_evidence": "The mobile client's promoted hash builds a moderator dashboard from subredditName alone; replaying that exact hash with a community name the caller never moderates still returns its delivered-messages log with no modcheck error.",
+   "planner_rationale": "Pin the query via the trusted promoted hash and pivot only the constrained variable toward the victim namespace.",
+   "vuln_class": "idor",
+   "payload": "{\"id\":\"<persisted-query-id>\",\"variables\":{\"subredditName\":\"target-subreddit\"}}",
+   "injection_point": "body",
+   "expected_success_signal": "Delivered-messages log rows for the target community paginate indefinitely via endCursor",
+   "confidence": 0.78,
+   "reasoning": "Because the persisted hash fixes the query text, subredditName is the only attacker-controlled object selector; with no ownership comparison on it, every response leaks the foreign community's operational log page by page."
+  },
+  {
+   "endpoint": "DELETE /api/v1/messages/<message_id>/",
+   "target_param": "message_id (path segment)",
+   "recon_evidence": "Deleting the attacker's own message with a valid session and fresh X-CSRFTOKEN succeeds, and the API schema exposes no owner comparison anywhere; the numeric message id in the path is the sole selector for the stored object.",
+   "planner_rationale": "Reuse the fully authenticated delete flow unchanged and only swap the path identifier to the victim's message id.",
+   "vuln_class": "idor",
+   "payload": "DELETE /api/v1/messages/4423007/ with attacker session cookie + X-CSRFTOKEN header",
+   "injection_point": "path",
+   "expected_success_signal": "204 No Content and the targeted DM disappears from the victim's inbox thread",
+   "confidence": 0.86,
+   "reasoning": "Session validity and CSRF are satisfied by the attacker's own credentials, leaving object ownership unchecked, so the path-supplied message id alone determines which stored message is destroyed for its real owner."
+  }
+ ],
+ "raw_tail": "ected_success_signal\": \"204 No Content and the targeted DM disappears from the victim's inbox thread\",\n    \"confidence\": 0.86,\n    \"reasoning\": \"Session validity and CSRF are satisfied by the attacker's own credentials, leaving object ownership unchecked, so the path-supplied message id alone determines which stored message is destroyed for its real owner.\"\n  }\n]\n\u001b[0m\n> build · glm-5.3-flash-free\n"
+}

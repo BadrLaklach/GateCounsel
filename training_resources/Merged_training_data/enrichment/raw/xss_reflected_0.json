@@ -1,0 +1,68 @@
+{
+ "key": "xss_reflected_0",
+ "model": "opencode/glm-5.3-flash-free",
+ "class": "xss_reflected",
+ "variants": [
+  {
+   "endpoint": "GET /products/view?name=wireless+mouse",
+   "target_param": "name",
+   "recon_evidence": "The name value is interpolated directly into the product detail heading with no HTML encoding; a probe of name=<b>x</b> rendered as bold text, confirming angle brackets survive.",
+   "planner_rationale": "Raw HTML context with unescaped reflection, so a first script tag injection is warranted before escalating.",
+   "vuln_class": "xss_reflected",
+   "payload": "<script>alert(1)</script>",
+   "injection_point": "query",
+   "expected_success_signal": "alert(1) fires when the product page renders, proving the script element was parsed from reflected input",
+   "confidence": 0.85,
+   "reasoning": "Reflection of raw angle brackets inside HTML element content means a newly opened script tag will be parsed and executed exactly as in the canonical first shot case. No evidence of filtering was observed, so the simplest verbatim payload applies."
+  },
+  {
+   "endpoint": "POST /newsletter/subscribe",
+   "target_param": "email",
+   "recon_evidence": "The subscription email value is echoed in a 'Thanks, <value> is on the list' banner; a probe containing <script> returned a 400 with 'disallowed tag: script', but <img> tags passed through to the rendered response.",
+   "planner_rationale": "Script tags are blocked but event-bearing elements are not, so an img onerror handler is the correct bypass.",
+   "vuln_class": "xss_reflected",
+   "payload": "<img src=x onerror=alert(1)>",
+   "injection_point": "body",
+   "expected_success_signal": "alert(1) fires on the confirmation page because the img with src=x fails to load and triggers the onerror handler",
+   "confidence": 0.8,
+   "reasoning": "The blacklist explicitly rejects 'script' while permitting img tags, which is precisely the filter profile an img onerror payload is designed for. The handler executes without any script tag, so the blocklist never engages."
+  },
+  {
+   "endpoint": "GET /profiles/lookup?handle=team_alpha",
+   "target_param": "handle",
+   "recon_evidence": "Handle reflection is HTML-safe but a tag-name filter rejects every documented element name (script, img, svg) tested against it; custom/unknown tags such as <x> are returned verbatim in the response.",
+   "planner_rationale": "With all standard tag names filtered, an invented tag carrying onfocus plus tabindex and a fragment anchor is the viable route.",
+   "vuln_class": "xss_reflected",
+   "payload": "<xss id=x onfocus=alert(document.cookie) tabindex=1>#x",
+   "injection_point": "query",
+   "expected_success_signal": "alert(document.cookie) fires after navigation because the URL fragment #x focuses the custom element with matching id, invoking onfocus",
+   "confidence": 0.7,
+   "reasoning": "Unknown tag names survive the filter, and an invented element with an id is still legitimized by element.focus when the fragment points to it. tabindex=1 makes the arbitrary tag focusable, so the onfocus handler executes without any known tag name being present."
+  },
+  {
+   "endpoint": "GET /blog/preview?draft=hello+world",
+   "target_param": "draft",
+   "recon_evidence": "Draft preview reflects input unescaped inside a <div> in the editor preview pane; no security testing was observed and raw tag probes of <b> and <script> both rendered, though the pane loads in a fresh context so a pop of alert still identifies the flaw.",
+   "planner_rationale": "Unfiltered raw HTML reflection means the canonical script tag should be confirmed first.",
+   "vuln_class": "xss_reflected",
+   "payload": "<script>alert(1)</script>",
+   "injection_point": "query",
+   "expected_success_signal": "alert(1) fires when the draft preview loads a user-supplied key maintained in the session",
+   "confidence": 0.75,
+   "reasoning": "Both bold and script tag probes rendered in the preview DOM, confirming browser-served raw HTML parsing of the reflection. The script tag payload is the minimal direct confirmation for an unfiltered context."
+  },
+  {
+   "endpoint": "GET /tickets/thread?ref=T-41221",
+   "target_param": "ref",
+   "recon_evidence": "The ref value is echoed back into an error banner on invalid-looking refs; a mechanism-check probe of <script>alert</script> was stripped, lacking element parsing, and an <img> tag was whitelisted but its quoted attributes were not blacklisted or removed from the response.",
+   "planner_rationale": "Script tags are removed but img tags pass and attribute quoting works, so an img onerror variant is the right choice.",
+   "vuln_class": "xss_reflected",
+   "payload": "<img src=x onerror=alert(1)>",
+   "injectiaon_point": "query",
+   "expected_success_signal": "alert(1) fires on the ticket history page when the img auto-loads and the source fails",
+   "confidence": 0.65,
+   "reasoning": "Script tags were stripped while img tags plus quoted attributes reflect intact, a pattern consistent with a tag-name-only blocklist. The onerror handler is a natural exploit for an allowed inline img tag."
+  }
+ ],
+ "raw_tail": "cted_success_signal\": \"alert(1) fires on the ticket history page when the img auto-loads and the source fails\",\n    \"confidence\": 0.65,\n    \"reasoning\": \"Script tags were stripped while img tags plus quoted attributes reflect intact, a pattern consistent with a tag-name-only blocklist. The onerror handler is a natural exploit for an allowed inline img tag.\"\n  }\n]\n\u001b[0m\n> build · glm-5.3-flash-free\n"
+}

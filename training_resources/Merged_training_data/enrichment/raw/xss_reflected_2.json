@@ -1,0 +1,68 @@
+{
+ "key": "xss_reflected_2",
+ "model": "opencode/mimo-v2.6-flash-free",
+ "class": "xss_reflected",
+ "variants": [
+  {
+   "endpoint": "GET /search",
+   "target_param": "q",
+   "recon_evidence": "The q value is reflected inside the quoted value attribute of a hidden input in the search results page; the double quote is not encoded and no CSP header is present.",
+   "planner_rationale": "Escape the attribute context and auto-fire an event that needs no user interaction.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" autofocus onfocus=alert(document.domain) x=\"",
+   "injection_point": "query",
+   "expected_success_signal": "alert fires on automatic focus after page load",
+   "confidence": 0.9,
+   "reasoning": "The reflection sits in a quoted attribute with an unencoded double quote, so closing the value and appending autofocus/onfocus yields script execution without a click; the trailing x= keeps the tag well-formed."
+  },
+  {
+   "endpoint": "GET /feedback",
+   "target_param": "ticket",
+   "recon_evidence": "The ticket value is reflected inside a quoted attribute of an anchor tag, but the > character is HTML-encoded, so the tag cannot be exited; quotes pass through unencoded.",
+   "planner_rationale": "Since '>' is encoded, stay inside the tag and trigger the handler via a fragment reference to an injected id.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" onfocus=alert(1) id=x tabindex=0 style=display:block>#x",
+   "injection_point": "query",
+   "expected_success_signal": "Fragment #x focuses the injected id and alert fires",
+   "confidence": 0.82,
+   "reasoning": "With '>' encoded the payload never leaves the tag, so the documented tag-trapped variant adds an event handler plus a displayable, focusable element; the #x fragment then focuses that id and fires the handler."
+  },
+  {
+   "endpoint": "GET /out",
+   "target_param": "u",
+   "recon_evidence": "The u value is written verbatim into the href attribute of an anchor tag in the interstitial page; quotes are fully encoded so an attribute breakout is impossible, but the scheme is unrestricted.",
+   "planner_rationale": "Control the whole href value with a javascript: scheme instead of attempting an attribute escape.",
+   "vuln_class": "xss_reflected",
+   "payload": "javascript:alert(1)",
+   "injection_point": "query",
+   "expected_success_signal": "Clicking the link executes alert(1)",
+   "confidence": 0.88,
+   "reasoning": "Because the attacker fully controls the href value and no quote breakout is available, the javascript: protocol executes on navigation, which matches the observed unrestricted scheme handling."
+  },
+  {
+   "endpoint": "POST /newsletter/confirm",
+   "target_param": "subscriber_token",
+   "recon_evidence": "The subscriber_token from the form body is reflected back into the confirmation page inside the quoted value attribute of a hidden input; double quotes are not encoded in the reflection.",
+   "planner_rationale": "Reflected body parameter lands in an attribute sink, so escape the attribute and auto-fire the focus event.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" autofocus onfocus=alert(document.domain) x=\"",
+   "injection_point": "body",
+   "expected_success_signal": "alert fires on automatic focus after page load",
+   "confidence": 0.86,
+   "reasoning": "The POST body parameter is echoed unencoded into a quoted attribute of the confirmation response, so closing the attribute and injecting autofocus/onfocus executes in document.domain context without any interaction."
+  },
+  {
+   "endpoint": "GET /account/prefs",
+   "target_param": "theme (Cookie)",
+   "recon_evidence": "The theme cookie is reflected into a quoted attribute of a link element used for theming; the > character is HTML-encoded in the reflection while double quotes pass through unencoded.",
+   "planner_rationale": "Cookie-controlled attribute context with '>' encoded: remain inside the tag and focus an injected id via the URL fragment.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" onfocus=alert(1) id=x tabindex=0 style=display:block>#x",
+   "injection_point": "cookie",
+   "expected_success_signal": "Fragment #x focuses the injected id and alert fires",
+   "confidence": 0.74,
+   "reasoning": "The cookie value reaches a quoted attribute where '>' is encoded, ruling out tag exit; the tag-trapped payload attaches onfocus plus a focusable id, and the #x fragment triggers it, though cookie reflection paths make this slightly more speculative."
+  }
+ ],
+ "raw_tail": "ccess_signal\": \"Fragment #x focuses the injected id and alert fires\",\n  \"confidence\": 0.74,\n  \"reasoning\": \"The cookie value reaches a quoted attribute where '>' is encoded, ruling out tag exit; the tag-trapped payload attaches onfocus plus a focusable id, and the #x fragment triggers it, though cookie reflection paths make this slightly more speculative.\"\n }\n]\n\u001b[0m\n> build · mimo-v2.6-flash-free\n"
+}

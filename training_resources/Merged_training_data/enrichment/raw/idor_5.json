@@ -1,0 +1,68 @@
+{
+ "key": "idor_5",
+ "model": "opencode/deepseek-v4.1-flash-free",
+ "class": "idor",
+ "variants": [
+  {
+   "endpoint": "POST /graphql",
+   "target_param": "ids",
+   "recon_evidence": "Capturing a self-delete of a spotlight post shows the DeleteStorySnaps mutation receiving a bare ids array; replaying the same operation with a different id returns a single-video success response with no ownership error, and spotlight ids are printed verbatim in public share URLs.",
+   "planner_rationale": "Replay the mutation but substitute a victim's spotlight id harvested from a shared clip link.",
+   "vuln_class": "idor",
+   "payload": "{\"operationName\":\"DeleteStorySnaps\",\"variables\":{\"ids\":[\"VICTIM_SPOTLIGHT_ID\"],\"storyType\":\"SPOTLIGHT_STORY\"}}",
+   "injection_point": "body",
+   "expected_success_signal": "HTTP 200 with the mutation result confirming deletion; the victim's spotlight clip disappears from their profile while the attacker's session stays valid.",
+   "confidence": 0.86,
+   "reasoning": "The resolver authorizes the caller's session but resolves each entry of ids as a raw object reference, so an id pulled from a public share URL deletes a resource the attacker does not own."
+  },
+  {
+   "endpoint": "POST /api/v2/graphql",
+   "target_param": "variables.ids",
+   "recon_evidence": "The mobile client batches spotlight removals through DeleteStorySnaps, and Burp shows no per-id owner assertion in the response; swapping in an id from another account still returns the standard success payload rather than a 403.",
+   "planner_rationale": "Batch-delete using a foreign spotlight id taken from a shared link to confirm the missing owner check.",
+   "vuln_class": "idor",
+   "payload": "{\"operationName\":\"DeleteStorySnaps\",\"variables\":{\"ids\":[\"VICTIM_SPOTLIGHT_ID\"],\"storyType\":\"SPOTLIGHT_STORY\"}}",
+   "injection_point": "body",
+   "expected_success_signal": "Mutation returns success with the updated snap count; the targeted foreign spotlight story is removed from the victim's account.",
+   "confidence": 0.82,
+   "reasoning": "Because the spoofed ids are never joined against the session owner, pointing the array at a victim id simply deletes that object, which is the classic object-reference IDOR in a GraphQL mutation."
+  },
+  {
+   "endpoint": "POST /api/v1/notes",
+   "target_param": "target_type, target_id",
+   "recon_evidence": "Creating a note on an issue always includes target_type=issue, and the server only evaluates project membership when that type is present; setting target_type=personal_snippet with an arbitrary target_id still returns 201 and the note body.",
+   "planner_rationale": "Re-type the noteable from issue to personal_snippet so the membership check is skipped and the note lands on a victim's private snippet.",
+   "vuln_class": "idor",
+   "payload": "?target_id=VICTIM_SNIPPETID&target_type=personal_snippet",
+   "injection_point": "body",
+   "expected_success_signal": "201 Created with the note rendered against the victim's snippet; the snippet title is disclosed and the injected note is visible/editable to the attacker.",
+   "confidence": 0.88,
+   "reasoning": "The authorization branch is keyed solely on target_type, so switching it to personal_snippet bypasses the project-scope check and attaches an attacker-authored note to an object selected only by attacker-supplied target_id. For a POST the equivalent pair is sent as form or JSON fields."
+  },
+  {
+   "endpoint": "PATCH /notes/:note_id",
+   "target_param": "target_type, target_id",
+   "recon_evidence": "Reassigning an existing note is done with the same noteable pair, and moving a note onto a personal snippet returns 200 while an issue-typed reassignment is rejected when the project does not match the caller.",
+   "planner_rationale": "Abuse the type-dependent check on the noteable reassignment to re-home the note onto a victim's private snippet.",
+   "vuln_class": "idor",
+   "payload": "?target_id=VICTIM_SNIPPETID&target_type=personal_snippet",
+   "injection_point": "body",
+   "expected_success_signal": "200 OK with the note's target updated to the victim snippet; subsequent GET shows the note attached to the victim's private object.",
+   "confidence": 0.74,
+   "reasoning": "The update path validates membership only when target_type=issue, so retyping to personal_snippet admits an arbitrary target_id and lets an attacker bind content to an object they have no rights over."
+  },
+  {
+   "endpoint": "GET /store/checkout/address?delivery_subzone=10233",
+   "target_param": "selectedAddressId",
+   "recon_evidence": "The storefront renders the saved delivery address from the selectedAddressId cookie, and it only responds with the full address when delivery_subzone matches the address record; iterating ids within a known subzone returns other customers' house and street details.",
+   "planner_rationale": "Pin the correct delivery_subzone and mutate selectedAddressId inside it to read a neighbouring customer's full address.",
+   "vuln_class": "idor",
+   "payload": "Cookie: selectedAddressId=<TARGET_ID> with matching delivery_subzone",
+   "injection_point": "cookie",
+   "expected_success_signal": "Response embeds another user's complete delivery address (house number, street, locality) in the checkout page.",
+   "confidence": 0.79,
+   "reasoning": "The backend dereferences the cookie-held address id without verifying it belongs to the session, and the subzone gate is only a weak locality filter since subzones are few and enumerable, permitting cross-account address disclosure."
+  }
+ ],
+ "raw_tail": "ete delivery address (house number, street, locality) in the checkout page.\",\n    \"confidence\": 0.79,\n    \"reasoning\": \"The backend dereferences the cookie-held address id without verifying it belongs to the session, and the subzone gate is only a weak locality filter since subzones are few and enumerable, permitting cross-account address disclosure.\"\n  }\n]\n\u001b[0m\n> build · deepseek-v4.1-flash-free\n"
+}

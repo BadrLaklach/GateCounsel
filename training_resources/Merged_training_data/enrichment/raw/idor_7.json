@@ -1,0 +1,68 @@
+{
+ "key": "idor_7",
+ "model": "opencode/space-bunny-free",
+ "class": "idor",
+ "variants": [
+  {
+   "endpoint": "GET /api/v2/accounts/1233",
+   "target_param": "account_id (path segment)",
+   "recon_evidence": "The bundled web app calls /api/v2/accounts/:id for the profile widget; GET /api/v2/accounts/1234 (own id, returned in the profile JSON) yields 200 with owner fields, while ids far outside the allocated range return 404 — so the server validates existence/range but nothing about ownership.",
+   "planner_rationale": "Path parameter is a raw object reference with no visible ownership gate; swap the neighbour id and see whether it resolves.",
+   "vuln_class": "idor",
+   "payload": "/api/user/1233",
+   "injection_point": "path",
+   "expected_success_signal": "200 with the account record for id 1233 (name, billing email, plan, last login) instead of 403/404",
+   "confidence": 0.87,
+   "reasoning": "The observed 200-then-404 boundary proves the backend does an existence/range lookup on the numeric path segment rather than an authorization check. Decrementing the caller's own id by one reaches the adjacent tenant record through the identical code path."
+  },
+  {
+   "endpoint": "GET /api/orders/1233/attachments",
+   "target_param": "order_id (path segment)",
+   "recon_evidence": "GET /api/orders/1234/attachments returns your own document list; walking the id upward (1235, 1236) in the same session still returns 200 with attachment metadata instead of 403, so only a range check is performed on the nested object reference.",
+   "planner_rationale": "Nested child resource keyed by a foreign parent id — test whether parent-to-child ownership is enforced on the parent segment.",
+   "vuln_class": "idor",
+   "payload": "/api/user/1233",
+   "injection_point": "path",
+   "expected_success_signal": "200 with the attachment list or presigned download URLs belonging to order 1233 owned by a different account",
+   "confidence": 0.81,
+   "reasoning": "Child collections are frequently resolved by first fetching the parent row by id and then filtering children, which skips the tenant predicate entirely. The absence of 403 on the neighbouring ids in recon indicates the parent lookup is existence-only, so the direct object reference exposes the attachment metadata and its storage keys."
+  },
+  {
+   "endpoint": "GET /api/v1/tenants/1233/members",
+   "target_param": "tenantId (path segment)",
+   "recon_evidence": "The published OpenAPI document exposes GET /api/v1/tenants/{tenantId}/members with no security scope declared; your own tenant id 1234 is echoed in the X-Tenant header of every call, and a request for tenantId 1235 returned 200 with a member list rather than an authorization error.",
+   "planner_rationale": "Tenant enumeration through a documented path parameter with no declared auth scope — walk the neighbour tenant id.",
+   "vuln_class": "idor",
+   "payload": "/api/user/1233",
+   "injection_point": "path",
+   "expected_success_signal": "200 with a user directory (emails, roles, invite state) for tenant 1233 rather than 403/404",
+   "confidence": 0.76,
+   "reasoning": "A tenant-scoped collection addressed purely by path id, combined with recon showing foreign tenant ids still returning 200, points to a missing tenant-ownership predicate in the handler. The declared-absent security scope in the spec makes it plausible the check is only enforced at the gateway for your own tenant."
+  },
+  {
+   "endpoint": "GET /api/billing/invoice?invoice=2024-00002",
+   "target_param": "invoice (query)",
+   "recon_evidence": "GET /api/billing/invoice?invoice=2024-00001 returns your own invoice document; the numbering is strictly sequential per tenant with no visible random component, and the billing portal links expose the invoice parameter as the sole lookup key.",
+   "planner_rationale": "Predictable sequential business identifier used as a direct record key — increment the counter to land on the neighbouring tenant's invoice.",
+   "vuln_class": "idor",
+   "payload": "invoice=2024-00002",
+   "injection_point": "query",
+   "expected_success_signal": "200 with invoice 2024-00002 (another account's PDF or JSON line items) instead of 403/404",
+   "confidence": 0.84,
+   "reasoning": "Because the invoice number is the primary lookup key and the enumeration pattern is exposed in the caller's own history, every record becomes guessable. A download handler that resolves the invoice without comparing its owning account leaks the neighbouring tenant's financial document."
+  },
+  {
+   "endpoint": "GET /api/v1/campaigns/metrics",
+   "target_param": "X-Client-ID (header)",
+   "recon_evidence": "Gateway access logs and response headers echo X-Client-ID on every call; substituting an arbitrary 4-digit client id returns 200 with dashboard aggregates rather than 401/403, so tenancy is selected from this header before any ownership evaluation.",
+   "planner_rationale": "Header-carried tenant selector appears unauthenticated at the edge — retarget it to a neighbouring client id and compare aggregate values.",
+   "vuln_class": "idor",
+   "payload": "X-Client-ID: 4712",
+   "injection_point": "header",
+   "expected_success_signal": "200 with campaign spend/impression aggregates for client 4712 rendered into the original session's dashboard payload",
+   "confidence": 0.72,
+   "reasoning": "The response shape stays identical when the client-id header changes, meaning the header alone drives the tenant scope in the query layer. If the downstream service trusts that scope without re-deriving the owning client from the session token, the swapped header returns another client's aggregate metrics."
+  }
+ ],
+ "raw_tail": " payload\",\n    \"confidence\": 0.72,\n    \"reasoning\": \"The response shape stays identical when the client-id header changes, meaning the header alone drives the tenant scope in the query layer. If the downstream service trusts that scope without re-deriving the owning client from the session token, the swapped header returns another client's aggregate metrics.\"\n  }\n]\n\u001b[0m\n> build · space-bunny-free\n"
+}

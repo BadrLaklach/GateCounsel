@@ -1,0 +1,68 @@
+{
+ "key": "sqli_0",
+ "model": "opencode/glm-5.3-flash-free",
+ "class": "sqli",
+ "variants": [
+  {
+   "endpoint": "GET /catalog/item/detail?sku=AX-1043",
+   "target_param": "sku",
+   "recon_evidence": "Appending a single quote to sku=AX-1043 renders 'DatabaseException: unrecognized token: \"''' java-style wrapper around a MySQL syntax message near '''.",
+   "planner_rationale": "Raw DBMS exception on quote confirms unprepared string concatenation and keeps the fingerprint MySQL, so proceed with MySQL syntax only.",
+   "vuln_class": "sqli",
+   "payload": "'",
+   "injection_point": "query",
+   "expected_success_signal": "Stack trace containing SQLSTATE HY000 / MySQL syntax error fragment echoed into the HTML error section",
+   "confidence": 0.9,
+   "reasoning": "The quote terminates the sku string literal mid-query and the framework surfaces the unhandled driver exception verbatim, proving both injection and the MySQL backend before any deeper payload is attempted."
+  },
+  {
+   "endpoint": "POST /api/ratings/summary",
+   "target_param": "product_ref",
+   "recon_evidence": "product_ref=12' yields a 200 page whose rating chart silently disappears, while removing the quote restores it; no error text is returned in either case.",
+   "planner_rationale": "Error output is suppressed but a boolean slot exists around the numeric ref; fingerprint the DBMS via a harmless MySQL-only TRUE expression.",
+   "vuln_class": "sqli",
+   "payload": "conv('a',16,2)=conv('a',16,2)",
+   "injection_point": "body",
+   "expected_success_signal": "Rating chart renders in the response body only because the injected condition evaluates TRUE on MySQL",
+   "confidence": 0.7,
+   "reasoning": "The boolean differential observed on the single-quote probe shows the appended string reaches a WHERE clause, and conv() with base-16 to base-2 conversion is MySQL-specific, so a silently TRUE page acts as a DBMS oracle without needing error output."
+  },
+  {
+   "endpoint": "GET /account/history?filter=purchases",
+   "target_param": "filter",
+   "recon_evidence": "Injections in filter alter nothing visible: input is never reflected and quote probes return identical static pages; response headers include X-Backend: mariadb-mysql.",
+   "planner_rationale": "No reflection and no boolean differential despite confirmed concatenation, so probe execution with a time-based side channel.",
+   "vuln_class": "sqli",
+   "payload": "1 AND SLEEP(5)",
+   "injection_point": "query",
+   "expected_success_signal": "Response for the filter request arrives approximately five seconds later than the unmodified baseline request",
+   "confidence": 0.85,
+   "reasoning": "With reflection and boolean channels ruled out, the MySQL-identified backend executing the concatenated expression stalls on SLEEP(5), turning the wall-clock delay into the confirmation oracle the recon evidence demands."
+  },
+  {
+   "endpoint": "GET /blog/post?id=77",
+   "target_param": "id",
+   "recon_evidence": "id=77' produces 'You have an error in your SQL syntax; ... near ''' at line 1'; the normal page is numeric-driven, no DBMS-specific constructs tried yet.",
+   "planner_rationale": "Quote-triggered error has already proven injection and fingerprinted MySQL; begin mode probing with the minimal quote payload kept verbatim to isolate statement-wrapping behaviour.",
+   "vuln_class": "sqli",
+   "payload": "'",
+   "injection_point": "query",
+   "expected_success_signal": "MySQL syntax error message referencing the quoted fragment reappears in the response body",
+   "confidence": 0.88,
+   "reasoning": "A blog path known to fail on quote implies the id value is directly concatenated into a query, so the canonical single-quote probe remains the cheapest way to re-confirm injection and pin the MySQL fingerprint before extraction."
+  },
+  {
+   "endpoint": "GET /support/ticket?category=hardware",
+   "target_param": "category",
+   "recon_evidence": "category value drives whether ticket rows appear; appending the boolean slot payload without a closing context caused no change and category accepts only trailing numerics on the normal path; headers show X-Server-DB: mysql-8.",
+   "planner_rationale": "Boolean-controlled row visibility on a fingerprinted MySQL backend justifies the silent conv() fingerprint to separate TRUE-TRUE from FALSE-FALSE differentials.",
+   "vuln_class": "sqli",
+   "payload": "conv('a',16,2)=conv('a',16,2)",
+   "injection_point": "query",
+   "expected_success_signal": "Ticket list section renders fully because the conv() condition evaluates TRUE and preserves the WHERE branch on MySQL",
+   "confidence": 0.75,
+   "reasoning": "The category slot already gates visible output, and because SLEEP-style delays are rate-limited here the MySQL-only conv comparison acts as a non-blocking boolean oracle that the row-injection context is evaluating our appended expression."
+  }
+ ],
+ "raw_tail": "he conv() condition evaluates TRUE and preserves the WHERE branch on MySQL\",\n    \"confidence\": 0.75,\n    \"reasoning\": \"The category slot already gates visible output, and because SLEEP-style delays are rate-limited here the MySQL-only conv comparison acts as a non-blocking boolean oracle that the row-injection context is evaluating our appended expression.\"\n  }\n]\n\u001b[0m\n> build · glm-5.3-flash-free\n"
+}

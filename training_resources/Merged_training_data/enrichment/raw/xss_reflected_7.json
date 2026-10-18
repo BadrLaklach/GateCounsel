@@ -1,0 +1,68 @@
+{
+ "key": "xss_reflected_7",
+ "model": "opencode/space-bunny-free",
+ "class": "xss_reflected",
+ "variants": [
+  {
+   "endpoint": "GET /promo/landing",
+   "target_param": "utm_content",
+   "recon_evidence": "Response body embeds the utm_content value verbatim inside an inline <script> template literal: var seg=`REFLECTED`; (self-contained copy of the page shows the value intact). A filter probe with alert(1) came back as alert1, while alert`1` survived byte-for-byte, so only round brackets are stripped and backticks are allowed.",
+   "planner_rationale": "Paren-free JS in a template-literal sink: use a tagged-template call so the tag function is invoked without parentheses.",
+   "vuln_class": "xss_reflected",
+   "payload": "alert`1`",
+   "injection_point": "query",
+   "expected_success_signal": "Inline script executes alert on page load with no parentheses present in the served response",
+   "confidence": 0.9,
+   "reasoning": "The value lands in a template-literal expression, and the filter only removes '(' and ')', so the backtick tagged-template form still reaches the parser. In tagged-template position the string '1' is passed as the first argument to alert, giving a parenthesis-free call in a context that would otherwise have been inert text."
+  },
+  {
+   "endpoint": "POST /api/v2/products/4411/reviews",
+   "target_param": "reviewBody",
+   "recon_evidence": "The submitted JSON body field reviewBody is rendered unescaped into the review widget's inline bootstrap script (var body=REFLECTED; then document.write(body)). A probe containing alert(1) returned alert1 and alert`1` returned empty brackets, while the reflected copy preserved { }, $ and square brackets; parenthesised calls are the only thing stripped.",
+   "planner_rationale": "Parentheses are filtered but template literals are not, so call any function through Reflect.apply.call with arguments supplied as template substitutions.",
+   "vuln_class": "xss_reflected",
+   "payload": "Reflect.apply.call`${alert}${window}${[1337]}`",
+   "injection_point": "body",
+   "expected_success_signal": "Reflect.apply.call invokes alert with this=window and argument 1337, firing the dialog on the product page",
+   "confidence": 0.86,
+   "reasoning": "Because the sanitizer removes parentheses, the payload routes the call through the generic invoker Reflect.apply.call rather than writing alert(...) directly. Backtick argument substitution supplies the function, the this value and the [1337] array, so the call executes with real arguments even though no parenthesis character survives the filter."
+  },
+  {
+   "endpoint": "GET /dashboard/panel",
+   "target_param": "X-Debug-Trace",
+   "recon_evidence": "With debug enabled the server echoes the X-Debug-Trace request header into an inline analytics snippet: new Function('t', REFLECTED) . Probing showed both backtick and parenthesis characters are rejected/stripped, the double quote is emitted raw, and \\x28 is left un-decoded in the reflected copy, so no character-level escape decoding happens before the script is parsed.",
+   "planner_rationale": "No backticks and no parentheses available: hijack the error handler and throw a string that onerror=eval will execute.",
+   "vuln_class": "xss_reflected",
+   "payload": "window.onerror=eval;throw\"=alert\\x281\\x29\"",
+   "injection_point": "header",
+   "expected_success_signal": "Assigned onerror handler evaluates the thrown string and a dialog appears with 1",
+   "confidence": 0.78,
+   "reasoning": "With parentheses and backticks blocked, the only remaining execution primitive is the error path: window.onerror=eval makes any uncaught error value be passed to eval, and throw hands it the string alert\\x281\\x29. The string concatenation with = keeps it a single expression statement, so the only assumption is that the header value is reflected into a script context without further sanitisation."
+  },
+  {
+   "endpoint": "POST /cart/checkout",
+   "target_param": "cart_session",
+   "recon_evidence": "The cart_session cookie value is echoed into an inline single-page bootstrap block (window.__CART__.trace = REFLECTED) and is not URL-decoded or entity-decoded on output. A filter probe with alert(1) returned alert1, while alert`1` and other backtick payloads were returned unchanged, indicating only round brackets are stripped at the cookie filter.",
+   "planner_rationale": "Cookie-controlled value reaches a JavaScript template literal with parentheses stripped; tagged-template invocation is the cleanest paren-free call.",
+   "vuln_class": "xss_reflected",
+   "payload": "alert`1`",
+   "injection_point": "cookie",
+   "expected_success_signal": "Bootstrap script evaluates the trace value as a tagged template and alert fires once the checkout page loads",
+   "confidence": 0.74,
+   "reasoning": "The reflection point is an assignment inside a script block, so a bare backtick expression is parsed as a tagged-template call rather than inert text. Since the cookie filter only strips parentheses, the payload passes unchanged and executes alert with the implicit string argument. Confidence is held lower because cookie-controlled values are often additionally escaped on the response path."
+  },
+  {
+   "endpoint": "GET /reports/2026/q1/summary",
+   "target_param": "segment",
+   "recon_evidence": "Router path segments are appended into an inline chart config (var series=[REFLECTED]) without per-segment normalisation; the reflected copy showed backticks and dollar-brace sequences preserved, while only round brackets were stripped by the edge WAF. No path traversal filtering or encoding of these characters was observed.",
+   "planner_rationale": "Path segment is injected into a JS array literal with parentheses filtered, so drive the call through Reflect.apply.call and backtick argument substitution.",
+   "vuln_class": "xss_reflected",
+   "payload": "Reflect.apply.call`${alert}${window}${[1337]}`",
+   "injection_point": "path",
+   "expected_success_signal": "Chart config script invokes alert via Reflect.apply with 1337 after the page renders the summary segment",
+   "confidence": 0.63,
+   "reasoning": "If the segment is concatenated into a script array without encoding, the Reflect.apply.call form provides a full argument-passing call despite the parenthesis filter. This is the weakest variant because it depends on the path being decoded and re-emitted verbatim, so confidence reflects that speculative assumption."
+  }
+ ],
+ "raw_tail": ",\n    \"confidence\": 0.63,\n    \"reasoning\": \"If the segment is concatenated into a script array without encoding, the Reflect.apply.call form provides a full argument-passing call despite the parenthesis filter. This is the weakest variant because it depends on the path being decoded and re-emitted verbatim, so confidence reflects that speculative assumption.\"\n  }\n]\n\u001b[0m\n> build · space-bunny-free\n"
+}

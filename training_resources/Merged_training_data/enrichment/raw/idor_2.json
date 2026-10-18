@@ -1,0 +1,63 @@
+{
+ "key": "idor_2",
+ "model": "opencode/mimo-v2.6-flash-free",
+ "class": "idor",
+ "variants": [
+  {
+   "endpoint": "GET /api/v2/users/avatar",
+   "target_param": "h",
+   "recon_evidence": "h is a 32-hex query value; h=098f6bcd4621d373cade4e832627b4f6 (md5('test')) returns the test account's avatar, and any well-formed md5(email) resolves to an image with no ownership comparison against the session user.",
+   "planner_rationale": "The reference scheme is md5(email), so hashing a known victim identifier locally reconstructs a valid avatar reference.",
+   "payload": "h=83878c91171338902e0fe0fb97a8c47a",
+   "injection_point": "query",
+   "expected_success_signal": "Avatar image belonging to the account whose email hashes to 83878c91171338902e0fe0fb97a8c47a is returned instead of the requester's own",
+   "confidence": 0.91,
+   "reasoning": "The observed behaviour shows the server only validates the hash format, not the requester's relationship to the record. Since the scheme is md5(email), pre-hashing a victim's email yields a syntactically valid, server-accepted reference that bypasses direct ID exposure."
+  },
+  {
+   "endpoint": "GET /api/orders/_",
+   "target_param": "orderId (path segment)",
+   "recon_evidence": "Direct access to another order returns 403, but the route handler interpolates the path segment verbatim into a query builder and the ORM's wildcard characters (% * . _) are not sanitized before pattern matching.",
+   "planner_rationale": "Try the underscore wildcard variant so the ORM pattern-matches the whole collection instead of a single owned row.",
+   "payload": "_",
+   "injection_point": "path",
+   "expected_success_signal": "Collection response containing orders from multiple accounts instead of a single authorized order",
+   "confidence": 0.74,
+   "reasoning": "Underscore is one of the four documented wildcard characters, and an ORM treating the path value as a LIKE pattern expands it to every record. The evidence of unsanitized query-builder interpolation supports the mechanism, though it remains uncertain whether the handler expects a scalar match."
+  },
+  {
+   "endpoint": "POST /api/v1/records",
+   "target_param": "body (XML to JSON switch)",
+   "recon_evidence": "The route advertises both application/xml and application/json; requests parsed as XML pass through the ownership interceptor, while the JSON parsing branch (older handler) writes the record with no ownership check.",
+   "planner_rationale": "Alternate encodings route to different handlers where ID-based authorization was never backported.",
+   "payload": "Content-Type: application/json with body {\"record\":{\"id\":19}}",
+   "injection_point": "body",
+   "expected_success_signal": "Record 19 accepted/modified through the JSON branch that skips the check",
+   "confidence": 0.86,
+   "reasoning": "The interceptor is only wired into the XML path, so switching the content type selects the legacy JSON branch that trusts the supplied id. Payload shape matches the JSON schema the endpoint expects, letting the attacker target record 19 directly."
+  },
+  {
+   "endpoint": "PUT /api/projects/documents/771",
+   "target_param": "body (XML to JSON switch)",
+   "recon_evidence": "The update route consumes either application/xml or application/json; XML submissions are validated against the caller's project membership, whereas JSON submissions land in a legacy deserializer with no membership interceptor.",
+   "planner_rationale": "Changing the content type selects the older handler where per-object authorization was never added.",
+   "payload": "Content-Type: application/json with body {\"record\":{\"id\":19}}",
+   "injection_point": "body",
+   "expected_success_signal": "Document 19 updated by a caller who is not a member of its owning project",
+   "confidence": 0.8,
+   "reasoning": "The asymmetric authorization between the XML and JSON branches means the JSON deserializer will accept a foreign object id without a membership check. The payload's record.id is the field the legacy branch reads, so supplying it directly expresses the cross-tenant target."
+  },
+  {
+   "endpoint": "GET /api/attachments/thumbnail",
+   "target_param": "h",
+   "recon_evidence": "The thumbnail endpoint accepts a 32-hex h parameter and returns file previews for arbitrary md5(username) inputs, including accounts the requester has no share relationship with; format is the only thing validated.",
+   "planner_rationale": "md5 of a known username reconstructs any victim's attachment reference without needing the numeric id.",
+   "payload": "h=83878c91171338902e0fe0fb97a8c47a",
+   "injection_point": "query",
+   "expected_success_signal": "Thumbnail of the attachment owned by the user matching hash 83878c91171338902e0fe0fb97a8c47a is rendered",
+   "confidence": 0.68,
+   "reasoning": "If the hash is derived from a known username as recon suggests, computing md5 locally reproduces a valid reference for any victim. Confidence is lower because the derivation may include a per-user salt not yet observed, which would make the locally computed hash invalid."
+  }
+ ],
+ "raw_tail": "8c91171338902e0fe0fb97a8c47a is rendered\",\n    \"confidence\": 0.68,\n    \"reasoning\": \"If the hash is derived from a known username as recon suggests, computing md5 locally reproduces a valid reference for any victim. Confidence is lower because the derivation may include a per-user salt not yet observed, which would make the locally computed hash invalid.\"\n  }\n]\n\u001b[0m\n> build · mimo-v2.6-flash-free\n"
+}

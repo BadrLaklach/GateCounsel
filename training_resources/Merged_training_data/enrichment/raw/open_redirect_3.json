@@ -1,0 +1,63 @@
+{
+ "key": "open_redirect_3",
+ "model": "opencode/space-bunny-free",
+ "class": "open_redirect",
+ "variants": [
+  {
+   "endpoint": "GET /partner/auth/sso/continue?returnUrl=",
+   "target_param": "returnUrl",
+   "recon_evidence": "Server-rendered page ships const NEXT = \"{{returnUrl}}\" and the SPA executes location.href = NEXT on load; the reflected value comes back byte-identical with backslashes intact, and a literal javascript: value is rewritten to /blocked while the escaped form is not touched.",
+   "planner_rationale": "The scheme blocklist matches the literal string, but the sink is a JS string context, so encode the scheme with \\u escapes that the browser reassembles after the check runs.",
+   "payload": "\\u006A\\u0061\\u0076\\u0061\\u0073\\u0063\\u0072\\u0069\\u0070\\u0074\\u003Aalert(1)",
+   "injection_point": "query",
+   "expected_success_signal": "Page source contains the reassembled javascript:alert(1) inside NEXT; navigation fires the dialog instead of loading the /blocked interstitial",
+   "confidence": 0.84,
+   "reasoning": "The validator compares the literal input, but the value is interpolated into a quoted JS string that the parser decodes at load time, so the \\u escapes rebuild the banned javascript: scheme before location.href reads it. Backslashes pass through the template unescaped (confirmed by the byte-identical echo), so the escapes survive and execute."
+  },
+  {
+   "endpoint": "GET /oauth2/authorize?redirect_uri=",
+   "target_param": "redirect_uri",
+   "recon_evidence": "Registered redirect URI allowlist is checked with a normalization-aware parser that folds U+FF0F to '/', so http://a.com/anything validates; supplying http://a.com／X.evil.com still returns HTTP 302 with that exact Location header and the consent flow completes normally.",
+   "planner_rationale": "Validator and browser disagree on the fullwidth solidus, so the U+FF0F host-split value passes the allowlist comparison yet still lands the agent on the attacker-controlled portion after consent.",
+   "payload": "http://a.com／X.evil.com",
+   "injection_point": "query",
+   "expected_success_signal": "302 with Location: http://a.com／X.evil.com after the consent POST, and post-consent navigation resolves to the attacker-controlled portion",
+   "confidence": 0.66,
+   "reasoning": "Validation normalizes U+FF0F to '/' and matches the trusted a.com prefix, while the redirect sink replays the raw bytes, so the parser differential observed on this endpoint lets the attacker label set win resolution in the browser. Confidence is moderate because it depends on a validator/sink inconsistency rather than a directly observed off-site navigation."
+  },
+  {
+   "endpoint": "GET /billing/checkout/return?continue=",
+   "target_param": "continue",
+   "recon_evidence": "Payment return handler copies continue straight into the Location header; the redirect filter rejects dotted-quad, decimal and octal IPv4 literals (all three fell back to /checkout/cancelled), while a bracketed IPv6-mapped literal produced no rejection and a302.",
+   "planner_rationale": "Dotted and decimal encodings are already burned, so wrap the same host in IPv4-mapped bracket syntax that the IPv4-shaped text filter does not recognise.",
+   "payload": "http://[::ffff:216.58.214.206]",
+   "injection_point": "query",
+   "expected_success_signal": "302 Location carrying the bracketed literal; the browser resolves the mapped IPv4 and connects to the attacker-controlled listener",
+   "confidence": 0.79,
+   "reasoning": "The allowlist is a regex over IPv4-shaped text, so http://[::ffff:216.58.214.206] never matches it, yet WHATWG URL parsing and the socket layer both map the ::ffff: prefix to 216.58.214.206, keeping the destination attacker-controlled."
+  },
+  {
+   "endpoint": "POST /api/v1/campaign/links",
+   "target_param": "landing_url",
+   "recon_evidence": "Link-creation API validates the JSON field landing_url at write time (dotted and decimal IP literals returned 422) and stores it; GET /c/{id} later replays the stored value verbatim as Location: with no second check.",
+   "planner_rationale": "Same stored-redirect sink one hop later, so the mapped-bracket form that fails nothing at creation time survives persistence and fires when the link is clicked.",
+   "payload": "http://[::ffff:216.58.214.206]",
+   "injection_point": "body",
+   "expected_success_signal": "201 on link creation, then GET /c/{id} answers 302 with the bracketed literal and the browser resolves to the attacker host",
+   "confidence": 0.71,
+   "reasoning": "Validation happens once at creation with an IPv4-shaped pattern and the serving path trusts the stored row, so the bracketed mapped literal is persisted verbatim and dereferenced later. Two-hop storage plus the write-time-only check keeps confidence below the direct reflect case."
+  },
+  {
+   "endpoint": "GET /auth/magic-link/return",
+   "target_param": "next_url",
+   "injection_point": "cookie",
+   "recon_evidence": "Login start stashes the requested destination in the next_url cookie; the magic-link callback reads that cookie and emits Location: with no allowlist (setting next_url=https://evil.example by hand produced an off-site 302), and the handler performs only substring/prefix host comparison on the cookie value.",
+   "planner_rationale": "The redirect target comes from client-controlled cookie state, so the fullwidth-solidus host split yields a value that clears the loose host comparison while still resolving off-site in the browser.",
+   "payload": "http://a.com／X.evil.com",
+   "expected_success_signal": "302 after magic-link consumption carrying the fullwidth-solidus Location, and the browser follows to the attacker-controlled portion of the split authority",
+   "confidence": 0.58,
+   "reasoning": "Because the destination is read back out of a cookie rather than the request line, the payload only has to survive the application's loose host check, and U+FF0F makes authority parsing diverge between validator and browser. This leans on speculative differential-parser behaviour, so confidence is low."
+  }
+ ],
+ "raw_tail": "it authority\",\n    \"confidence\": 0.58,\n    \"reasoning\": \"Because the destination is read back out of a cookie rather than the request line, the payload only has to survive the application's loose host check, and U+FF0F makes authority parsing diverge between validator and browser. This leans on speculative differential-parser behaviour, so confidence is low.\"\n  }\n]\n\u001b[0m\n> build · space-bunny-free\n"
+}

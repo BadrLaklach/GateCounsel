@@ -1,0 +1,68 @@
+{
+ "key": "open_redirect_6",
+ "model": "opencode/mimo-v2.6-flash-free",
+ "class": "open_redirect",
+ "variants": [
+  {
+   "endpoint": "GET /oauth/authorize",
+   "target_param": "redirect_uri",
+   "recon_evidence": "Server compares the resolved callback host against the literal string 'localhost' and rejects any mismatch, with no normalization of a trailing root label.",
+   "planner_rationale": "Append the trailing dot so DNS resolution still lands on localhost while the exact string compare fails to match.",
+   "vuln_class": "open_redirect",
+   "payload": "http://LOCALHOST./",
+   "injection_point": "query",
+   "expected_success_signal": "Callback completes against localhost even though the validator reported an exact-host mismatch",
+   "confidence": 0.9,
+   "reasoning": "A trailing dot makes the host a fully-qualified name that DNS resolves identically to localhost, but an exact-match validator sees a different string, which is precisely the observed comparison behaviour."
+  },
+  {
+   "endpoint": "POST /session/continue",
+   "target_param": "next",
+   "recon_evidence": "Response reflects a 'untrusted destination' error only when the trusted domain string is absent from the supplied URL; presence anywhere in the value is sufficient.",
+   "planner_rationale": "Place the trusted domain in the userinfo slot so the substring check passes while the authority resolves elsewhere.",
+   "vuln_class": "open_redirect",
+   "payload": "https://trusted.example@evil.example/",
+   "injection_point": "body",
+   "expected_success_signal": "POST responds with a 302 Location pointing at evil.example and no untrusted-destination error",
+   "confidence": 0.92,
+   "reasoning": "The contains-check finds 'trusted.example' before the '@', but RFC 3986 parsing treats everything after '@' as the authority, so the browser navigates to evil.example."
+  },
+  {
+   "endpoint": "GET /out/link",
+   "target_param": "target",
+   "recon_evidence": "Filter succeeds whenever the trusted hostname appears anywhere in the parameter value; no check is made of the registrable domain actually being resolved.",
+   "planner_rationale": "Embed the trusted name as a subdomain label of an attacker-controlled zone to satisfy the substring rule.",
+   "vuln_class": "open_redirect",
+   "payload": "https://trusted.example.evil.example/",
+   "injection_point": "path",
+   "expected_success_signal": "Redirect Location resolves under evil.example while the filter logs a trusted-domain match",
+   "confidence": 0.88,
+   "reasoning": "Suffixing the attacker's zone with the trusted label keeps the trusted substring intact, yet DNS resolution is delegated to evil.example, which matches the observed prefix/suffix matching behaviour."
+  },
+  {
+   "endpoint": "GET /sso/return",
+   "target_param": "Referer",
+   "recon_evidence": "The return handler reads the Referer header and compares its host component exactly against 'localhost' before issuing the follow-up redirect.",
+   "planner_rationale": "Supply a trailing-dot localhost URL in the header so the header-sourced host fails the exact comparison yet still resolves locally.",
+   "vuln_class": "open_redirect",
+   "payload": "http://LOCALHOST./",
+   "injection_point": "header",
+   "expected_success_signal": "Follow-up navigation is issued to localhost despite the header host failing exact equality",
+   "confidence": 0.72,
+   "reasoning": "The same trailing-dot/casing asymmetry applies to header-derived hosts, but the mechanism relies on the header actually being consumed for redirect construction, which recon only inferred indirectly."
+  },
+  {
+   "endpoint": "GET /shop/checkout/return",
+   "target_param": "post_login_url",
+   "recon_evidence": "A 'destination not allowed' response is returned only when the configured trusted domain is missing from the stored cookie value; no authority parsing is performed.",
+   "planner_rationale": "Reuse the userinfo trick inside the cookie-stored URL so the contains-check passes on the trusted name.",
+   "vuln_class": "open_redirect",
+   "payload": "https://trusted.example@evil.example/",
+   "injection_point": "cookie",
+   "expected_success_signal": "Checkout return issues a 302 to evil.example without the destination-not-allowed response",
+   "confidence": 0.83,
+   "reasoning": "The cookie value passes the substring allow-list because it contains 'trusted.example', while URL parsing assigns evil.example as the authority, matching the observed contains-only validation."
+  }
+ ],
+ "raw_tail": "  \"expected_success_signal\": \"Checkout return issues a 302 to evil.example without the destination-not-allowed response\",\n    \"confidence\": 0.83,\n    \"reasoning\": \"The cookie value passes the substring allow-list because it contains 'trusted.example', while URL parsing assigns evil.example as the authority, matching the observed contains-only validation.\"\n  }\n]\n\u001b[0m\n> build · mimo-v2.6-flash-free\n"
+}

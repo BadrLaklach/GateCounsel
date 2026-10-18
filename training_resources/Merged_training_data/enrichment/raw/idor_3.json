@@ -1,0 +1,68 @@
+{
+ "key": "idor_3",
+ "model": "opencode/space-bunny-free",
+ "class": "idor",
+ "variants": [
+  {
+   "endpoint": "GET /api/v2/notifications?user_id=19",
+   "target_param": "user_id",
+   "recon_evidence": "GET /api/v2/notifications?user_id=19 returns only our own rows (uid 19). The Express app parses the query with the 'extended' option, so a duplicated key becomes an array: the authorize() middleware reads the first element while the controller calls Array.isArray(req.query.user_id) ? req.query.user_id.slice(-1)[0] : ..., i.e. the last. uid 21 is a live neighbouring account (confirmed via GET /api/v2/users/21, a public profile).",
+   "planner_rationale": "Checklist tip 4: duplicate a parameter that the auth layer validates but the handler resolves differently, rather than just swapping the value (which already returns 403).",
+   "vuln_class": "idor",
+   "payload": "user_id=19&user_id=21",
+   "injection_point": "query",
+   "expected_success_signal": "200 response whose rows carry author_id/recipient_id 21 (e.g. password-reset and billing alerts for uid 21) while no uid 19 row is present, i.e. the authorization context was uid 19",
+   "confidence": 0.88,
+   "reasoning": "The observed first-vs-last discrepancy between middleware and controller is exactly the condition HTTP parameter pollution exploits. The first occurrence keeps the ownership check satisfied with our own uid, while the duplicate silently redirects the query to uid 21's notification objects."
+  },
+  {
+   "endpoint": "DELETE /api/v1/messages/697412",
+   "target_param": "messageId (path segment)",
+   "recon_evidence": "DELETE /api/v1/messages/697412 (our own message) returns 204 and the object disappears. IDs are strictly sequential (696...697413) and GET /api/v1/messages/697413 shows author_id 4471, another tenant. Requesting the unversioned alias /api/messages/697413 with a garbage token returns 500 from the rowLoader (not401/403), showing the legacy alias is wired to the pre-authorization controller while /v1 enforces tenancy.",
+   "planner_rationale": "Write/delete routes are the highest-impact confirmation that the missing ownership check is systemic, and version-forked handlers often keep the older, unchecked code path.",
+   "vuln_class": "idor",
+   "payload": "DELETE /api/messages/697413",
+   "injection_point": "path",
+   "expected_success_signal": "204 No Content on the legacy alias, and GET /api/v1/messages/697413 afterwards returns 404 for both us and the victim, confirming permanent deletion of another user's object",
+   "confidence": 0.77,
+   "reasoning": "Ownership is checked on the versioned handler but the legacy alias resolves the same row with only an existence test, so the sequential neighbour ID crosses the tenant boundary. A successful204 plus the object vanishing for the victim proves the missing check also applies to destructive operations, not just reads."
+  },
+  {
+   "endpoint": "GET /api/marketplace/partner-token?account_id=1001",
+   "target_param": "account_id",
+   "recon_evidence": "The endpoint mirrors the integration_token of whichever account_id is supplied and requires no tenancy header, mTLS client cert or signature. The billing page lists our accounts as 1001 and 1002 with consecutive numeric IDs, so 1002 is a real, adjacent account belonging to another organisation.",
+   "planner_rationale": "Credentials keyed by a plain account_id are the highest-value IDOR target: reading the victim's token turns a low-severity disclosure into full programmatic access to their account.",
+   "vuln_class": "idor",
+   "payload": "account_id=1002",
+   "injection_point": "query",
+   "expected_success_signal": "200 with partner_token/api_secret values bound to account 1002 in the JSON body, replayable against /api/marketplace/v1/* as the victim organisation",
+   "confidence": 0.9,
+   "reasoning": "The response is a direct function of the supplied account_id with no visible tenancy binding, so incrementing the sequential ID retrieves another organisation's integration credential. The impact is credential disclosure rather than mere profile data, which is why this is the highest-confidence variant here."
+  },
+  {
+   "endpoint": "POST /api/notifications/digest",
+   "target_param": "user_id",
+   "recon_evidence": "The endpoint consumes application/x-www-form-urlencoded bodies: sending user_id=19 builds the digest for our own mailbox. Source and runtime both show qs.parse with array enabled and an authorize() step that only compares the scalar first element of the duplicated key, so any later reader that does last-wins resolves a different principal.",
+   "planner_rationale": "State-changing routes that take the owner id in the body usually reuse the same broken ownership check; a duplicate key tests whether the write lands on the victim's mailbox instead of ours.",
+   "vuln_class": "idor",
+   "payload": "user_id=19&user_id=21",
+   "injection_point": "body",
+   "expected_success_signal": "200 with digest entries for uid 21 (device-recovery and security-alert mails) queued or rendered, and our own uid 19 digest missing, despite auth running as uid 19",
+   "confidence": 0.72,
+   "reasoning": "Duplicate-key resolution in a form-encoded body follows the same qs/Express array semantics as the query string, so the polluted value can redirect the write to uid 21. Confidence is lower than the query-string case because body parsers, parameterised SQL and any schema validation may canonicalise the key before the handler reads it."
+  },
+  {
+   "endpoint": "POST /api/integrations/rotate-token",
+   "target_param": "account_id",
+   "recon_evidence": "POSTing account_id=1001 with our session cookie rotates and returns a new token for account 1001; the handler trusts the body value exclusively and applies no CSRF token, signature or account-membership lookup beyond the session. Account IDs are sequential and 1002 is a neighbouring organisation we do not belong to.",
+   "planner_rationale": "Rotation is a write-side variant of the token read: if it also trusts account_id from the body, we can force a victim's integration credential to be invalidated, giving us both DoS and a race to capture the new secret.",
+   "vuln_class": "idor",
+   "payload": "account_id=1002",
+   "injection_point": "body",
+   "expected_success_signal": "200 returning a newly issued api_token for account 1002 that we can replay, and the victim's pre-existing integration subsequently failing authentication with invalid_token",
+   "confidence": 0.86,
+   "reasoning": "The rotation handler demonstrably keys off the client-supplied account_id without a membership check, so substituting the sequential neighbour ID operates on another organisation's credential. Unlike the read variant this also mutates state, but the evidence that the body value alone selects the target is direct, so confidence stays high."
+  }
+ ],
+ "raw_tail": ",\n    \"reasoning\": \"The rotation handler demonstrably keys off the client-supplied account_id without a membership check, so substituting the sequential neighbour ID operates on another organisation's credential. Unlike the read variant this also mutates state, but the evidence that the body value alone selects the target is direct, so confidence stays high.\"\n  }\n]\n\u001b[0m\n> build · space-bunny-free\n"
+}

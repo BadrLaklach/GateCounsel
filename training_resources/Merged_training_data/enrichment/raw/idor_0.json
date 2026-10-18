@@ -1,0 +1,64 @@
+{
+ "key": "idor_0",
+ "model": "opencode/glm-5.3-flash-free",
+ "class": "idor",
+ "variants": [
+  {
+   "endpoint": "GET /api/v2/account/preferences?user_id=123",
+   "target_param": "user_id",
+   "recon_evidence": "Authenticated as account 123, requesting user_id=122 returned a preferences object with another person's contact email and locale, and the API applied no visible ownership filter or audit warning.",
+   "planner_rationale": "Query-borne object identifier resolves records without binding to the session principal; adjacent-id probe already crossed the tenant boundary.",
+   "vuln_class": "idor",
+   "payload": "user_id=124",
+   "injection_point": "query",
+   "expected_success_signal": "HTTP 200 whose body is the preferences record (notification flags, recovery email) belonging to account 124 instead of the caller's",
+   "confidence": 0.9,
+   "reasoning": "Since 122 already returned foreign data, the record lookup is keyed purely on the query parameter with no principal comparison; user_id=124 is the next sequential object and should resolve the same way absent an authorization check."
+  },
+  {
+   "endpoint": "POST /api/account/recovery-preview",
+   "target_param": "user_id (JSON body field)",
+   "recon_evidence": "The recovery preview accepts user_id in the request body and echoed masked PII for a colleague's identifier during testing, indicating the field alone drives the lookup before any proof-of-possession step.",
+   "planner_rationale": "Body parameter carries the authoritative object reference; no session-derived identity is consulted server-side.",
+   "payload": "user_id=124",
+   "injection_point": "body",
+   "expected_success_signal": "Response contains the masked phone and profile preview generated for account 124",
+   "confidence": 0.8,
+   "reasoning": "The same user_id attribute used for object selection is client-controlled in the body, and the observed neighbour-id response proves no ownership validation runs; supplying 124 resolves the adjacent account's recovery data by form-encoding semantics, presentation location aside."
+  },
+  {
+   "endpoint": "GET /api/invoices/100234",
+   "target_param": "invoiceId (path segment)",
+   "recon_evidence": "Invoices across all tenants draw from one global counter: our newest document is 100234 with 100231-100233 below it, and the download URL exposes the raw integer with no capability token appended.",
+   "planner_rationale": "Globally monotonic financial identifiers are enumerable by design; per-record authorization absent.",
+   "payload": "/api/invoices/100235",
+   "injection_point": "path",
+   "expected_success_signal": "HTTP 200 returning an invoice document whose bill-to party names a different customer",
+   "confidence": 0.85,
+   "reasoning": "A single shared sequence already spans our own invoices, so 100235 is by construction another customer's record; without a per-document ACL the direct path request streams their PDF, confirming cross-tenant read."
+  },
+  {
+   "endpoint": "GET /api/ledger/entries/0x4642d",
+   "target_param": "entryId (path segment)",
+   "recon_evidence": "Ledger entry ids are 0x-prefixed hex integers; 0x4642d and 0x4642f both resolved in our own history with 0x4642e absent between them, exposing a contiguous shared integer sequence.",
+   "planner_rationale": "Hex presentation is an encoding choice over a sequential integer, not an opaque authorization token.",
+   "payload": "0x4642e",
+   "injection_point": "path",
+   "expected_success_signal": "Ledger entry JSON for 0x4642e returned, showing a counterparty and amount not associated with the caller's accounts",
+   "confidence": 0.85,
+   "reasoning": "0x4642e decodes to an integer sitting between two records we own in the shared sequence, so the server's decode-then-lookup path returns the neighbour entry; encoding is obfuscation only and modifies nothing about the authorization decision."
+  },
+  {
+   "endpoint": "GET /api/orders/history",
+   "target_param": "user_id (cookie value)",
+   "recon_evidence": "Dropping the Authorization header makes the API fall back to a user_id cookie; while logged in as 122, setting the cookie to 123 returned 123's complete order list, proving the cookie overrides the session-derived principal.",
+   "planner_rationale": "Legacy cookie-based identity selector supersedes the bearer token on this route.",
+   "payload": "user_id=124",
+   "injection_point": "cookie",
+   "expected_success_signal": "Order history listing account 124's line items and shipping addresses",
+   "confidence": 0.8,
+   "reasoning": "The fallback path already honoured an attacker-chosen cookie for id 123, so presenting the same pair with value 124 selects the next account's orders; the check is off client-side state that the server trusts instead of the session, making the mechanism directly evidenced."
+  }
+ ],
+ "raw_tail": "t 124's line items and shipping addresses\",\n    \"confidence\": 0.8,\n    \"reasoning\": \"The fallback path already honoured an attacker-chosen cookie for id 123, so presenting the same pair with value 124 selects the next account's orders; the check is off client-side state that the server trusts instead of the session, making the mechanism directly evidenced.\"\n  }\n]\n\u001b[0m\n> build · glm-5.3-flash-free\n"
+}
