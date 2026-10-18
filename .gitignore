@@ -2,7 +2,6 @@ __pycache__/
 *.pyc
 sitemap.json
 juiceshop_sitemap.json
-*.jsonl
 .venv/
 .env
 
@@ -15,7 +14,3 @@ juiceshop_sitemap.json
 
 # Local-only project plans and working notes.
 /Document_Plans_GitIgnored/
-
-# Version the generated training datasets with the repo.
-!training_resources/payloads_all_the_things/training_data/*.jsonl
-!training_resources/hacktricks/training_data/generated/*.jsonl

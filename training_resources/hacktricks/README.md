@@ -26,4 +26,4 @@ From this directory, run:
 python .\training_data\generate_full.py
 ```
 
-This writes one `{class}_full_training_data.jsonl` per class under `training_data/generated/`. The generated JSONL files are versioned with the repo (the `.gitignore` negation overrides the repository-wide `*.jsonl` rule); the source modules and the generator remain the reviewable inputs.
+This writes one `{class}_full_training_data.jsonl` per class under `training_data/generated/`. The generated JSONL files are versioned with the repo; the source modules and the generator remain the reviewable inputs.
