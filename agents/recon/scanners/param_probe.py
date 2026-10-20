@@ -75,19 +75,16 @@ class ParamProber:
             result = self.client.get(test_url)
             if result.error or result.status is None:
                 continue
-            body = result.text
-            m = REFLECTION_CONTEXT.search(body)
+            m = REFLECTION_CONTEXT.search(result.text)
             if m:
                 param.reflected = True
                 if param.name not in endpoint.reflected_params:
                     endpoint.reflected_params.append(param.name)
-                results[param.name] = "raw" if m.group("core") in body and "<>" in body else "encoded"
+                # raw iff the marker's special chars immediately follow the
+                # echoed core — anywhere else in the page proves nothing
+                echoed_suffix = m.group("after")[: len(MARKER_SUFFIX)]
+                results[param.name] = "raw" if echoed_suffix == MARKER_SUFFIX else "encoded"
                 endpoint.notes = f"{endpoint.notes or ''}; reflection={results[param.name]}".strip("; ")
-            elif self.marker in body:
-                param.reflected = True
-                if param.name not in endpoint.reflected_params:
-                    endpoint.reflected_params.append(param.name)
-                results[param.name] = "encoded"
         return results
 
     # ------------------------------------------------------------------ #
