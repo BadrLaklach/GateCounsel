@@ -143,12 +143,8 @@ class AuthDetector:
         return False
 
     def _json_field_variants(self, username: str, password: str) -> list[dict]:
-        out = []
-        for uf in USERNAME_FIELDS:
-            out.append({uf: username, "password": password})
-        # Juice Shop shape: {email, password}
-        out.append({"email": username, "password": password})
-        return out
+        """One variant per candidate username field; 'email' first (Juice Shop's shape)."""
+        return [{field: username, "password": password} for field in USERNAME_FIELDS]
 
     def _fresh_form_values(self, form: FormInfo) -> dict[str, str]:
         """Re-fetch the form's page to pick up CURRENT hidden-field values
