@@ -24,7 +24,7 @@ from urllib.parse import urljoin, urlsplit
 from agents.recon.scanners.auth_detector import AuthDetector, decode_jwt
 from agents.recon.crawlers.browser_crawler import BrowserCrawler
 from agents.recon.crawlers.crawler import HttpCrawler, normalize_key
-from agents.recon.scanners.fingerprint import fingerprint, merge_hints
+from agents.recon.scanners.fingerprint import merge_hints
 from agents.recon.planners.gemini_planner import GeminiReconPlanner
 from agents.recon.core.http_client import ScopedHttpClient
 from agents.recon.crawlers.katana_crawler import KatanaCrawler

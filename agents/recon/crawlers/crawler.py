@@ -11,7 +11,7 @@ import logging
 import re
 from collections import deque
 from dataclasses import dataclass, field
-from urllib.parse import urljoin, urlsplit, parse_qsl, urlencode, urlunsplit
+from urllib.parse import urljoin, urlsplit, parse_qsl, urlencode
 
 from bs4 import BeautifulSoup
 
@@ -155,9 +155,7 @@ class HttpCrawler:
                 self._ingest_markup(url, result.text, depth)
             if "javascript" in ctype or path_is_js(url):
                 self._ingest_javascript(result.text)
-            if self._scan_jwt(result):
-                pass  # hits appended internally
-
+            self._scan_jwt(result)
             if depth >= self.max_depth:
                 continue
             for link in self._collect_links(url, result.text):
@@ -255,13 +253,13 @@ class HttpCrawler:
             ep.notes = f"{ep.notes or ''}; unverified".strip("; ")
 
     def _ingest_json(self, url: str, result: FetchResult, ep: Endpoint) -> None:
-        data = result.json()
-        if isinstance(data, dict):
-            ep.response_snippet = "json keys: " + ", ".join(list(data.keys())[:10])
-        elif isinstance(data, list) and data:
-            first = data[0]
+        parsed = result.json()
+        if isinstance(parsed, dict):
+            ep.response_snippet = "json keys: " + ", ".join(list(parsed.keys())[:10])
+        elif isinstance(parsed, list) and parsed:
+            first = parsed[0]
             if isinstance(first, dict):
-                ep.response_snippet = f"json array[{len(data)}] item keys: " + ", ".join(list(first.keys())[:10])
+                ep.response_snippet = f"json array[{len(parsed)}] item keys: " + ", ".join(list(first.keys())[:10])
 
     def _scan_common_headers(self, result: FetchResult) -> None:
         for name, value in result.headers.items():
@@ -275,17 +273,11 @@ class HttpCrawler:
             if name == "content-security-policy":
                 self.fingerprints.append(("header", "content-security-policy", value[:80]))
 
-    def _scan_jwt(self, result: FetchResult) -> bool:
-        hit = False
+    def _scan_jwt(self, result: FetchResult) -> None:
         for m in RE_JWT.finditer(result.text[:8192]):
             token = m.group(0)
             if token not in self.jwt_hits:
                 self.jwt_hits.append(token)
-                hit = True
-        auth = result.headers.get("authorization", "")
-        if RE_JWT.search(auth):
-            hit = True
-        return hit
 
 
 def path_is_js(url: str) -> bool:

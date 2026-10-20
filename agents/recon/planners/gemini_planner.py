@@ -101,13 +101,13 @@ class GeminiReconPlanner:
                     },
                 )
                 response.raise_for_status()
-                data: dict[str, Any] = response.json()
+                response_data: dict[str, Any] = response.json()
         except (httpx.HTTPError, ValueError) as exc:
             log.warning("Gemini planning unavailable: %s", exc)
             return [], f"AI planning skipped: {type(exc).__name__}"
 
         try:
-            parts = data["candidates"][0]["content"]["parts"]
+            parts = response_data["candidates"][0]["content"]["parts"]
             content = "".join(part.get("text", "") for part in parts if isinstance(part, dict))
             return self._parse(content), None
         except (KeyError, IndexError, TypeError, ValueError) as exc:

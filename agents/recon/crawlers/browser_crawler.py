@@ -13,12 +13,13 @@ produced from the httpx pass.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from urllib.parse import urljoin, urlsplit, parse_qsl
 
 from agents.recon.core.models import Endpoint, Param
-from agents.recon.crawlers.crawler import RE_JWT
+from agents.recon.crawlers.crawler import RE_JWT, normalize_key
 
 log = logging.getLogger("gatecounsel.browser")
 
@@ -36,7 +37,6 @@ class BrowserCrawler:
         self.local_storage: dict[str, str] = {}
         self.cookies: list[dict] = []
         self.jwt_tokens: list[str] = []
-        self.blocked_by_scope = 0
         self.errors: list[str] = []
         self.capture_errors = 0
 
@@ -105,7 +105,6 @@ class BrowserCrawler:
 
     def _visit(self, page, url: str, is_allowed) -> None:
         if not is_allowed(url):
-            self.blocked_by_scope += 1
             return
         try:
             page.goto(url, wait_until="load", timeout=self.timeout)
@@ -120,7 +119,6 @@ class BrowserCrawler:
         try:
             url = request.url
             if not is_allowed(url):
-                self.blocked_by_scope += 1
                 return
             method = request.method.upper()
             if url.startswith("data:") or url.endswith((".png", ".jpg", ".woff2", ".ico", ".svg")):
@@ -157,11 +155,10 @@ class BrowserCrawler:
                 params.append(p)
             body = request.post_data
             if body:
-                import json as _json
                 try:
-                    data = _json.loads(body)
-                    if isinstance(data, dict):
-                        params.extend(Param(name=k, location="body", type_hint="string") for k in data)
+                    parsed = json.loads(body)
+                    if isinstance(parsed, dict):
+                        params.extend(Param(name=k, location="body", type_hint="string") for k in parsed)
                 except ValueError:
                     pass
         except Exception as exc:
@@ -169,7 +166,6 @@ class BrowserCrawler:
         return params
 
     def _record(self, method: str, url: str, **kw) -> Endpoint:
-        from agents.recon.crawlers.crawler import normalize_key
         key = normalize_key(method, url)
         ep = self.captured.get(key)
         if ep is None:
@@ -183,14 +179,12 @@ class BrowserCrawler:
     def _harvest_local_storage(self, page) -> None:
         try:
             raw = page.evaluate("() => JSON.stringify(window.localStorage)")
-            import json as _json
-            data = _json.loads(raw or "{}")
-            for k, v in data.items():
-                self.local_storage[k] = str(v)[:300]
-                if RE_JWT.search(str(v)):
-                    token = RE_JWT.search(str(v)).group(0)  # type: ignore[union-attr]
-                    if token not in self.jwt_tokens:
-                        self.jwt_tokens.append(token)
+            entries = json.loads(raw or "{}")
+            for storage_key, storage_value in entries.items():
+                self.local_storage[storage_key] = str(storage_value)[:300]
+                match = RE_JWT.search(str(storage_value))
+                if match and match.group(0) not in self.jwt_tokens:
+                    self.jwt_tokens.append(match.group(0))
         except Exception as exc:
             self._capture_failed("localStorage harvest", exc)
 
@@ -229,8 +223,7 @@ class BrowserCrawler:
     # ------------------------------------------------------------------ #
     def scan_jwt_cookies(self) -> list[str]:
         for cookie in self.cookies:
-            if RE_JWT.search(cookie.get("value", "")):
-                token = RE_JWT.search(cookie["value"]).group(0)  # type: ignore[union-attr]
-                if token not in self.jwt_tokens:
-                    self.jwt_tokens.append(token)
+            match = RE_JWT.search(cookie.get("value", ""))
+            if match and match.group(0) not in self.jwt_tokens:
+                self.jwt_tokens.append(match.group(0))
         return self.jwt_tokens

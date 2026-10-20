@@ -12,6 +12,7 @@ converts a lucky guess into a complete API inventory.
 
 from __future__ import annotations
 
+import json
 import logging
 import random
 import re
@@ -158,9 +159,8 @@ class ParamProber:
 
     # ------------------------------------------------------------------ #
     def _parse_openapi(self, spec_url: str, text: str) -> list[Endpoint]:
-        import json as _json
         try:
-            spec = _json.loads(text)
+            spec = json.loads(text)
         except ValueError:
             return []
         if not isinstance(spec, dict) or "paths" not in spec:
