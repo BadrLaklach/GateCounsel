@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import re
 from collections import deque
+from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlsplit, parse_qsl, urlencode, urlunsplit
 
 from bs4 import BeautifulSoup
@@ -34,6 +35,15 @@ RE_XHR = re.compile(r"""\.open\(\s*['"]([A-Z]+)['"]\s*,\s*['"]([^'"]+)['"]""", r
 RE_API_LITERAL = re.compile(r"""['"`](/(?:api|rest|graphql|v[1-9])(?:/api)?[/A-Za-z0-9_.\-{}]*)['"`]""")
 RE_HASH_ROUTE = re.compile(r"""['"`]#/([A-Za-z0-9_\-/?=&.%]+)['"`]""")
 RE_JWT = re.compile(r"eyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]*")
+
+
+@dataclass
+class FetchObservation:
+    """One fetch's harvest to fold into an endpoint record."""
+
+    result: FetchResult | None = None
+    params: list[Param] = field(default_factory=list)
+    forms: list[FormInfo] = field(default_factory=list)
 
 
 def looks_like_page(url: str) -> bool:
@@ -78,15 +88,17 @@ class HttpCrawler:
             return False
         return p.scheme in ("http", "https") and p.netloc == self.origin.netloc
 
-    def record(self, method: str, url: str, *, via: str = "link", result: FetchResult | None = None,
-               params: list[Param] | None = None, forms: list[FormInfo] | None = None,
-               auth_required: bool | None = None) -> Endpoint:
+    def record(self, method: str, url: str, observation: FetchObservation | None = None,
+               *, via: str = "link") -> Endpoint:
         method = method.upper()
         key = normalize_key(method, url)
         ep = self.endpoints.get(key)
         if ep is None:
             ep = Endpoint(url=url, method=method, discovered_via=via)  # type: ignore[arg-type]
             self.endpoints[key] = ep
+        if observation is None:
+            return ep
+        result = observation.result
         if result is not None:
             if result.status and result.status not in ep.status_codes:
                 ep.status_codes.append(result.status)
@@ -95,13 +107,11 @@ class HttpCrawler:
             body_text = result.text[:300].strip()
             if body_text and not ep.response_snippet:
                 ep.response_snippet = " ".join(body_text.split())[:200]
-        for p in params or []:
+        for p in observation.params:
             ep._upsert_param(p)
-        for f in forms or []:
+        for f in observation.forms:
             if f.model_dump() not in [x.model_dump() for x in ep.forms]:
                 ep.forms.append(f)
-        if auth_required is not None:
-            ep.auth_required = auth_required
         return ep
 
     def params_from_url(self, url: str) -> list[Param]:
@@ -130,7 +140,8 @@ class HttpCrawler:
                 continue
 
             self.pages_crawled += 1
-            ep = self.record("GET", url, via="link", result=result, params=self.params_from_url(url))
+            ep = self.record("GET", url,
+                             FetchObservation(result=result, params=self.params_from_url(url)))
             self._scan_common_headers(result)
             try:
                 self.tech_hints.extend(fingerprint(result.headers, result.text))
@@ -202,12 +213,11 @@ class HttpCrawler:
                 hidden_values=hidden_values, page_url=url,
                 has_password_field=has_pw, likely_login=has_pw,
             )
-            self.record(method, action, via="form", forms=[info])
+            self.record(method, action, FetchObservation(forms=[info]), via="form")
             loc = "body" if method == "POST" else "query"
-            self.record(
-                method, action, via="form",
-                params=[Param(name=n, location=loc, type_hint="string") for n in fields],  # type: ignore[arg-type]
-            )
+            params = [Param(name=n, location=loc, type_hint="string")  # type: ignore[arg-type]
+                      for n in fields]
+            self.record(method, action, FetchObservation(params=params), via="form")
 
         # SPA hash routes (AngularJS-style #/routing)
         for m in RE_HASH_ROUTE.finditer(text):

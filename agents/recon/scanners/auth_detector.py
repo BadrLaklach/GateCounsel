@@ -130,14 +130,14 @@ class AuthDetector:
                 for field_map in self._json_field_variants(username, password):
                     result = self.client.post(url, json=field_map)
                     self.observe_headers(result)
-                    if self._evaluate(result, url, pre_cookies=pre_cookies,
+                    if self._evaluate(result, kind="json", pre_cookies=pre_cookies,
                                       strategy=f"json POST {url} fields={list(field_map)}"):
                         return True
             else:  # form
                 field_map = self._form_field_map(form, username, password)
                 result = self.client.post(url, data=field_map)
                 self.observe_headers(result)
-                if self._evaluate(result, url, pre_cookies=pre_cookies, form_kind=True,
+                if self._evaluate(result, kind="form", pre_cookies=pre_cookies,
                                   strategy=f"form POST {url} fields={sorted(field_map)}"):
                     return True
         return False
@@ -186,13 +186,16 @@ class AuthDetector:
             values[name] = value
         return values
 
-    def _evaluate(self, result: FetchResult, url: str, *, strategy: str,
-                  pre_cookies: set[str] | None = None, form_kind: bool = False) -> bool:
+    def _evaluate(self, result: FetchResult, *, kind: str, strategy: str,
+                  pre_cookies: set[str]) -> bool:
         """Success heuristics, in order of strength:
           1. a token (JWT) in the response body;
           2. form logins that redirect AWAY from a login-looking URL
              (the DVWA pattern: success -> index, failure -> back to login);
           3. a recognized session cookie (detected name) now present in the jar.
+
+        kind is the attempt kind ("form" or "json") — the heuristics differ:
+        only form logins are trusted on redirect-away alone.
         """
         if result.error or result.status is None:
             return False
@@ -224,13 +227,13 @@ class AuthDetector:
 
         success = False
         if ok_status and not looks_failed:
-            if form_kind and away_from_login:
+            if kind == "form" and away_from_login:
                 success = True
             elif got_session:
                 success = True
-            elif not form_kind and away_from_login and any(
+            elif kind == "json" and away_from_login and any(
                     re.search(r"(session|sid|auth|token|login)", c, re.I)
-                    for c in set(jar_names) - (pre_cookies or set())):
+                    for c in set(jar_names) - pre_cookies):
                 success = True  # JSON endpoint set a session-ish cookie + left the login URL
 
         if success:

@@ -54,6 +54,17 @@ class ReconConfig(TypedDict, total=False):
     katana_duration: int
 
 
+def merge_endpoint_maps(
+    base: dict[tuple[str, str], Endpoint], incoming: dict[tuple[str, str], Endpoint]
+) -> None:
+    """Fold one phase's discoveries into the shared endpoint map."""
+    for key, ep in incoming.items():
+        if key in base:
+            base[key].merge(ep)
+        else:
+            base[key] = ep
+
+
 class ReconAgent:
     """Orchestrates the recon pipeline against one sanctioned target."""
 
@@ -114,138 +125,33 @@ class ReconAgent:
         log.info("phase 1 (httpx crawl): %d pages, %d endpoints", crawler.pages_crawled, len(endpoints))
 
         # Phase 1b — optional Katana discovery ---------------------------------
-        katana_used = False
-        if self.use_katana:
-            katana = KatanaCrawler(
-                self.base_url, is_allowed=self.guard.is_allowed,
-                max_depth=self.max_depth, max_pages=self.max_pages, rps=self.rps,
-                duration_seconds=self.katana_duration, headless=self.katana_headless,
-            )
-            katana_result = katana.run()
-            katana_used = katana_result.ran
-            for key, ep in katana_result.endpoints.items():
-                if key in endpoints:
-                    endpoints[key].merge(ep)
-                else:
-                    endpoints[key] = ep
-            notes.extend(katana_result.notes)
-            log.info("phase 1b (katana): ran=%s, %d endpoints", katana_used, len(katana_result.endpoints))
+        katana_used = self._katana_phase(endpoints, notes)
 
         # Phase 2 — API surface guessing ----------------------------------------
         prober = ParamProber(client, self.base_url)
         guessed, guess_notes = prober.probe_api_surface()
-        for key, ep in guessed.items():
-            if key in endpoints:
-                endpoints[key].merge(ep)
-            else:
-                endpoints[key] = ep
+        merge_endpoint_maps(endpoints, guessed)
         notes.extend(guess_notes)
         log.info("phase 2 (api guesses): %d endpoints total", len(endpoints))
 
         # Phase 2b — optional AI-directed, still GET-only discovery ------------
         if self.use_gemini:
-            planner = GeminiReconPlanner(
-                model=self.gemini_model,
-                timeout=self.gemini_timeout,
-                max_targets=self.gemini_max_targets,
-            )
-            planned, planning_note = planner.plan(self.base_url, list(endpoints.values()))
-            if planning_note:
-                notes.append(planning_note)
-            added = self._fetch_ai_targets(client, endpoints, planned, notes)
-            if planned:
-                notes.append(f"AI planning nominated {len(planned)} path(s); {added} safe GET target(s) fetched")
+            self._gemini_phase(client, endpoints, notes)
 
         # Phase 3 — auth --------------------------------------------------------
         auth = AuthDetector(client, self.base_url)
         auth.observe_headers(probe)
         auth.detect(endpoints)
-        if self.username and self.password:
-            authed = auth.authenticate(self.username, self.password)
-            if authed:
-                notes.append(f"auto-login succeeded via {auth.info.login_strategy}")
-                # authenticated second pass over discovered links (bounded)
-                auth_crawler = HttpCrawler(
-                    client, self.base_url, max_pages=min(self.max_pages, 30), max_depth=2
-                )
-                auth_crawler.crawl()
-                for key, ep in auth_crawler.endpoints.items():
-                    if key in endpoints:
-                        endpoints[key].merge(ep)
-                    else:
-                        ep.auth_required = True  # reachable only post-auth
-                        endpoints[key] = ep
-                protected = auth.probe_protected(endpoints)
-                if protected:
-                    notes.append(f"{len(protected)} protected endpoint(s) confirmed")
-            else:
-                notes.append("auto-login failed — credentials rejected or no login found")
-        elif self.username or self.password:
-            notes.append("incomplete credentials (need both --username and --password) — auth skipped")
-        else:
-            notes.append("no credentials supplied — authenticated surface not crawled")
+        self._auth_phase(auth, client, endpoints, notes)
 
         # Phase 4 — Playwright pass --------------------------------------------
-        browser_used = False
-        if self.use_playwright:
-            browser = BrowserCrawler(self.base_url, max_spa_routes=self.max_spa_routes)
-            auth_cookies = self._export_cookies(client)
-            ran = browser.run(
-                self.guard.is_allowed,
-                auth_cookies=auth_cookies,
-                auth_token=client.jwt_token,
-            )
-            browser_used = ran
-            if ran:
-                for key, ep in browser.captured.items():
-                    if key in endpoints:
-                        endpoints[key].merge(ep)
-                    else:
-                        endpoints[key] = ep
-                for token in browser.scan_jwt_cookies():
-                    if not client.jwt_token:
-                        client.jwt_token = token
-                        claims = decode_jwt(token)
-                        if claims and not auth.info.jwt_sample_claims:
-                            auth.info.jwt_sample_claims = claims
-                        auth.info.token_type = "jwt"
-                        auth.info.token_storage = "localStorage"
-                        notes.append("JWT found in browser localStorage (unauthenticated surface)")
-                for key, value in browser.local_storage.items():
-                    low = key.lower()
-                    if any(h in low for h in ("token", "jwt", "auth")) and not auth.info.token_storage:
-                        auth.info.token_storage = "localStorage"
-            notes.extend(browser.errors)
-            log.info("phase 4 (browser): ran=%s, %d captured endpoints", ran, len(browser.captured))
-        else:
-            notes.append("Playwright pass disabled by config")
+        browser_used = self._browser_phase(client, auth, endpoints, notes)
 
         # Phase 5 — fingerprinting (aggregate from stored fingerprints) ----------
         tech = self._aggregate_tech(crawler, notes)
 
         # Phase 6 — reflection probing (bounded, GET-only, benign marker) --------
-        reflected_count = 0
-        probes = 0
-        for (_m, _k), ep in endpoints.items():
-            if probes >= self.max_reflection_probes:
-                break
-            has_params = any(p.location == "query" for p in ep.params) or ep.forms
-            # form-only endpoints may never have been fetched yet (no status) —
-            # the probe itself is a harmless GET, so probe those too
-            no_status = not ep.status_codes
-            if ep.method == "GET" and has_params and (
-                no_status or ep.status_codes[0] < 400
-            ):
-                probes += 1
-                before = {p.name for p in ep.params if p.reflected}
-                prober.probe_reflection(ep)
-                if no_status and ep.status_codes:
-                    pass  # probe_reflection doesn't fetch the base endpoint; leave status empty
-                after = {p.name for p in ep.params if p.reflected}
-                if after - before:
-                    reflected_count += 1
-        if reflected_count:
-            notes.append(f"{reflected_count} endpoint(s) reflect parameter values (XSS/SQLi candidates)")
+        self._reflection_phase(prober, endpoints, notes)
 
         stats = {
             "pages_crawled": crawler.pages_crawled,
@@ -272,6 +178,123 @@ class ReconAgent:
         )
         client.close()
         return sitemap
+
+    def _katana_phase(self, endpoints: dict[tuple[str, str], Endpoint],
+                      notes: list[str]) -> bool:
+        """Phase 1b — external Katana crawler, bounded and scope-filtered."""
+        if not self.use_katana:
+            return False
+        katana = KatanaCrawler(
+            self.base_url, is_allowed=self.guard.is_allowed,
+            max_depth=self.max_depth, max_pages=self.max_pages, rps=self.rps,
+            duration_seconds=self.katana_duration, headless=self.katana_headless,
+        )
+        katana_result = katana.run()
+        merge_endpoint_maps(endpoints, katana_result.endpoints)
+        notes.extend(katana_result.notes)
+        log.info("phase 1b (katana): ran=%s, %d endpoints",
+                 katana_result.ran, len(katana_result.endpoints))
+        return katana_result.ran
+
+    def _gemini_phase(self, client: ScopedHttpClient,
+                      endpoints: dict[tuple[str, str], Endpoint], notes: list[str]) -> None:
+        """Phase 2b — model-nominated paths, validated and scope-checked."""
+        planner = GeminiReconPlanner(
+            model=self.gemini_model,
+            timeout=self.gemini_timeout,
+            max_targets=self.gemini_max_targets,
+        )
+        planned, planning_note = planner.plan(self.base_url, list(endpoints.values()))
+        if planning_note:
+            notes.append(planning_note)
+        added = self._fetch_ai_targets(client, endpoints, planned, notes)
+        if planned:
+            notes.append(f"AI planning nominated {len(planned)} path(s); {added} safe GET target(s) fetched")
+
+    def _auth_phase(self, auth: AuthDetector, client: ScopedHttpClient,
+                    endpoints: dict[tuple[str, str], Endpoint], notes: list[str]) -> None:
+        """Phase 3 — operator-driven auto-login + protected-surface probing."""
+        if self.username and self.password:
+            authed = auth.authenticate(self.username, self.password)
+            if authed:
+                notes.append(f"auto-login succeeded via {auth.info.login_strategy}")
+                # authenticated second pass over discovered links (bounded)
+                auth_crawler = HttpCrawler(
+                    client, self.base_url, max_pages=min(self.max_pages, 30), max_depth=2
+                )
+                auth_crawler.crawl()
+                for key, ep in auth_crawler.endpoints.items():
+                    if key in endpoints:
+                        endpoints[key].merge(ep)
+                    else:
+                        ep.auth_required = True  # reachable only post-auth
+                        endpoints[key] = ep
+                protected = auth.probe_protected(endpoints)
+                if protected:
+                    notes.append(f"{len(protected)} protected endpoint(s) confirmed")
+            else:
+                notes.append("auto-login failed — credentials rejected or no login found")
+        elif self.username or self.password:
+            notes.append("incomplete credentials (need both --username and --password) — auth skipped")
+        else:
+            notes.append("no credentials supplied — authenticated surface not crawled")
+
+    def _browser_phase(self, client: ScopedHttpClient, auth: AuthDetector,
+                       endpoints: dict[tuple[str, str], Endpoint], notes: list[str]) -> bool:
+        """Phase 4 — Playwright network capture of the SPA surface."""
+        if not self.use_playwright:
+            notes.append("Playwright pass disabled by config")
+            return False
+        browser = BrowserCrawler(self.base_url, max_spa_routes=self.max_spa_routes)
+        auth_cookies = self._export_cookies(client)
+        ran = browser.run(
+            self.guard.is_allowed,
+            auth_cookies=auth_cookies,
+            auth_token=client.jwt_token,
+        )
+        if ran:
+            merge_endpoint_maps(endpoints, browser.captured)
+            for token in browser.scan_jwt_cookies():
+                if not client.jwt_token:
+                    client.jwt_token = token
+                    claims = decode_jwt(token)
+                    if claims and not auth.info.jwt_sample_claims:
+                        auth.info.jwt_sample_claims = claims
+                    auth.info.token_type = "jwt"
+                    auth.info.token_storage = "localStorage"
+                    notes.append("JWT found in browser localStorage (unauthenticated surface)")
+            for key, value in browser.local_storage.items():
+                low = key.lower()
+                if any(h in low for h in ("token", "jwt", "auth")) and not auth.info.token_storage:
+                    auth.info.token_storage = "localStorage"
+        notes.extend(browser.errors)
+        log.info("phase 4 (browser): ran=%s, %d captured endpoints", ran, len(browser.captured))
+        return ran
+
+    def _reflection_phase(self, prober: ParamProber,
+                          endpoints: dict[tuple[str, str], Endpoint], notes: list[str]) -> None:
+        """Phase 6 — bounded, GET-only reflection probing with a benign marker."""
+        reflected_count = 0
+        probes = 0
+        for (_method, _key), ep in endpoints.items():
+            if probes >= self.max_reflection_probes:
+                break
+            has_params = any(p.location == "query" for p in ep.params) or ep.forms
+            # form-only endpoints may never have been fetched (no status yet) —
+            # the probe is a harmless GET, so those are probed too; it does not
+            # backfill the endpoint's own status
+            no_status = not ep.status_codes
+            if ep.method == "GET" and has_params and (
+                no_status or ep.status_codes[0] < 400
+            ):
+                probes += 1
+                before = {p.name for p in ep.params if p.reflected}
+                prober.probe_reflection(ep)
+                after = {p.name for p in ep.params if p.reflected}
+                if after - before:
+                    reflected_count += 1
+        if reflected_count:
+            notes.append(f"{reflected_count} endpoint(s) reflect parameter values (XSS/SQLi candidates)")
 
     def _fetch_ai_targets(self, client, endpoints, planned, notes: list[str]) -> int:
         """Validate every model suggestion before issuing a bounded GET request."""
@@ -301,10 +324,7 @@ class ReconAgent:
                 notes=f"AI-directed path: {proposal.reason}" if proposal.reason else "AI-directed path",
             )
             key = normalize_key("GET", url)
-            if key in endpoints:
-                endpoints[key].merge(ep)
-            else:
-                endpoints[key] = ep
+            merge_endpoint_maps(endpoints, {key: ep})
             added += 1
         return added
 
