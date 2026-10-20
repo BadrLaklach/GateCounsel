@@ -12,5 +12,3 @@ juiceshop_sitemap.json
 *.pdf
 *.tex
 
-# Local-only project plans and working notes.
-/Document_Plans_GitIgnored/
