@@ -251,7 +251,8 @@ class ReconAgent:
             "pages_crawled": crawler.pages_crawled,
             "unique_urls_seen": len(crawler.seen_urls) + len(crawler.hash_routes),
             "requests_made": client.requests_made,
-            "scope_blocked": client.scope_blocked + self.guard.counters["blocked"],
+            # guard.check() already counts every block (enforce + is_allowed paths)
+            "scope_blocked": self.guard.counters["blocked"],
             "errors": client.errors,
             "duration_seconds": round(time.monotonic() - started, 2),
             "playwright_used": browser_used,

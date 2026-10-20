@@ -79,7 +79,6 @@ class ScopedHttpClient:
         self.body_cap = body_cap
         self.requests_made = 0
         self.errors = 0
-        self.scope_blocked = 0
         self.jwt_token: str | None = None  # set by AuthDetector on successful login
         self._client = httpx.Client(
             follow_redirects=False,  # manual: re-check scope on every hop
@@ -112,7 +111,6 @@ class ScopedHttpClient:
         try:
             self.guard.enforce(url)
         except PermissionError as exc:
-            self.scope_blocked += 1
             log.warning("Blocked by scope: %s", exc)
             return FetchResult(url=url, final_url=url, error=f"scope: {exc}")
 
@@ -144,7 +142,6 @@ class ScopedHttpClient:
                 try:
                     self.guard.enforce(nxt)  # re-check every redirect hop
                 except PermissionError as exc:
-                    self.scope_blocked += 1
                     log.warning("Redirect blocked by scope: %s", exc)
                     return FetchResult(url=url, final_url=current, error=f"scope: {exc}",
                                        redirects=hops, elapsed=elapsed)
