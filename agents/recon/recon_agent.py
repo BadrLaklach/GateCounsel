@@ -318,8 +318,9 @@ class ReconAgent:
                     "name": c.name, "value": c.value or "",
                     "domain": c.domain or host, "path": c.path or "/",
                 })
-        except Exception:
-            pass
+        except AttributeError as exc:
+            # httpx private cookie-jar API moved — export nothing rather than crash
+            log.debug("cookie export failed: %s", exc)
         return cookies
 
     def _aggregate_tech(self, crawler: HttpCrawler, notes: list[str]) -> list[TechHint]:

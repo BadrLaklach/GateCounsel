@@ -168,13 +168,14 @@ class ScopedHttpClient:
 
     def _from_response(self, resp: httpx.Response, url: str, final_url: str, hops, elapsed) -> FetchResult:
         body = b""
+        read_error: str | None = None
         try:
             for chunk in resp.iter_bytes(65536):
                 body += chunk
                 if len(body) >= self.body_cap:
                     break
-        except httpx.HTTPError:
-            pass
+        except httpx.HTTPError as exc:
+            read_error = f"partial body read: {type(exc).__name__}"
         return FetchResult(
             url=url,
             final_url=final_url,
@@ -183,6 +184,7 @@ class ScopedHttpClient:
             body=body,
             elapsed=elapsed,
             redirects=hops,
+            error=read_error,
         )
 
     # Convenience verbs ------------------------------------------------- #

@@ -38,6 +38,7 @@ class BrowserCrawler:
         self.jwt_tokens: list[str] = []
         self.blocked_by_scope = 0
         self.errors: list[str] = []
+        self.capture_errors = 0
 
     # ------------------------------------------------------------------ #
     def run(self, is_allowed, auth_cookies: list[dict] | None = None,
@@ -87,9 +88,21 @@ class BrowserCrawler:
             self.errors.append(f"browser pass failed: {type(exc).__name__}: {exc}")
             log.warning("Playwright pass failed: %s", exc)
             return False
+        if self.capture_errors:
+            self.errors.append(f"{self.capture_errors} capture event(s) failed")
         return True
 
     # ------------------------------------------------------------------ #
+    def _capture_failed(self, source: str, exc: Exception) -> None:
+        """Event handlers must not raise into Playwright; count + log instead.
+
+        The broad catch is deliberate: the playwright error classes are only
+        importable inside run()'s lazy import, and a handler that raises
+        aborts the whole capture. Failures are summarized into self.errors.
+        """
+        self.capture_errors += 1
+        log.debug("%s capture failed: %s", source, exc)
+
     def _visit(self, page, url: str, is_allowed) -> None:
         if not is_allowed(url):
             self.blocked_by_scope += 1
@@ -114,8 +127,8 @@ class BrowserCrawler:
                 return
             params = self._params_from_request(request)
             self._record(method, url, params=params)
-        except Exception:
-            pass
+        except Exception as exc:
+            self._capture_failed("request", exc)
 
     def _on_response(self, response, is_allowed) -> None:
         try:
@@ -128,8 +141,8 @@ class BrowserCrawler:
             ct = response.headers.get("content-type", "")
             if ct and not ep.content_type:
                 ep.content_type = ct.split(";")[0].lower()
-        except Exception:
-            pass
+        except Exception as exc:
+            self._capture_failed("response", exc)
 
     def _params_from_request(self, request) -> list[Param]:
         params: list[Param] = []
@@ -151,8 +164,8 @@ class BrowserCrawler:
                         params.extend(Param(name=k, location="body", type_hint="string") for k in data)
                 except ValueError:
                     pass
-        except Exception:
-            pass
+        except Exception as exc:
+            self._capture_failed("parameter extraction", exc)
         return params
 
     def _record(self, method: str, url: str, **kw) -> Endpoint:
@@ -178,8 +191,8 @@ class BrowserCrawler:
                     token = RE_JWT.search(str(v)).group(0)  # type: ignore[union-attr]
                     if token not in self.jwt_tokens:
                         self.jwt_tokens.append(token)
-        except Exception:
-            pass
+        except Exception as exc:
+            self._capture_failed("localStorage harvest", exc)
 
     def _inject_token(self, page, token: str) -> None:
         """Best-effort: store JWT under common SPA localStorage keys, then reload."""
@@ -204,8 +217,8 @@ class BrowserCrawler:
                     continue
                 if is_allowed(url) and url.rstrip("/") != self.base_url.rstrip("/"):
                     routes.append(url)
-        except Exception:
-            pass
+        except Exception as exc:
+            self._capture_failed("anchor collection", exc)
         seen, uniq = set(), []
         for r in routes:
             if r not in seen:
