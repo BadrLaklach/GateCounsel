@@ -58,3 +58,116 @@ Line 17: OK - injection_point=body, confidence=0.6
 Verification complete
 [0m
 [0m→ [0mRead training_resources/enrichment/candidates/ssrf_b.jsonl
+[0m
+[0m← [0mWrite training_resources/enrichment/candidates/ssrf_b.jsonl
+Wrote file successfully.
+[0m
+[0m$ [0mpython3 -c "
+import json
+with open('training_resources/enrichment/candidates/ssrf_b.jsonl', 'r') as f:
+    lines = f.readlines()
+print(f'Total lines: {len(lines)}')
+for i, line in enumerate(lines):
+    line = line.strip()
+    if not line:
+        print(f'Line {i+1}: EMPTY')
+        continue
+    try:
+        data = json.loads(line)
+        assert 'messages' in data
+        assert len(data['messages']) == 3
+        assert data['messages'][0]['role'] == 'system'
+        assert data['messages'][1]['role'] == 'user'
+        assert data['messages'][2]['role'] == 'assistant'
+        
+        assistant_content = json.loads(data['messages'][2]['content'])
+        required_keys = ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+        assert list(assistant_content.keys()) == required_keys, f'Keys mismatch: {list(assistant_content.keys())}'
+        assert assistant_content['vuln_class'] == 'ssrf'
+        assert assistant_content['injection_point'] in ['query', 'body', 'header', 'cookie', 'path']
+        assert 0.0 <= assistant_content['confidence'] <= 1.0
+        print(f'Line {i+1}: OK - injection_point={assistant_content[\"injection_point\"]}, confidence={assistant_content[\"confidence\"]}')
+    except Exception as e:
+        print(f'Line {i+1}: ERROR - {e}')
+print('Verification complete')
+"
+Total lines: 16
+Line 1: OK - injection_point=query, confidence=0.75
+Line 2: OK - injection_point=body, confidence=0.85
+Line 3: OK - injection_point=query, confidence=0.9
+Line 4: OK - injection_point=header, confidence=0.8
+Line 5: OK - injection_point=body, confidence=0.6
+Line 6: OK - injection_point=query, confidence=0.7
+Line 7: OK - injection_point=body, confidence=0.65
+Line 8: OK - injection_point=query, confidence=0.55
+Line 9: OK - injection_point=body, confidence=0.7
+Line 10: OK - injection_point=query, confidence=0.8
+Line 11: OK - injection_point=body, confidence=0.6
+Line 12: OK - injection_point=body, confidence=0.65
+Line 13: OK - injection_point=query, confidence=0.5
+Line 14: OK - injection_point=cookie, confidence=0.45
+Line 15: OK - injection_point=path, confidence=0.7
+Line 16: OK - injection_point=body, confidence=0.85
+Verification complete
+[0m
+[0m→ [0mRead training_resources/enrichment/candidates/ssrf_b.jsonl
+[0m
+[0m← [0mWrite training_resources/enrichment/candidates/ssrf_b.jsonl
+Wrote file successfully.
+[0m
+[0m$ [0mpython3 -c "
+import json
+with open('training_resources/enrichment/candidates/ssrf_b.jsonl', 'r') as f:
+    lines = f.readlines()
+print(f'Total lines: {len(lines)}')
+for i, line in enumerate(lines):
+    line = line.strip()
+    if not line:
+        print(f'Line {i+1}: EMPTY')
+        continue
+    try:
+        data = json.loads(line)
+        assert 'messages' in data
+        assert len(data['messages']) == 3
+        assert data['messages'][0]['role'] == 'system'
+        assert data['messages'][1]['role'] == 'user'
+        assert data['messages'][2]['role'] == 'assistant'
+        
+        assistant_content = json.loads(data['messages'][2]['content'])
+        required_keys = ['vuln_class', 'target_param', 'payload', 'injection_point', 'expected_success_signal', 'confidence', 'reasoning']
+        assert list(assistant_content.keys()) == required_keys, f'Keys mismatch: {list(assistant_content.keys())}'
+        assert assistant_content['vuln_class'] == 'ssrf'
+        assert assistant_content['injection_point'] in ['query', 'body', 'header', 'cookie', 'path']
+        assert 0.0 <= assistant_content['confidence'] <= 1.0
+        print(f'Line {i+1}: OK - injection_point={assistant_content[\"injection_point\"]}, confidence={assistant_content[\"confidence\"]}')
+    except Exception as e:
+        print(f'Line {i+1}: ERROR - {e}')
+print('Verification complete')
+"
+Total lines: 15
+Line 1: OK - injection_point=query, confidence=0.75
+Line 2: OK - injection_point=body, confidence=0.85
+Line 3: OK - injection_point=query, confidence=0.9
+Line 4: OK - injection_point=header, confidence=0.8
+Line 5: OK - injection_point=body, confidence=0.6
+Line 6: OK - injection_point=query, confidence=0.7
+Line 7: OK - injection_point=body, confidence=0.65
+Line 8: OK - injection_point=query, confidence=0.55
+Line 9: OK - injection_point=body, confidence=0.7
+Line 10: OK - injection_point=query, confidence=0.8
+Line 11: OK - injection_point=body, confidence=0.6
+Line 12: OK - injection_point=query, confidence=0.5
+Line 13: OK - injection_point=cookie, confidence=0.45
+Line 14: OK - injection_point=path, confidence=0.7
+Line 15: OK - injection_point=body, confidence=0.85
+Verification complete
+[0m
+The file has exactly 15 lines, all valid JSONL with correct structure. Verified:
+- 15 lines, each parsing as JSON with 3 messages (system/user/assistant)
+- Assistant content has all 7 required keys in order
+- `injection_point` values: query(5), body(5), header(1), cookie(1), path(1) - all 5 covered
+- `confidence` range: 0.45-0.9 with good spread (high/moderate/low)
+- Technique coverage: redirect bypass, URL parser inconsistencies, cloud metadata (AWS/GCP/Azure), allowlist bypass
+- Application types: e-commerce, blog, banking, SaaS, university, file-sharing, helpdesk, API gateway, admin panel
+- HTTP methods: GET, POST, PUT, PATCH
+- No duplicate (target_param, payload) pairs

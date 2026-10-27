@@ -12,3 +12,265 @@ reviews
 specs
 Python 3.13.3
 [0m
+[0m$ [0mpython - <<'EOF'
+import json, re, base64, sys
+
+spec_path = r"training_resources/enrichment/specs/idor_a.md"
+out_path = r"training_resources/enrichment/candidates/idor_a.jsonl"
+
+text = open(spec_path, encoding="utf-8").read()
+blocks = re.findall(r"```\n(.*?)```", text, re.S)
+system = blocks[0].rstrip("\n")
+
+records = [
+(
+"""Endpoint: GET /shop/orders/{order_id}
+Target parameter(s): order_id (path segment)
+Recon evidence: Order IDs are sequential 5-digit numbers. While authenticated as a customer, GET /shop/orders/10043 returned HTTP 200 with a different customer's item list, quantities and shipping address in the body.
+Planner's rationale: Direct object reference in the path with sequential IDs and no ownership check.""",
+'{"vuln_class": "idor", "target_param": "order_id", "payload": "GET /shop/orders/10043", "injection_point": "path", "expected_success_signal": "HTTP 200 response body containing another customer's order items and shipping address", "confidence": 0.9, "reasoning": "The backend resolves the order purely from the path segment and never verifies ownership, so walking the sequential ID space returns other customers' orders. The 200 with a foreign shipping address already confirms the leak, making the next adjacent increment the highest-value probe."}'
+),
+(
+"""Endpoint: GET /api/statements?acct=88213&month=07
+Target parameter(s): acct (query)
+Recon evidence: Account numbers are sequential; requesting acct=88214 while logged in as 88213 returned HTTP 200 with a different holder's statement, including balance and last four of their card.
+Planner's rationale: Sequential account identifier accepted from the query string without session binding.""",
+'{"vuln_class": "idor", "target_param": "acct", "payload": "acct=88214", "injection_point": "query", "expected_success_signal": "HTTP 200 with another account holder's statement body (balance, card last four)", "confidence": 0.92, "reasoning": "Adjacent sequential account numbers return full statement bodies for other principals, showing the lookup keys only on the query parameter. Enumerating one step further is the canonical IDOR walk on this endpoint."}'
+),
+(
+"""Endpoint: GET /university/records/{record_id}
+Target parameter(s): record_id (path segment)
+Recon evidence: Student records are indexed by predictable registration IDs (stu-2023-NNNNN). Probing stu-2023-04516 returned HTTP 200 with a transcript page showing a different student's name and GPA.
+Planner's rationale: Predictable registration identifier in the path allows cross-student record access."}',
+'{"vuln_class": "idor", "target_param": "record_id", "payload": "GET /university/records/stu-2023-04516", "injection_point": "path", "expected_success_signal": "HTTP 200 body containing another student's transcript (name, GPA)", "confidence": 0.7, "reasoning": "The registration ID format is trivially guessable and the 200 response disclosed another student's name and GPA, confirming missing authorization. The payload targets the next sequential registration ID."}'
+),
+(
+"""Endpoint: GET /drive/documents?id=7f3a9c2e-41b8-4d0a-9c6e-2b8f5d1a0e44
+Target parameter(s): id (query)
+Recon evidence: Document IDs are UUIDs, but the UUID returned in a shared order object also resolves on /drive/documents and /api/v2/preview, meaning the same identifier is reused across endpoints with no per-endpoint authorization.
+Planner's rationale: Opaque identifier reuse across endpoints widens the IDOR surface."}',
+'{"vuln_class": "idor", "target_param": "id", "payload": "GET /drive/documents?id=7f3a9c2e-41b8-4d0a-9c6e-2b8f5d1a0e45", "injection_point": "query", "expected_success_signal": "HTTP 200 with another user's document content or metadata", "confidence": 0.88, "reasoning": "UUIDs leak through order/notification objects and are accepted on multiple document endpoints without re-checking ownership. Swapping a leaked UUID from another principal's object reference is the natural next probe."}'
+),
+(
+"""Endpoint: GET /articles?ref=MTIzNDU2
+Target parameter(s): ref (query)
+Recon evidence: The ref parameter is base64; decoding the logged-in user's ref yields the sequential article number 123456. Submitting ref=MTIzNDU3 (base64 of 123457) returned HTTP 200 with another author's draft article.
+Planner's rationale: Encoded sequential identifier invites decode-tamper-re-encode."}',
+'{"vuln_class": "idor", "target_param": "ref", "payload": "ref=MTIzNDU3", "injection_point": "query", "expected_success_signal": "HTTP 200 with another author's draft article in the response body", "confidence": 0.85, "reasoning": "Base64 encoding is not access control: decoding exposes a sequential article number, so incrementing and re-encoding produces a valid reference the backend accepts. The tampered encoding was already observed returning a foreign draft."}'
+),
+(
+"""Endpoint: GET /helpdesk/tickets?ticket=55231
+Target parameter(s): ticket (query)
+Recon evidence: Ticket numbers are sequential; the authenticated user's own ticket 55231 returns 200, a non-existent ticket 99999 returns 404, but adjacent ticket 55230 returns 403 with a body of length 118 bytes, an oracle that distinguishes existing-but-forbidden objects.
+Planner's rationale: Error-message oracle makes hidden ticket enumeration measurable."}',
+'{"vuln_class": "idor", "target_param": "ticket", "payload": "ticket=55230", "injection_point": "query", "expected_success_signal": "HTTP 403 with a fixed-length body, versus 404 for non-existent tickets, confirming ticket 55230 exists and belongs to another user", "confidence": 0.65, "reasoning": "The 403-vs-404 split proves object existence without leaking content, so adjacent sequential IDs are the next enumeration targets. The 403 response suggests the object exists but is owned by another principal, indicating an ownership check that may be bypassable."}'
+),
+(
+"""Endpoint: GET /admin/reports/{report_id}
+Target parameter(s): report_id (path segment)
+Recon evidence: Authenticated as a regular staff user (role=user), GET /admin/reports/0001 returned HTTP 200 containing the platform-wide audit report, while the user's own /reports/0042 also returns 200.
+Planner's rationale: Role escalation by swapping the report ID in the admin path."}',
+'{"vuln_class": "idor", "target_param": "report_id", "payload": "GET /admin/reports/0001", "injection_point": "path", "expected_success_signal": "HTTP 200 with the platform-wide audit report body readable from a non-admin session", "confidence": 0.88, "reasoning": "The endpoint performs no role check on the report ID and the observed 200 from a regular session proves the guard is missing. Report 0001 is the lowest-numbered admin report, the most likely to contain privileged content."}'
+),
+(
+"""Endpoint: GET /dashboard/widgets?owner=778
+Target parameter(s): owner (query)
+Recon evidence: Logged in as owner 778; requesting owner=779 returned HTTP 200 with a Content-Length of 1204 bytes versus 312 bytes for the own request, suggesting another owner's widget set is rendered.
+Planner's rationale: The owner parameter selects resources without matching the session principal."}',
+'{"vuln_class": "idor", "target_param": "owner", "payload": "owner=779", "injection_point": "query", "expected_success_signal": "HTTP 200 with a response body containing another owner's widget configurations", "confidence": 0.6, "reasoning": "The differing Content-Length indicates the backend built a different owner's widget set, though body content was not yet confirmed. The adjacent owner ID is the cheapest way to test whether widget data for another principal is fully rendered."}'
+),
+(
+"""Endpoint: POST /api/v1/invoices (JSON body: customer.id)
+Target parameter(s): customer.id (nested JSON body)
+Recon evidence: The gateway accepted a nested JSON body and created an invoice; changing the nested customer.id from 552 to 553 returned HTTP 201 with another company's billing address and tax ID embedded in the response.
+Planner's rationale: Nested JSON identifiers are not re-validated against the session identity."}',
+'{"vuln_class": "idor", "target_param": "customer.id", "payload": "{\\"customer\\": {\\"id\\": 553, \\"invoice_ref\\": \\"INV-8891\\"}}", "injection_point": "body", "expected_success_signal": "HTTP 201 response echoing another company's billing address and tax ID", "confidence": 0.87, "reasoning": "The nested customer.id is trusted after the outer request is authorized, so the sibling customer ID 553 is the next increment to confirm cross-tenant invoice access. The observed 201 with foreign billing data already demonstrates the flaw."}'
+),
+(
+"""Endpoint: GET /bank/statements/2024/{stmt_id}
+Target parameter(s): stmt_id (path segment)
+Recon evidence: Statement IDs are sequential zero-padded numbers. Requesting /bank/statements/2024/0041 returned 404, while 0043 returned 200 with a Content-Length of 2871 bytes versus 2410 bytes for the own statement, a response-size oracle for enumeration.
+Planner's rationale: Sequential path IDs with response-size filtering support a measured enumeration loop."}',
+'{"vuln_class": "idor", "target_param": "stmt_id", "payload": "GET /bank/statements/2024/0044", "injection_point": "path", "expected_success_signal": "HTTP 200 with a foreign statement body distinguishable by Content-Length", "confidence": 0.7, "reasoning": "The 404/200 split plus varying Content-Length lets the researcher distinguish owned from existing-but-foreign statements. The next sequential ID 0044 is the obvious continuation of the observed enumeration pattern."}'
+),
+(
+"""Endpoint: GET /shop/api/addresses?addr_uuid=4c8f1a2e-9d3b-4e7a-b1c2-3d4e5f607182
+Target parameter(s): addr_uuid (query)
+Recon evidence: The address book uses UUIDs, yet the same UUID observed inside a leaked delivery-order object also resolves on /shop/api/addresses, proving address identifiers are reusable across endpoints with no per-endpoint ownership check.
+Planner's rationale: Cross-endpoint UUID reuse lets an attacker pivot object references."}',
+'{"vuln_class": "idor", "target_param": "addr_uuid", "payload": "GET /shop/api/addresses?addr_uuid=4c8f1a2e-9d3b-4e7a-b1c2-3d4e5f607183", "injection_point": "query", "expected_success_signal": "HTTP 200 with another customer's saved shipping addresses", "confidence": 0.86, "reasoning": "Address UUIDs leak through order and notification objects and are accepted wherever the address endpoint is called. Swapping in the UUID of a known other-principal object reference is the direct next step."}'
+),
+(
+"""Endpoint: PUT /helpdesk/api/tickets (JSON body: ticket_ref)
+Target parameter(s): ticket_ref (JSON body, base64-encoded field)
+Recon evidence: The ticket_ref field is base64; decoding the logged-in user's ref reveals the sequential ticket number T-1024. No authorization error was seen on the encode/decode boundary, so the backend likely trusts the decoded value as-is.
+Planner's rationale: Encoded sequential identifier inside the request body invites a decode-tamper-re-encode probe."}',
+'{"vuln_class": "idor", "target_param": "ticket_ref", "payload": "{\\"ticket_ref\\": \\"VC0xMDI1\\"}", "injection_point": "body", "expected_success_signal": "HTTP 200/204 on a ticket update that affects another user's ticket T-1025", "confidence": 0.6, "reasoning": "The encoding hides only the format, not an authorization boundary, so incrementing the decoded ticket number and re-encoding should address a foreign ticket. Evidence is indirect (no direct observation of a foreign-ticket write), keeping confidence moderate."}'
+),
+(
+"""Endpoint: GET /api/v2/profile (cookie: uid)
+Target parameter(s): uid (cookie)
+Recon evidence: The gateway falls back to the uid cookie when no X-User-Id header is sent, and the cookie holds a sequential user number. A request with uid=1147 returned HTTP 200 with a different display name in the JSON body.
+Planner's rationale: Cookie-backed identity resolution is tamperable client-side."}',
+'{"vuln_class": "idor", "target_param": "uid", "payload": "Cookie: uid=1147", "injection_point": "cookie", "expected_success_signal": "HTTP 200 JSON body containing another user's display name and profile fields", "confidence": 0.55, "reasoning": "The sequential cookie value selects the principal with no signature or binding to the session, and the observed foreign display name confirms the swap. Only one adjacent ID was tested, so confidence stays moderate."}'
+),
+(
+"""Endpoint: GET /saas/billing/usage (header: X-Tenant-Id)
+Target parameter(s): X-Tenant-Id (header)
+Recon evidence: The API gateway resolves the tenant from the X-Tenant-Id header with tenant numbers assigned sequentially. Sending X-Tenant-Id: 2048 returned HTTP 200 with another tenant's usage records and seat count.
+Planner's rationale: Header-controlled tenant resolution enables cross-tenant data reads."}',
+'{"vuln_class": "idor", "target_param": "X-Tenant-Id", "payload": "X-Tenant-Id: 2048", "injection_point": "header", "expected_success_signal": "HTTP 200 with another tenant's billing usage and seat count in the response body", "confidence": 0.9, "reasoning": "The header alone selects the tenant object and no server-side ownership tie was observed, so a one-step tenant ID change yields foreign data. The observed 200 with a different seat count confirms cross-tenant access."}'
+),
+(
+"""Endpoint: GET /share/d/{dir_id}/download
+Target parameter(s): dir_id (path segment)
+Recon evidence: Share directory IDs are sequential. Requesting /share/d/9917/download while authenticated returned HTTP 200 with a private PDF belonging to another user, including their file metadata.
+Planner's rationale: Sequential share-directory IDs in the path expose other users\' files."}',
+'{"vuln_class": "idor", "target_param": "dir_id", "payload": "GET /share/d/9917/download", "injection_point": "path", "expected_success_signal": "HTTP 200 streaming another user's private file bytes", "confidence": 0.85, "reasoning": "The download endpoint keys the object purely off the path segment and the observed 200 leaked a foreign private PDF. Continuing the sequential walk is the most direct enumeration payload."}'
+),
+]
+
+# sanity on base64 claims used in evidence/payloads
+assert base64.b64decode("MTIzNDU2").decode() == "123456"
+assert base64.b64decode("MTIzNDU3").decode() == "123457"
+assert base64.b64decode("VC0xMDI1").decode() == "T-1025"
+
+expected_params = {
+    "order_id","acct","record_id","id","ref","ticket","report_id","owner",
+    "customer.id","stmt_id","addr_uuid","ticket_ref","uid","X-Tenant-Id","dir_id",
+}
+
+lines = []
+for user, assistant in records:
+    obj = {"messages": [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user},
+        {"role": "assistant", "content": assistant},
+    ]}
+    lines.append(json.dumps(obj, ensure_ascii=False))
+
+assert len(lines) == 15
+
+with open(out_path, "w", encoding="utf-8", newline="\n") as f:
+    f.write("\n".join(lines) + "\n")
+
+# verification pass
+raw = open(out_path, encoding="utf-8").read()
+vlines = raw.split("\n")
+assert vlines[-1] == "" and len(vlines) - 1 == 15
+seen_pairs = set()
+params = set()
+points = []
+KEYS = ["vuln_class","target_param","payload","injection_point","expected_success_signal","confidence","reasoning"]
+for i, line in enumerate(vlines[:-1], 1):
+    obj = json.loads(line)
+    assert list(obj.keys()) == ["messages"]
+    msgs = obj["messages"]
+    assert len(msgs) == 3 and [m["role"] for m in msgs] == ["system","user","assistant"]
+    assert msgs[0]["content"] == system, f"system mismatch line {i}"
+    a = json.loads(msgs[2]["content"])
+    assert list(a.keys()) == KEYS, f"key order line {i}"
+    assert a["vuln_class"] == "idor"
+    assert a["injection_point"] in {"query","body","header","cookie","path"}
+    assert 0.0 <= a["confidence"] <= 1.0
+    params.add(a["target_param"])
+    points.append(a["injection_point"])
+    pair = (a["target_param"], a["payload"])
+    assert pair not in seen_pairs, f"dup pair line {i}"
+    seen_pairs.add(pair)
+    assert msgs[2]["content"] == json.dumps(a, ensure_ascii=False)
+
+assert params == expected_params, params ^ expected_params
+assert set(points) == {"query","body","header","cookie","path"}
+assert len([p for p in points if p=="path"]) == 5
+conf = [json.loads(l)["messages"][2]["content"] for l in []]
+print("OK: 15 lines written and verified")
+print("injection points:", {p: points.count(p) for p in sorted(set(points))})
+EOF
+/usr/bin/bash: line 73: warning: here-document at line 1 delimited by end-of-file (wanted `EOF')
+  File "<stdin>", line 23
+    '{"vuln_class": "idor", "target_param": "acct", "payload": "acct=88214", "injection_point": "query", "expected_success_signal": "HTTP 200 with another account holder's statement body (balance, card last four)", "confidence": 0.92, "reasoning": "Adjacent sequential account numbers return full statement bodies for other principals, showing the lookup keys only on the query parameter. Enumerating one step further is the canonical IDOR walk on this endpoint."}'
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ^
+SyntaxError: unterminated string literal (detected at line 23)
+[0m
+[0m← [0mWrite C:/Users/anas/AppData/Local/Temp/opencode/gen_idor_a.py
+Wrote file successfully.
+[0m
+The heredoc broke on an apostrophe inside a single-quoted Python string. I'll write the generator script to a temp file (outside the workspace) and build the assistant JSON via `json.dumps` to avoid quoting issues entirely.
+[0m$ [0mpython "C:\Users\anas\AppData\Local\Temp\opencode\gen_idor_a.py"
+Traceback (most recent call last):
+  File "C:\Users\anas\AppData\Local\Temp\opencode\gen_idor_a.py", line 197, in <module>
+    assert base64.b64decode("VK0xMDI1").decode() == "T-1025"
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xad in position 1: invalid start byte
+[0m
+My manual base64 for record 12 was wrong. Verifying with the actual command:
+[0m$ [0mpython -c "import base64; print(base64.b64encode(b'T-1025').decode()); print(base64.b64encode(b'T-1024').decode()); print(base64.b64decode('MTIzNDU3').decode())"
+VC0xMDI1
+VC0xMDI0
+123457
+[0m
+[0m← [0mEdit C:/Users/anas/AppData/Local/Temp/opencode/gen_idor_a.py
+Index: C:\Users\anas\AppData\Local\Temp\opencode\gen_idor_a.py
+===================================================================
+--- C:\Users\anas\AppData\Local\Temp\opencode\gen_idor_a.py
++++ C:\Users\anas\AppData\Local\Temp\opencode\gen_idor_a.py
+@@ -193,9 +193,9 @@
+ ))
+ 
+ assert base64.b64decode("MTIzNDU2").decode() == "123456"
+ assert base64.b64decode("MTIzNDU3").decode() == "123457"
+-assert base64.b64decode("VK0xMDI1").decode() == "T-1025"
++assert base64.b64decode("VC0xMDI1").decode() == "T-1025"
+ 
+ lines = []
+ for user, a in R:
+     lines.append(json.dumps({"messages": [
+
+[0m
+[0m← [0mEdit C:/Users/anas/AppData/Local/Temp/opencode/gen_idor_a.py
+Index: C:\Users\anas\AppData\Local\Temp\opencode\gen_idor_a.py
+===================================================================
+--- C:\Users\anas\AppData\Local\Temp\opencode\gen_idor_a.py
++++ C:\Users\anas\AppData\Local\Temp\opencode\gen_idor_a.py
+@@ -148,9 +148,9 @@
+ Target parameter(s): ticket_ref (JSON body, base64-encoded field)
+ Recon evidence: The ticket_ref field is base64; decoding the logged-in user's ref reveals the sequential ticket number T-1024. No authorization error was seen on the encode/decode boundary, so the backend likely trusts the decoded value as-is.
+ Planner's rationale: Encoded sequential identifier inside the request body invites a decode-tamper-re-encode probe.""",
+ {"vuln_class": "idor", "target_param": "ticket_ref",
+- "payload": "{\"ticket_ref\": \"VK0xMDI1\"}",
++ "payload": "{\"ticket_ref\": \"VC0xMDI1\"}",
+  "injection_point": "body",
+  "expected_success_signal": "HTTP 200/204 on a ticket update that affects another user's ticket T-1025",
+  "confidence": 0.6,
+  "reasoning": "The encoding hides only the format, not an authorization boundary, so incrementing the decoded ticket number and re-encoding should address a foreign ticket. Evidence is indirect (no direct observation of a foreign-ticket write), keeping confidence moderate."}
+
+[0m
+[0m$ [0mpython "C:\Users\anas\AppData\Local\Temp\opencode\gen_idor_a.py"
+VERIFIED: 15 lines
+injection points: {'body': 2, 'cookie': 1, 'header': 1, 'path': 5, 'query': 6}
+confidences: [0.55, 0.6, 0.6, 0.65, 0.7, 0.7, 0.85, 0.85, 0.86, 0.87, 0.88, 0.88, 0.9, 0.9, 0.92]
+[0m
+[0m$ [0mpython -c "
+import json
+p = r'C:\Users\anas\Documents\hackbot_recon_agent\hackbot\training_resources\enrichment\candidates\idor_a.jsonl'
+raw = open(p, encoding='utf-8').read()
+assert raw.endswith('\n') and not raw.endswith('\n\n')
+lines = raw.splitlines()
+assert len(lines) == 15, len(lines)
+K = ['vuln_class','target_param','payload','injection_point','expected_success_signal','confidence','reasoning']
+spec = open(r'C:\Users\anas\Documents\hackbot_recon_agent\hackbot\training_resources\enrichment\specs\idor_a.md', encoding='utf-8').read()
+sysp = spec.split('\`\`\`')[1].strip('\n')
+for i, l in enumerate(lines, 1):
+    o = json.loads(l)
+    m = o['messages']
+    assert [x['role'] for x in m] == ['system','user','assistant']
+    assert m[0]['content'] == sysp
+    a = json.loads(m[2]['content'])
+    assert list(a) == K and a['injection_point'] in {'query','body','header','cookie','path'} and 0.0 <= a['confidence'] <= 1.0
+print('FINAL CHECK OK: 15 lines, valid JSONL, schema/order/enum/range all conform')
+"
+FINAL CHECK OK: 15 lines, valid JSONL, schema/order/enum/range all conform
+[0m
+All checks passed. Running one final independent read-back verification as the brief requires:
+Done. Wrote and verified `training_resources/enrichment/candidates/idor_a.jsonl` — **15 lines**, each a valid JSONL record with system/user/assistant messages, assistant content parsing as JSON with the 7 keys in the required order, all injection points in-enum, confidences in 0.0–1.0, and the system prompt copied character-for-character from the spec. Coverage: 9 strong-evidence (0.85–0.92) and 6 moderate (0.55–0.7) records spanning path (5), query (6), body (2), header (1), cookie (1) injection points across 9 distinct app types. No other files in the workspace were created or modified.
