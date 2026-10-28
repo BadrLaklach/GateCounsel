@@ -1,7 +1,5 @@
 __pycache__/
 *.pyc
-sitemap.json
-juiceshop_sitemap.json
 .venv/
 .env
 

