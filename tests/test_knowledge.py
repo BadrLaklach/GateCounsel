@@ -10,12 +10,13 @@ bodies, and globally unique ids. Run with the normal suite:
 
 from __future__ import annotations
 
-import re
 import sys
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from rag.retriever import parse_chunk as _parse_chunk  # noqa: E402
 
 KNOWLEDGE_DIR = Path(__file__).resolve().parents[1] / "knowledge"
 EXPECTED_CLASSES = [
@@ -25,24 +26,6 @@ EXPECTED_CLASSES = [
 REQUIRED_KEYS = ["id", "class", "kind", "title", "applies_when", "source", "tags"]
 ALLOWED_KINDS = {"technique", "context_map"}
 MIN_BODY_WORDS, MAX_BODY_WORDS = 100, 300
-
-
-def _parse_chunk(path: Path) -> tuple[dict, str]:
-    """Parse frontmatter (flat key: value, tags as [a, b]) and body."""
-    text = path.read_text(encoding="utf-8")
-    m = re.match(r"\A---\n(.*?)\n---\n(.*)\Z", text, re.S)
-    if not m:
-        raise ValueError(f"{path.name}: missing '---\\n...\\n---' frontmatter block")
-
-    meta: dict[str, str] = {}
-    for line in m.group(1).splitlines():
-        key, sep, value = line.partition(":")
-        if not sep:
-            raise ValueError(f"{path.name}: frontmatter line not 'key: value': {line!r}")
-        meta[key.strip()] = value.strip()
-
-    body = m.group(2).strip()
-    return meta, body
 
 
 def _iter_chunks() -> list[tuple[Path, dict, str]]:

@@ -67,12 +67,25 @@ context map per class, global id uniqueness). Run it with the normal suite:
 python -m unittest discover -s tests
 ```
 
-## Ingestion (when rag/ is built)
+## Retrieval
 
-One ChromaDB collection per class (`knowledge_<class>`, per the expert spec)
-so retrieval can never leak cross-class context. A chunk file is embedded as
-a unit; the frontmatter becomes document metadata, and `source` flows into
-`ExpertVerdict.retrieved_sources`.
+`rag/retriever.py` (`KnowledgeRetriever`) is the retrieval layer: one
+instance per vulnerability class, loading and indexing only that class's
+directory — cross-class context leakage is impossible by construction, a
+stronger guarantee than separate collections in a shared vector store.
+Ranking is BM25 over the chunk text with the frontmatter anchors (title,
+`applies_when`, tags) boosted ahead of body prose; queries are built from
+the task's evidence via `context_query(signals, rationale)` (expert spec
+§5). It is pure stdlib, offline, and deterministic — the retrieval-quality
+fixtures in `tests/test_rag.py` assert evidence-phrased queries rank the
+matching technique first, and double as the seed of the eval harness.
+
+clean-code exception (documented in `rag/retriever.py`): vector retrieval
+via ChromaDB (named in the expert spec §6) is deliberately deferred — it
+would add a heavy dependency tree and a runtime embedding-model download
+for paraphrase robustness this corpus size does not need. Revisit when the
+store grows past ~300 chunks or the eval harness shows paraphrase misses;
+`KnowledgeRetriever.retrieve()` is the seam a vector backend plugs into.
 
 ## Adding a chunk
 
