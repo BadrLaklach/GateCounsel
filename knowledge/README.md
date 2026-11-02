@@ -69,23 +69,48 @@ python -m unittest discover -s tests
 
 ## Retrieval
 
-`rag/retriever.py` (`KnowledgeRetriever`) is the retrieval layer: one
-instance per vulnerability class, loading and indexing only that class's
-directory — cross-class context leakage is impossible by construction, a
-stronger guarantee than separate collections in a shared vector store.
-Ranking is BM25 over the chunk text with the frontmatter anchors (title,
-`applies_when`, tags) boosted ahead of body prose; queries are built from
-the task's evidence via `context_query(signals, rationale)` (expert spec
-§5). It is pure stdlib, offline, and deterministic — the retrieval-quality
-fixtures in `tests/test_rag.py` assert evidence-phrased queries rank the
-matching technique first, and double as the seed of the eval harness.
+`rag/retriever.py` provides three engines behind one interface
+(`retrieve(query, k=3) -> list[RetrievedChunk]`):
 
-clean-code exception (documented in `rag/retriever.py`): vector retrieval
-via ChromaDB (named in the expert spec §6) is deliberately deferred — it
-would add a heavy dependency tree and a runtime embedding-model download
-for paraphrase robustness this corpus size does not need. Revisit when the
-store grows past ~300 chunks or the eval harness shows paraphrase misses;
-`KnowledgeRetriever.retrieve()` is the seam a vector backend plugs into.
+- **HybridKnowledgeRetriever** — the default once the vector index exists:
+  reciprocal-rank fusion (RRF, k=60) of the lexical and vector rankings.
+  Empirically each single engine misses queries the other hits (see the
+  fixture history in `tests/test_rag.py`), so fusion is the shipping
+  engine.
+- **ChromaKnowledgeRetriever** — vector retrieval over per-class
+  collections (`knowledge_<class>`), cosine similarity.
+- **KnowledgeRetriever** — BM25 over the chunk files directly; the
+  fallback for fresh clones before the first ingest, and the offline
+  engine the suite's retrieval-quality fixtures run against.
+
+`get_retriever(vuln_class)` picks the engine automatically: hybrid when
+the class's collection exists, lexical otherwise. Every engine is scoped
+to one class by construction — it loads only that class's directory or
+collection, so cross-class context leakage is impossible.
+
+## Ingestion (embeddings)
+
+```
+pip install -r requirements.txt        # adds chromadb + sentence-transformers
+python -m rag.ingest                   # all classes
+python -m rag.ingest sqli xss_reflected
+```
+
+Ingestion embeds each chunk as anchors (title + applies_when + tags)
+followed by body, into per-class collections stored in
+`rag/chroma_index/` (gitignored — rebuilt from source anytime). It is
+idempotent by content hash: unchanged chunks are skipped, edits are
+upserted, deleted chunks are removed. Re-run it after every corpus edit.
+ChromaDB's anonymized telemetry is explicitly disabled at every client
+construction. The first ingest downloads the MiniLM model (~90 MB,
+cached in your home directory).
+
+The real-model end-to-end check (fixtures against a genuinely ingested
+index) is env-gated to keep the default suite offline and fast:
+
+```
+GATECOUNSEL_EMBEDDINGS_E2E=1 python -m unittest tests.test_rag
+```
 
 ## Adding a chunk
 

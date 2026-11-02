@@ -1,24 +1,23 @@
-"""Per-class lexical retrieval over the knowledge/ chunk store.
+"""Per-class retrieval over the knowledge/ chunk store — two engines.
 
 The Tier-1 expert's context source (EXPERT_AGENTS_SPEC §5/§6): each expert
-retrieves ONLY from its own vulnerability class's chunks. The retriever
-loads a single class directory and never sees the others, so cross-class
-context leakage is impossible by construction — a stronger guarantee than
-separate collections in a shared vector store.
+retrieves ONLY from its own vulnerability class's chunks, so cross-class
+context leakage is impossible by construction — stronger than trusting a
+shared store to keep collections apart.
 
-Engine: BM25 over one document per chunk. Title, applies_when and tags are
-retrieval anchors, so they are boosted by duplication ahead of body prose.
-Pure stdlib, deterministic, offline: the corpus is a few dozen small files,
-index build is milliseconds, and identical queries return identical results
-(same-score ties break by chunk id) — which is what makes the retrieval
-fixtures in tests/test_rag.py a meaningful mini eval harness.
+ChromaKnowledgeRetriever is the primary engine: vector retrieval over
+per-class collections ingested by rag/ingest.py (sentence-transformers
+MiniLM by default). KnowledgeRetriever is Okapi BM25 over the chunk files
+directly — the fallback for fresh clones before the first ingest, and the
+offline engine the retrieval-quality fixtures run against (the same
+assertions run against the real vector index under
+GATECOUNSEL_EMBEDDINGS_E2E=1). get_retriever() picks: vector when the
+class's collection exists, lexical otherwise.
 
-clean-code exception: vector retrieval (ChromaDB, named in the expert spec
-§6) is deliberately deferred — it would add a heavy dependency tree and a
-runtime embedding-model download for paraphrase robustness this corpus
-size does not need. Revisit when the store grows past ~300 chunks or the
-eval harness shows paraphrase misses; KnowledgeRetriever.retrieve() is the
-seam a vector backend plugs into.
+The embedding function contract is a plain callable list[str] -> list of
+vectors, invoked explicitly on both ingest and query sides, so a
+deterministic fake can replace the model in tests without touching
+Chroma's embedding-function plumbing.
 """
 
 from __future__ import annotations
@@ -28,10 +27,21 @@ import re
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-__all__ = ["RetrievedChunk", "KnowledgeRetriever", "parse_chunk", "context_query"]
+__all__ = ["RetrievedChunk", "KnowledgeRetriever", "ChromaKnowledgeRetriever",
+           "HybridKnowledgeRetriever", "get_retriever", "parse_chunk",
+           "context_query", "default_embedding_function"]
 
 KNOWLEDGE_ROOT = Path(__file__).resolve().parents[1] / "knowledge"
+DEFAULT_PERSIST_DIR = Path(__file__).resolve().parent / "chroma_index"  # gitignored
 DEFAULT_K = 3  # spec §5: "Return top-k (k=3 default) chunks"
+DEFAULT_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+
+
+def default_embedding_function():
+    """sentence-transformers MiniLM embedder (lazy: no torch at module import)."""
+    from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+
+    return SentenceTransformerEmbeddingFunction(model_name=DEFAULT_EMBEDDING_MODEL)
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
@@ -204,3 +214,128 @@ class KnowledgeRetriever:
         hits = [(score, chunk) for score, chunk in scored if score > 0.0]
         hits.sort(key=lambda pair: (-pair[0], pair[1].chunk_id))
         return [replace(chunk, score=round(score, 4)) for score, chunk in hits[:k]]
+
+
+# ------------------------------------------------------------------ #
+# Vector engine (primary; requires rag/ingest.py to have run)
+# ------------------------------------------------------------------ #
+class ChromaKnowledgeRetriever:
+    """Vector retrieval over one ingested class collection.
+
+    The embedding function must match ingest time (same model, or the same
+    fake in tests); collections store precomputed vectors, queries embed
+    explicitly.
+    """
+
+    def __init__(self, vuln_class: str, *, persist_dir: str | Path = DEFAULT_PERSIST_DIR,
+                 embedding_function=None) -> None:
+        import chromadb  # lazy: importing rag.retriever never pulls chroma
+
+        self.vuln_class = vuln_class
+        self._embed = embedding_function or default_embedding_function()
+        client = chromadb.PersistentClient(
+            path=str(Path(persist_dir)),
+            settings=chromadb.Settings(anonymized_telemetry=False),
+        )
+        try:
+            self._collection = client.get_collection(f"knowledge_{vuln_class}")
+        except Exception as exc:  # chroma raises ValueError/NotFoundError by version
+            raise ValueError(
+                f"no ingested collection for {vuln_class!r} — run: python -m rag.ingest {vuln_class}"
+            ) from exc
+
+    @property
+    def chunk_ids(self) -> list[str]:
+        return list(self._collection.get().get("ids", []))
+
+    def retrieve(self, query: str, k: int = DEFAULT_K) -> list[RetrievedChunk]:
+        """Top-k chunks by cosine similarity (score = 1 - distance)."""
+        available = self._collection.count()
+        if k <= 0 or available == 0:
+            return []
+        result = self._collection.query(
+            query_embeddings=self._embed([query]),
+            n_results=min(k, available),
+        )
+        chunks: list[RetrievedChunk] = []
+        for chunk_id, distance, meta, text in zip(
+            result["ids"][0], result["distances"][0],
+            result["metadatas"][0], result["documents"][0],
+        ):
+            chunks.append(RetrievedChunk(
+                chunk_id=chunk_id,
+                class_name=(meta or {}).get("class", self.vuln_class),
+                title=(meta or {}).get("title", ""),
+                source=(meta or {}).get("source", ""),
+                applies_when=(meta or {}).get("applies_when", ""),
+                text=text or "",
+                score=round(1.0 - distance, 4),
+            ))
+        return chunks
+
+
+# ------------------------------------------------------------------ #
+# Hybrid engine (default once ingested): reciprocal-rank fusion
+# ------------------------------------------------------------------ #
+class HybridKnowledgeRetriever:
+    """RRF fusion of the lexical and vector engines — the default after ingest.
+
+    Empirical basis (tests/test_rag.py fixtures): on this corpus each single
+    engine misses queries the other hits — plain BM25 lost everyday
+    phrasings before the anchor-synonym fixes; pure MiniLM retrieval ranks
+    adjacent technique chunks nearly tied and flips fixtures (idor
+    'changing the number': 0.2012 obfuscation vs 0.1964 tampering). RRF
+    (k=60, Cormack et al. 2009) fuses the two ranked lists without
+    normalizing incomparable score spaces (unbounded BM25 vs bounded
+    cosine), is parameter-free beyond k, and stays deterministic (ties
+    break by chunk id).
+    """
+
+    RRF_K = 60
+    CANDIDATE_POOL = 10  # each engine contributes up to this many candidates
+
+    def __init__(self, vuln_class: str, *, persist_dir: str | Path = DEFAULT_PERSIST_DIR,
+                 embedding_function=None) -> None:
+        self.vuln_class = vuln_class
+        self.lexical = KnowledgeRetriever(vuln_class)
+        self.vector = ChromaKnowledgeRetriever(vuln_class, persist_dir=persist_dir,
+                                               embedding_function=embedding_function)
+
+    @property
+    def chunk_ids(self) -> list[str]:
+        return self.lexical.chunk_ids
+
+    def retrieve(self, query: str, k: int = DEFAULT_K) -> list[RetrievedChunk]:
+        """Fuse both engines' rankings; top-k by fused RRF score."""
+        pool = max(k, self.CANDIDATE_POOL)
+        fused: dict[str, float] = {}
+        by_id: dict[str, RetrievedChunk] = {}
+        for ranked in (self.lexical.retrieve(query, k=pool),
+                       self.vector.retrieve(query, k=pool)):
+            for rank, chunk in enumerate(ranked, start=1):
+                fused[chunk.chunk_id] = fused.get(chunk.chunk_id, 0.0) + 1.0 / (self.RRF_K + rank)
+                by_id.setdefault(chunk.chunk_id, chunk)
+        ranked_ids = sorted(fused, key=lambda cid: (-fused[cid], cid))
+        return [replace(by_id[cid], score=round(fused[cid], 6)) for cid in ranked_ids[:k]]
+
+
+def get_retriever(
+    vuln_class: str,
+    *,
+    prefer_vector: bool = True,
+    persist_dir: str | Path = DEFAULT_PERSIST_DIR,
+    embedding_function=None,
+) -> "KnowledgeRetriever | ChromaKnowledgeRetriever | HybridKnowledgeRetriever":
+    """Hybrid retriever when the class collection exists; lexical otherwise."""
+    if prefer_vector:
+        import chromadb
+
+        client = chromadb.PersistentClient(
+            path=str(Path(persist_dir)),
+            settings=chromadb.Settings(anonymized_telemetry=False),
+        )
+        names = {getattr(c, "name", c) for c in client.list_collections()}
+        if f"knowledge_{vuln_class}" in names:
+            return HybridKnowledgeRetriever(vuln_class, persist_dir=persist_dir,
+                                            embedding_function=embedding_function)
+    return KnowledgeRetriever(vuln_class)

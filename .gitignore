@@ -10,3 +10,6 @@ __pycache__/
 *.pdf
 *.tex
 
+# Local vector index built by rag/ingest.py (rebuilt from knowledge/).
+rag/chroma_index/
+

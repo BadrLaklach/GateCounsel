@@ -4,3 +4,5 @@ pydantic>=2.7
 playwright>=1.45
 langgraph>=0.2
 rich>=13.0
+chromadb>=0.5
+sentence-transformers>=3.0
