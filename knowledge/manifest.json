@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Provenance for the per-class RAG knowledge chunks under knowledge/. These chunks are retrieval context for the Tier-1 expert agents (EXPERT_AGENTS_SPEC §6). They are reference material only and grant no scope, target, or execution authorization.",
+  "upstream": [
+    {
+      "name": "HackTricks",
+      "author_attribution": "Carlos Polop",
+      "repository": "https://github.com/HackTricks-wiki/hacktricks",
+      "pinned_commit": "f66c437539916b7e87d35c17252a26f90878b40f",
+      "license": {
+        "name": "Creative Commons Attribution-NonCommercial 4.0 International",
+        "spdx": "CC-BY-NC-4.0",
+        "url": "https://creativecommons.org/licenses/by-nc/4.0/",
+        "exception_note": "The upstream notice says some external material belongs to its original authors and may have separate terms. Chunks paraphrase concepts and do not copy those passages."
+      },
+      "local_intermediaries": [
+        "training_resources/hacktricks/source/src/ (compact paraphrased notes)",
+        "training_resources/hacktricks/source/source_manifest.json (page hashes)"
+      ]
+    },
+    {
+      "name": "PayloadsAllTheThings",
+      "author_attribution": "swisskyrepo and contributors",
+      "repository": "https://github.com/swisskyrepo/PayloadsAllTheThings",
+      "license": {
+        "name": "MIT License",
+        "spdx": "MIT",
+        "url": "https://opensource.org/licenses/MIT"
+      },
+      "local_intermediaries": [
+        "training_resources/payloads_all_the_things/training_data/ (derived example sets)"
+      ]
+    }
+  ],
+  "curation": {
+    "method": "Chunks were written in the project's own words from the compact notes, the derived example corpora, and standard published technique categories. Each chunk carries its source line; no upstream text or raw payload lists are copied verbatim.",
+    "hand_written_classes": [
+      "jwt_misconfig",
+      "auth_bypass"
+    ],
+    "hand_written_note": "jwt_misconfig and auth_bypass have no gathered corpus yet; their chunks are hand-written decision notes based on standard published technique categories, with no upstream text.",
+    "runtime_status": "Offline reference data only. Not yet wired to a retriever; ingest per knowledge/README.md when rag/ exists.",
+    "safety_scope": "Training and reference data only. Runtime execution remains governed by the ScopePolicy, the operation allowlist, and the deterministic verifier."
+  },
+  "classes": [
+    "xss_reflected",
+    "sqli",
+    "ssrf",
+    "idor",
+    "open_redirect",
+    "jwt_misconfig",
+    "auth_bypass"
+  ]
+}
