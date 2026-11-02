@@ -19,7 +19,7 @@ import re
 from urllib.parse import urljoin, urlsplit, parse_qsl
 
 from agents.recon.core.models import Endpoint, Param
-from agents.recon.crawlers.crawler import RE_JWT, normalize_key
+from agents.recon.crawlers.crawler import RE_JWT, RE_LOGOUT_URL, normalize_key
 
 log = logging.getLogger("gatecounsel.browser")
 
@@ -209,6 +209,8 @@ class BrowserCrawler:
                 p = urlsplit(url)
                 if p.netloc != origin or p.scheme not in ("http", "https"):
                     continue
+                if RE_LOGOUT_URL.search(p.path):
+                    continue  # navigating would end the session for later routes
                 if is_allowed(url) and url.rstrip("/") != self.base_url.rstrip("/"):
                     routes.append(url)
         except Exception as exc:

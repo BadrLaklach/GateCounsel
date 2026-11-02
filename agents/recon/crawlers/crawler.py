@@ -36,6 +36,10 @@ RE_API_LITERAL = re.compile(r"""['"`](/(?:api|rest|graphql|v[1-9])(?:/api)?[/A-Z
 RE_HASH_ROUTE = re.compile(r"""['"`]#/([A-Za-z0-9_\-/?=&.%]+)['"`]""")
 RE_JWT = re.compile(r"eyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]*")
 
+# Session-ending surfaces: one authenticated GET invalidates the operator's
+# session and every subsequent authenticated request silently degrades.
+RE_LOGOUT_URL = re.compile(r"log-?out|log-?off|sign-?out|d[eé]conn|disconnect", re.I)
+
 
 @dataclass
 class FetchObservation:
@@ -159,11 +163,19 @@ class HttpCrawler:
             if depth >= self.max_depth:
                 continue
             for link in self._collect_links(url, result.text):
-                if self.same_origin(link) and looks_like_page(link):
-                    k = normalize_key("GET", link)[1]
-                    if k not in self.seen_urls:
-                        self.seen_urls.add(k)
-                        queue.append((link, depth + 1))
+                if not (self.same_origin(link) and looks_like_page(link)):
+                    continue
+                if RE_LOGOUT_URL.search(urlsplit(link).path):
+                    # record the surface but never fetch it — a single GET
+                    # would end the session mid-crawl
+                    ep = self.record("GET", link, via="link")
+                    ep.notes = f"{ep.notes}; " if ep.notes else ""
+                    ep.notes += "logout surface — not fetched to preserve the session"
+                    continue
+                k = normalize_key("GET", link)[1]
+                if k not in self.seen_urls:
+                    self.seen_urls.add(k)
+                    queue.append((link, depth + 1))
 
     # ------------------------------------------------------------------ #
     def _collect_links(self, base: str, text: str) -> list[str]:
