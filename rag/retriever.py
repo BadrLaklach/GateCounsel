@@ -35,6 +35,15 @@ DEFAULT_K = 3  # spec §5: "Return top-k (k=3 default) chunks"
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
+# Prose noise that matches almost every document and drowns out anchor
+# terms at small corpus sizes (found by the paraphrase probe in
+# tests/test_rag.py: "backend visits a link i give it" ranked an
+# irrelevant chunk first on 'a'/'i'/'it' matches alone).
+_STOPWORDS = frozenset("""
+a an and are as at be by for from has have i in is it its of on or that
+the this to was were will with you your
+""".split())
+
 
 # ------------------------------------------------------------------ #
 # Chunk loading
@@ -90,7 +99,17 @@ def context_query(signals: list[str] | None, rationale: str | None) -> str:
 # BM25 index (Okapi, k1/b defaults per Robertson/Sparck Jones usage)
 # ------------------------------------------------------------------ #
 def _tokenize(text: str) -> list[str]:
-    return _TOKEN_RE.findall(text.lower())
+    """Lowercase word tokens: stopwords dropped, trailing plural 's' folded.
+
+    The plural fold ("changes"→"change", "quotes"→"quote") is deliberately
+    crude — applied after stopword removal, only to words longer than three
+    chars — because the paraphrase probe showed tense/plural mismatches
+    ("changing the number" vs "changes ... integer") lose the right chunk,
+    and a full stemmer is not warranted for this corpus.
+    """
+    tokens = _TOKEN_RE.findall(text.lower())
+    return [t[:-1] if len(t) > 3 and t.endswith("s") else t
+            for t in tokens if t not in _STOPWORDS]
 
 
 def _document_text(meta: dict[str, str], body: str) -> str:

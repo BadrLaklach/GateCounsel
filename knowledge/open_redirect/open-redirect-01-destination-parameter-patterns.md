@@ -5,7 +5,7 @@ kind: technique
 title: Destination parameters — where they hide and what they control
 applies_when: enumerating which parameters actually steer navigation before proposing a redirect payload
 source: HackTricks Open Redirect page (commit f66c437, CC-BY-NC-4.0), paraphrased
-tags: [parameter-discovery, location-header, client-redirect]
+tags: [parameter-discovery, location-header, client-redirect, visitors, another-domain]
 ---
 
 Two mechanisms produce redirects, and they need different evidence:

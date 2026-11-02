@@ -5,7 +5,7 @@ kind: technique
 title: Reflected XSS into a tag attribute — quote breakout with event handlers
 applies_when: the marker value appears inside an HTML attribute such as value="..." and tag creation is not possible
 source: HackTricks XSS README (commit f66c437, CC-BY-NC-4.0), paraphrased
-tags: [attribute, breakout, event-handler, onfocus, autofocus]
+tags: [attribute, breakout, event-handler, onfocus, autofocus, echo, quotes, input-field]
 ---
 
 When the reflection lands inside an attribute, angle brackets are usually

@@ -5,7 +5,7 @@ kind: technique
 title: Reflected XSS into raw HTML body — tag injection
 applies_when: the marker value appears in HTML text outside any tag, and angle brackets survive reflection unescaped
 source: HackTricks XSS README (commit f66c437, CC-BY-NC-4.0), paraphrased
-tags: [raw-html, tag-injection, script, img-onerror, svg]
+tags: [raw-html, tag-injection, script, img-onerror, svg, mirrored, markup, page-text]
 ---
 
 When the value lands as HTML text and `<`/`>` are not encoded, the canonical

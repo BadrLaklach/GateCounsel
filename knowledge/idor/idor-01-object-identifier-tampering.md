@@ -5,7 +5,7 @@ kind: technique
 title: Object identifier tampering — the seeded-pair swap
 applies_when: an endpoint returns one identified object to an authenticated identity, and a second seeded identity owns a known object
 source: HackTricks IDOR page (commit f66c437, CC-BY-NC-4.0), paraphrased
-tags: [swap, seeded-pair, sequential, leaked-id]
+tags: [swap, seeded-pair, sequential, leaked-id, changing, number, predict]
 ---
 
 The minimal IDOR probe changes exactly one thing — the object identifier —

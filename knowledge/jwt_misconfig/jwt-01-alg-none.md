@@ -5,7 +5,7 @@ kind: technique
 title: alg:none — the unsigned-token acceptance gap
 applies_when: the decoded token header uses a symmetric or asymmetric alg and the verifier may not pin the expected algorithm
 source: hand-written decision note (own words; standard published technique categories, no upstream text)
-tags: [alg-none, header-tampering, unsigned]
+tags: [alg-none, header-tampering, unsigned, accepted-without-signature, still-works]
 ---
 
 The server should decide which algorithm it trusts; when it instead

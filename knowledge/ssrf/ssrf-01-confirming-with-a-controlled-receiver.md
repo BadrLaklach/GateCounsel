@@ -5,7 +5,7 @@ kind: technique
 title: Confirming SSRF with a controlled receiver and unique case ID
 applies_when: a URL-accepting parameter exists and the lab provides a request-logging receiver endpoint
 source: HackTricks SSRF README (commit f66c437, CC-BY-NC-4.0), paraphrased
-tags: [receiver, callback, case-id, evidence]
+tags: [receiver, callback, case-id, evidence, backend, fetches, visits, link]
 ---
 
 The strongest SSRF evidence does not depend on the target's response at
