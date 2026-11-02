@@ -4,6 +4,7 @@
 Usage:
     python run_recon.py http://localhost:3000
     python run_recon.py http://localhost:3000 --username admin@juice-sh.op --password admin123
+    python run_recon.py http://localhost:3000 --session-cookie JSESSIONID=abc123
     python run_recon.py http://localhost:3000 --no-playwright --out sitemap.json --rps 2
 
 Only run this against targets you are explicitly authorized to test
@@ -36,6 +37,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("target", help="Base URL of the target, e.g. http://localhost:3000")
     p.add_argument("--username", help="Operator-supplied login for the authenticated pass")
     p.add_argument("--password", help="Operator-supplied password for the authenticated pass")
+    p.add_argument("--session-cookie", action="append", default=[], metavar="NAME=VALUE",
+                   help="Operator-supplied session cookie, e.g. JSESSIONID=abc123 (repeatable); "
+                        "takes precedence over --username/--password")
     p.add_argument("--scope", action="append", default=[],
                    help="Extra sanctioned hosts/URLs (repeatable); the target is always in scope")
     p.add_argument("--out", default="sitemap.json", help="Output JSON path (default: sitemap.json)")
@@ -113,10 +117,19 @@ def main(argv: list[str] | None = None) -> int:
     urllib3.disable_warnings()
     logging.getLogger("urllib3").setLevel(logging.ERROR)
 
+    session_cookies: list[tuple[str, str]] = []
+    for raw in args.session_cookie:
+        if "=" not in raw:
+            print(f"error: --session-cookie expects NAME=VALUE, got {raw!r}", file=sys.stderr)
+            return 2
+        name, value = raw.split("=", 1)
+        session_cookies.append((name.strip(), value.strip()))
+
     agent = ReconAgent(
         args.target,
         username=args.username,
         password=args.password,
+        session_cookies=session_cookies,
         scope_targets=[args.target] + args.scope,
         config={
             "max_pages": args.max_pages,

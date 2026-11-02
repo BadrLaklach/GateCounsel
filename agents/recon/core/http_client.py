@@ -193,6 +193,10 @@ class ScopedHttpClient:
         except Exception:
             return []
 
+    def set_cookie(self, name: str, value: str, *, domain: str, path: str = "/") -> None:
+        """Seed an operator-supplied session cookie into the jar."""
+        self._client.cookies.set(name, value, domain=domain, path=path)
+
     def auth_headers(self) -> dict[str, str]:
         """Authorization header for the stored JWT, if any."""
         return {"Authorization": f"Bearer {self.jwt_token}"} if self.jwt_token else {}

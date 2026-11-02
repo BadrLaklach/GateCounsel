@@ -21,7 +21,7 @@ import time
 from typing import Any, TypedDict
 from urllib.parse import urljoin, urlsplit
 
-from agents.recon.scanners.auth_detector import AuthDetector, decode_jwt
+from agents.recon.scanners.auth_detector import LOGIN_URL_HINTS, AuthDetector, decode_jwt
 from agents.recon.crawlers.browser_crawler import BrowserCrawler
 from agents.recon.crawlers.crawler import HttpCrawler, normalize_key
 from agents.recon.scanners.fingerprint import merge_hints
@@ -74,6 +74,7 @@ class ReconAgent:
         *,
         username: str | None = None,
         password: str | None = None,
+        session_cookies: list[tuple[str, str]] | None = None,
         scope_targets: list[str] | None = None,
         config: ReconConfig | None = None,
     ) -> None:
@@ -81,6 +82,7 @@ class ReconAgent:
         self.base_url = target.rstrip("/")
         self.username = username
         self.password = password
+        self.session_cookies = session_cookies or []
         cfg: ReconConfig = config or {}
         self.max_pages = int(cfg.get("max_pages", 60))
         self.max_depth = int(cfg.get("max_depth", 3))
@@ -111,6 +113,11 @@ class ReconAgent:
         started = time.monotonic()
         notes: list[str] = []
         client = ScopedHttpClient(self.guard, rps=self.rps, timeout=self.timeout)
+
+        if self.session_cookies:
+            host = urlsplit(self.base_url).hostname or ""
+            for name, value in self.session_cookies:
+                client.set_cookie(name, value, domain=host)
 
         # Phase 0 — reachability ------------------------------------------------
         probe = client.get(self.base_url + "/")
@@ -213,31 +220,56 @@ class ReconAgent:
 
     def _auth_phase(self, auth: AuthDetector, client: ScopedHttpClient,
                     endpoints: dict[tuple[str, str], Endpoint], notes: list[str]) -> None:
-        """Phase 3 — operator-driven auto-login + protected-surface probing."""
-        if self.username and self.password:
+        """Phase 3 — operator-driven auth (session cookie or auto-login) + protected probing."""
+        if self.session_cookies:
+            names = ", ".join(name for name, _ in self.session_cookies)
+            if self._session_is_live(client):
+                auth.info.authenticated = True
+                auth.info.token_type = "session_cookie"
+                auth.info.token_storage = "set_cookie"
+                auth.info.login_strategy = "operator-supplied session cookie"
+                for name, _ in self.session_cookies:
+                    if name not in auth.info.session_cookie_names:
+                        auth.info.session_cookie_names.append(name)
+                notes.append(f"operator session cookie(s) {names} accepted — authenticated pass enabled")
+                self._crawl_authenticated(auth, client, endpoints, notes)
+            else:
+                notes.append(f"operator session cookie(s) {names} rejected or expired — authenticated pass skipped")
+        elif self.username and self.password:
             authed = auth.authenticate(self.username, self.password)
             if authed:
                 notes.append(f"auto-login succeeded via {auth.info.login_strategy}")
-                # authenticated second pass over discovered links (bounded)
-                auth_crawler = HttpCrawler(
-                    client, self.base_url, max_pages=min(self.max_pages, 30), max_depth=2
-                )
-                auth_crawler.crawl()
-                for key, ep in auth_crawler.endpoints.items():
-                    if key in endpoints:
-                        endpoints[key].merge(ep)
-                    else:
-                        ep.auth_required = True  # reachable only post-auth
-                        endpoints[key] = ep
-                protected = auth.probe_protected(endpoints)
-                if protected:
-                    notes.append(f"{len(protected)} protected endpoint(s) confirmed")
+                self._crawl_authenticated(auth, client, endpoints, notes)
             else:
                 notes.append("auto-login failed — credentials rejected or no login found")
         elif self.username or self.password:
             notes.append("incomplete credentials (need both --username and --password) — auth skipped")
         else:
             notes.append("no credentials supplied — authenticated surface not crawled")
+
+    def _session_is_live(self, client: ScopedHttpClient) -> bool:
+        """True if a request still lands on the app instead of a login page."""
+        probe = client.get(self.base_url + "/")
+        if probe.error or probe.status is None or probe.status in (401, 403):
+            return False
+        return not LOGIN_URL_HINTS.search(urlsplit(probe.final_url).path.lower())
+
+    def _crawl_authenticated(self, auth: AuthDetector, client: ScopedHttpClient,
+                             endpoints: dict[tuple[str, str], Endpoint], notes: list[str]) -> None:
+        """Second crawl + protected-surface probe once a live session exists."""
+        auth_crawler = HttpCrawler(
+            client, self.base_url, max_pages=min(self.max_pages, 30), max_depth=2
+        )
+        auth_crawler.crawl()
+        for key, ep in auth_crawler.endpoints.items():
+            if key in endpoints:
+                endpoints[key].merge(ep)
+            else:
+                ep.auth_required = True  # reachable only post-auth
+                endpoints[key] = ep
+        protected = auth.probe_protected(endpoints)
+        if protected:
+            notes.append(f"{len(protected)} protected endpoint(s) confirmed")
 
     def _browser_phase(self, client: ScopedHttpClient, auth: AuthDetector,
                        endpoints: dict[tuple[str, str], Endpoint], notes: list[str]) -> bool:
@@ -366,6 +398,7 @@ class ReconState(TypedDict, total=False):
     target: str
     username: str | None
     password: str | None
+    session_cookies: list[tuple[str, str]] | None
     scope_targets: list[str] | None
     recon_config: ReconConfig
     sitemap: dict[str, Any]
@@ -379,6 +412,7 @@ def recon_node(state: ReconState) -> dict[str, Any]:
         target,
         username=state.get("username"),
         password=state.get("password"),
+        session_cookies=state.get("session_cookies"),
         scope_targets=state.get("scope_targets"),
         config=state.get("recon_config"),
     )
