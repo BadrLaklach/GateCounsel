@@ -176,12 +176,18 @@ class ParaphraseRobustnessTests(unittest.TestCase):
 # model is covered by the env-gated VectorEndToEndTests below.
 # ---------------------------------------------------------------------- #
 class _FakeEmbedding:
-    """Hashed bag-of-token vectors: deterministic, offline, NOT semantic."""
+    """Hashed bag-of-token vectors: deterministic, offline, NOT semantic.
+
+    ``calls`` counts invocations so tests can prove rejected queries never
+    reach the embedding function.
+    """
 
     def __init__(self, dim: int = 64) -> None:
         self.dim = dim
+        self.calls = 0
 
     def __call__(self, texts):
+        self.calls += 1
         return [self._vector(text) for text in texts]
 
     def _vector(self, text: str) -> list[float]:
@@ -289,6 +295,107 @@ class VectorRetrieverTests(unittest.TestCase):
                 for chunk in hits:
                     self.assertEqual(chunk.class_name, "sqli")
                     self.assertTrue(chunk.chunk_id.startswith("sqli-"))
+
+
+class QueryRejectionTests(unittest.TestCase):
+    """Batch 1: every engine refuses empty/whitespace queries and k <= 0,
+    and rejected queries never invoke the embedding function."""
+
+    def test_lexical_engine_rejects_bad_queries(self):
+        retriever = KnowledgeRetriever("sqli")
+        for bad_query in ("", "   ", "\t\n"):
+            self.assertEqual(retriever.retrieve(bad_query), [])
+        self.assertEqual(retriever.retrieve("error message", 0), [])
+        self.assertEqual(retriever.retrieve("error message", -3), [])
+
+    def test_vector_engine_rejects_without_embedding(self):
+        with _MiniCorpus() as root:
+            with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as store:
+                embed = _FakeEmbedding()
+                ingest_class("sqli", knowledge_root=root, persist_dir=store,
+                             embedding_function=embed)
+                retriever = ChromaKnowledgeRetriever("sqli", persist_dir=store,
+                                                     embedding_function=embed)
+                baseline = embed.calls  # ingest itself embeds; rejected queries must not add
+                for bad_query in ("", "   "):
+                    self.assertEqual(retriever.retrieve(bad_query), [])
+                self.assertEqual(retriever.retrieve("sql error", 0), [])
+                self.assertEqual(retriever.retrieve("sql error", -1), [])
+                self.assertEqual(embed.calls, baseline)
+
+    def test_hybrid_engine_rejects_without_embedding(self):
+        with _MiniCorpus() as root:
+            with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as store:
+                embed = _FakeEmbedding()
+                ingest_class("sqli", knowledge_root=root, persist_dir=store,
+                             embedding_function=embed)
+                hybrid = HybridKnowledgeRetriever("sqli", persist_dir=store,
+                                                  embedding_function=embed,
+                                                  knowledge_root=root)
+                baseline = embed.calls  # ingest itself embeds; rejected queries must not add
+                for bad_query in ("", "   "):
+                    self.assertEqual(hybrid.retrieve(bad_query), [])
+                self.assertEqual(hybrid.retrieve("sql error", 0), [])
+                self.assertEqual(hybrid.retrieve("sql error", -2), [])
+                self.assertEqual(embed.calls, baseline)
+
+
+class CustomRootIsolationTests(unittest.TestCase):
+    """Batch 1: knowledge_root must reach the hybrid's lexical engine, so a
+    custom corpus yields exactly its own (disjoint) chunk IDs — never the
+    repository corpus's IDs."""
+
+    def test_hybrid_lexical_side_is_scoped_to_custom_root(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            root = Path(tmp) / "knowledge"
+            _write_chunk(root / "sqli", "customsql-alpha", "alpha " + "sql error " * 30)
+            _write_chunk(root / "sqli", "customsql-beta", "beta " + "union select " * 30)
+            with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as store:
+                embed = _FakeEmbedding()
+                ingest_class("sqli", knowledge_root=root, persist_dir=store,
+                             embedding_function=embed)
+                hybrid = get_retriever("sqli", persist_dir=store,
+                                       embedding_function=embed, knowledge_root=root)
+                self.assertIsInstance(hybrid, HybridKnowledgeRetriever)
+                self.assertEqual(hybrid.lexical.chunk_ids,
+                                 ["customsql-alpha", "customsql-beta"])
+                allowed = {"customsql-alpha", "customsql-beta"}
+                hits = (hybrid.retrieve("sql error alpha")
+                        + hybrid.retrieve("union select beta"))
+                self.assertTrue(hits)
+                for chunk in hits:
+                    self.assertIn(chunk.chunk_id, allowed)
+
+    def test_get_retriever_lexical_fallback_honors_custom_root(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            root = Path(tmp) / "knowledge"
+            _write_chunk(root / "ssrf", "customssrf-one", "one " + "server fetch " * 30)
+            retriever = get_retriever("ssrf", persist_dir=Path(tmp) / "no_index",
+                                      knowledge_root=root)
+            self.assertIsInstance(retriever, KnowledgeRetriever)
+            self.assertEqual(retriever.chunk_ids, ["customssrf-one"])
+
+
+class MissingCollectionTests(unittest.TestCase):
+    """Batch 1: NotFoundError maps to ingest guidance; operational errors
+    propagate untouched. Verified against installed chromadb 1.5.0, which
+    raises chromadb.errors.NotFoundError for missing collections."""
+
+    def test_missing_collection_keeps_ingest_guidance(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as store:
+            with self.assertRaisesRegex(ValueError, r"rag\.ingest sqli"):
+                ChromaKnowledgeRetriever("sqli", persist_dir=store,
+                                         embedding_function=_FakeEmbedding())
+
+    def test_operational_errors_propagate_not_swallowed(self):
+        from unittest import mock
+
+        import chromadb
+
+        with mock.patch.object(chromadb, "PersistentClient") as factory:
+            factory.return_value.get_collection.side_effect = RuntimeError("disk exploded")
+            with self.assertRaisesRegex(RuntimeError, "disk exploded"):
+                ChromaKnowledgeRetriever("sqli", embedding_function=_FakeEmbedding())
 
 
 class VectorEndToEndTests(unittest.TestCase):

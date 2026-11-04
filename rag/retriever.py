@@ -105,6 +105,12 @@ def context_query(signals: list[str] | None, rationale: str | None) -> str:
     return " ".join(parts)
 
 
+def _query_rejected(query: str, k: int) -> bool:
+    """Empty/whitespace queries and non-positive k are refused before any
+    engine does work — including embedding-function calls."""
+    return k <= 0 or not (query or "").strip()
+
+
 # ------------------------------------------------------------------ #
 # BM25 index (Okapi, k1/b defaults per Robertson/Sparck Jones usage)
 # ------------------------------------------------------------------ #
@@ -204,6 +210,8 @@ class KnowledgeRetriever:
         Returns an empty list when no document shares a term with the
         query — an honest miss rather than arbitrary filler.
         """
+        if _query_rejected(query, k):
+            return []
         terms = _tokenize(query)
         if not terms:
             return []
@@ -239,7 +247,10 @@ class ChromaKnowledgeRetriever:
         )
         try:
             self._collection = client.get_collection(f"knowledge_{vuln_class}")
-        except Exception as exc:  # chroma raises ValueError/NotFoundError by version
+        except chromadb.errors.NotFoundError as exc:
+            # chromadb 1.5 raises NotFoundError for missing collections;
+            # operational failures (bad path, locked store, transport) are
+            # NOT swallowed here — they propagate untouched.
             raise ValueError(
                 f"no ingested collection for {vuln_class!r} — run: python -m rag.ingest {vuln_class}"
             ) from exc
@@ -250,8 +261,10 @@ class ChromaKnowledgeRetriever:
 
     def retrieve(self, query: str, k: int = DEFAULT_K) -> list[RetrievedChunk]:
         """Top-k chunks by cosine similarity (score = 1 - distance)."""
+        if _query_rejected(query, k):
+            return []
         available = self._collection.count()
-        if k <= 0 or available == 0:
+        if available == 0:
             return []
         result = self._collection.query(
             query_embeddings=self._embed([query]),
@@ -295,9 +308,9 @@ class HybridKnowledgeRetriever:
     CANDIDATE_POOL = 10  # each engine contributes up to this many candidates
 
     def __init__(self, vuln_class: str, *, persist_dir: str | Path = DEFAULT_PERSIST_DIR,
-                 embedding_function=None) -> None:
+                 embedding_function=None, knowledge_root: str | Path = KNOWLEDGE_ROOT) -> None:
         self.vuln_class = vuln_class
-        self.lexical = KnowledgeRetriever(vuln_class)
+        self.lexical = KnowledgeRetriever(vuln_class, knowledge_root=knowledge_root)
         self.vector = ChromaKnowledgeRetriever(vuln_class, persist_dir=persist_dir,
                                                embedding_function=embedding_function)
 
@@ -307,6 +320,8 @@ class HybridKnowledgeRetriever:
 
     def retrieve(self, query: str, k: int = DEFAULT_K) -> list[RetrievedChunk]:
         """Fuse both engines' rankings; top-k by fused RRF score."""
+        if _query_rejected(query, k):
+            return []
         pool = max(k, self.CANDIDATE_POOL)
         fused: dict[str, float] = {}
         by_id: dict[str, RetrievedChunk] = {}
@@ -325,6 +340,7 @@ def get_retriever(
     prefer_vector: bool = True,
     persist_dir: str | Path = DEFAULT_PERSIST_DIR,
     embedding_function=None,
+    knowledge_root: str | Path = KNOWLEDGE_ROOT,
 ) -> "KnowledgeRetriever | ChromaKnowledgeRetriever | HybridKnowledgeRetriever":
     """Hybrid retriever when the class collection exists; lexical otherwise."""
     if prefer_vector:
@@ -337,5 +353,6 @@ def get_retriever(
         names = {getattr(c, "name", c) for c in client.list_collections()}
         if f"knowledge_{vuln_class}" in names:
             return HybridKnowledgeRetriever(vuln_class, persist_dir=persist_dir,
-                                            embedding_function=embedding_function)
-    return KnowledgeRetriever(vuln_class)
+                                            embedding_function=embedding_function,
+                                            knowledge_root=knowledge_root)
+    return KnowledgeRetriever(vuln_class, knowledge_root=knowledge_root)
