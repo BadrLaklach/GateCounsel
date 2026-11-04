@@ -22,6 +22,8 @@ Chroma's embedding-function plumbing.
 
 from __future__ import annotations
 
+import hashlib
+import logging
 import math
 import re
 from dataclasses import dataclass, replace
@@ -35,6 +37,12 @@ KNOWLEDGE_ROOT = Path(__file__).resolve().parents[1] / "knowledge"
 DEFAULT_PERSIST_DIR = Path(__file__).resolve().parent / "chroma_index"  # gitignored
 DEFAULT_K = 3  # spec §5: "Return top-k (k=3 default) chunks"
 DEFAULT_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+# Version of the embedded-document layout ("anchors\n\nbody"). Folded into
+# every embedding identity so a format change forces a rebuild even when the
+# model is unchanged.
+EMBEDDING_DOC_FORMAT = 1
+
+log = logging.getLogger("gatecounsel.rag")
 
 
 def default_embedding_function():
@@ -42,6 +50,48 @@ def default_embedding_function():
     from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
     return SentenceTransformerEmbeddingFunction(model_name=DEFAULT_EMBEDDING_MODEL)
+
+
+def resolve_embedding_identity(embedding_function=None, identity: str | None = None) -> str:
+    """Stable identity string for index compatibility decisions.
+
+    Content hashes alone cannot decide vector compatibility: the same chunk
+    embedded by a different model (or a different embedded-document format)
+    yields vectors from a different space. Rules:
+
+    - an explicit ``identity`` wins (required for custom embedding functions,
+      which are opaque callables — we refuse to guess their compatibility);
+    - ``embedding_function=None`` means the default MiniLM embedder;
+    - the embedded-document format version is appended so format changes
+      invalidate old vectors regardless of model.
+    """
+    base = identity or (None if embedding_function is not None
+                        else f"sentence-transformers/{DEFAULT_EMBEDDING_MODEL}")
+    if base is None:
+        raise ValueError(
+            "custom embedding functions must declare a stable embedding_identity "
+            "(index compatibility cannot be guessed from an opaque callable)")
+    return f"{base};docfmt={EMBEDDING_DOC_FORMAT}"
+
+
+def content_hash(meta: dict[str, str], body: str) -> str:
+    """Stable hash over a chunk's full content (sorted frontmatter + body)."""
+    payload = "\n".join(f"{k}: {v}" for k, v in sorted(meta.items())) + "\n---\n" + body
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def corpus_manifest(chunks: list[tuple[dict[str, str], str]]) -> str:
+    """Content-addressed manifest of a class's whole chunk set.
+
+    Deliberately independent of paths: two identical corpora at different
+    locations (e.g. a fresh clone) produce the same manifest and stay
+    index-compatible; any edit or deletion changes it.
+    """
+    digest = hashlib.sha256()
+    for meta, body in sorted(chunks, key=lambda chunk: chunk[0]["id"]):
+        digest.update(content_hash(meta, body).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
@@ -236,11 +286,12 @@ class ChromaKnowledgeRetriever:
     """
 
     def __init__(self, vuln_class: str, *, persist_dir: str | Path = DEFAULT_PERSIST_DIR,
-                 embedding_function=None) -> None:
+                 embedding_function=None, embedding_identity: str | None = None) -> None:
         import chromadb  # lazy: importing rag.retriever never pulls chroma
 
         self.vuln_class = vuln_class
         self._embed = embedding_function or default_embedding_function()
+        expected_identity = resolve_embedding_identity(embedding_function, embedding_identity)
         client = chromadb.PersistentClient(
             path=str(Path(persist_dir)),
             settings=chromadb.Settings(anonymized_telemetry=False),
@@ -254,6 +305,25 @@ class ChromaKnowledgeRetriever:
             raise ValueError(
                 f"no ingested collection for {vuln_class!r} — run: python -m rag.ingest {vuln_class}"
             ) from exc
+        metadata = self._collection.metadata or {}
+        if metadata.get("status") != "ready":
+            # covers indexes abandoned mid-rebuild ("building"), and indexes
+            # created before identity versioning existed (no status key)
+            state = metadata.get("status") or "legacy/unversioned"
+            raise ValueError(
+                f"index for {vuln_class!r} is {state!r} and not safe to query — "
+                f"rebuild it: python -m rag.ingest {vuln_class}")
+        stored_identity = metadata.get("embedding_identity")
+        if stored_identity != expected_identity:
+            raise ValueError(
+                f"index for {vuln_class!r} was built with embedding identity "
+                f"{stored_identity!r} but {expected_identity!r} is configured — "
+                f"rebuild with: python -m rag.ingest {vuln_class}")
+
+    @property
+    def stored_metadata(self) -> dict:
+        """Collection-level metadata (identity, status, corpus manifest)."""
+        return dict(self._collection.metadata or {})
 
     @property
     def chunk_ids(self) -> list[str]:
@@ -308,11 +378,29 @@ class HybridKnowledgeRetriever:
     CANDIDATE_POOL = 10  # each engine contributes up to this many candidates
 
     def __init__(self, vuln_class: str, *, persist_dir: str | Path = DEFAULT_PERSIST_DIR,
-                 embedding_function=None, knowledge_root: str | Path = KNOWLEDGE_ROOT) -> None:
+                 embedding_function=None, embedding_identity: str | None = None,
+                 knowledge_root: str | Path = KNOWLEDGE_ROOT) -> None:
         self.vuln_class = vuln_class
         self.lexical = KnowledgeRetriever(vuln_class, knowledge_root=knowledge_root)
         self.vector = ChromaKnowledgeRetriever(vuln_class, persist_dir=persist_dir,
-                                               embedding_function=embedding_function)
+                                               embedding_function=embedding_function,
+                                               embedding_identity=embedding_identity)
+        # Staleness gate (batch 2.4): the vector side must describe exactly the
+        # corpus the lexical side reads, or fusion would silently mix two
+        # corpus versions. Fails explicitly; get_retriever() turns this into
+        # a logged lexical-only fallback.
+        indexed_manifest = self.vector.stored_metadata.get("corpus_manifest")
+        current_manifest = corpus_manifest(self._read_class_chunks(knowledge_root, vuln_class))
+        if indexed_manifest != current_manifest:
+            raise ValueError(
+                f"index for {vuln_class!r} is stale: the knowledge corpus changed "
+                f"since the last ingest (manifest {indexed_manifest!r} != {current_manifest!r}) "
+                f"— re-run: python -m rag.ingest {vuln_class}")
+
+    @staticmethod
+    def _read_class_chunks(knowledge_root: str | Path, vuln_class: str) -> list[tuple[dict[str, str], str]]:
+        class_dir = Path(knowledge_root) / vuln_class
+        return [parse_chunk(path) for path in sorted(class_dir.glob("*.md"))]
 
     @property
     def chunk_ids(self) -> list[str]:
@@ -340,9 +428,16 @@ def get_retriever(
     prefer_vector: bool = True,
     persist_dir: str | Path = DEFAULT_PERSIST_DIR,
     embedding_function=None,
+    embedding_identity: str | None = None,
     knowledge_root: str | Path = KNOWLEDGE_ROOT,
 ) -> "KnowledgeRetriever | ChromaKnowledgeRetriever | HybridKnowledgeRetriever":
-    """Hybrid retriever when the class collection exists; lexical otherwise."""
+    """Hybrid retriever when the class collection exists; lexical otherwise.
+
+    Policy (batch 2.4): a missing/incomplete/incompatible/stale vector index
+    makes direct hybrid construction raise, but this factory degrades to
+    lexical-only retrieval with a logged warning — retrieval keeps working,
+    and nothing ever silently fuses two corpus versions.
+    """
     if prefer_vector:
         import chromadb
 
@@ -352,7 +447,12 @@ def get_retriever(
         )
         names = {getattr(c, "name", c) for c in client.list_collections()}
         if f"knowledge_{vuln_class}" in names:
-            return HybridKnowledgeRetriever(vuln_class, persist_dir=persist_dir,
-                                            embedding_function=embedding_function,
-                                            knowledge_root=knowledge_root)
+            try:
+                return HybridKnowledgeRetriever(vuln_class, persist_dir=persist_dir,
+                                                embedding_function=embedding_function,
+                                                embedding_identity=embedding_identity,
+                                                knowledge_root=knowledge_root)
+            except ValueError as exc:
+                log.warning("vector index unusable for %r (%s); using lexical retrieval",
+                            vuln_class, exc)
     return KnowledgeRetriever(vuln_class, knowledge_root=knowledge_root)

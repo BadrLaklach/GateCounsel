@@ -16,6 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from rag.ingest import ALLOWED_KINDS, REQUIRED_KEYS  # noqa: E402
 from rag.retriever import parse_chunk as _parse_chunk  # noqa: E402
 
 KNOWLEDGE_DIR = Path(__file__).resolve().parents[1] / "knowledge"
@@ -23,8 +24,6 @@ EXPECTED_CLASSES = [
     "auth_bypass", "idor", "jwt_misconfig", "open_redirect", "sqli", "ssrf",
     "xss_reflected",
 ]
-REQUIRED_KEYS = ["id", "class", "kind", "title", "applies_when", "source", "tags"]
-ALLOWED_KINDS = {"technique", "context_map"}
 MIN_BODY_WORDS, MAX_BODY_WORDS = 100, 300
 
 
